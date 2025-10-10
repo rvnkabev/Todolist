@@ -1,1 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tonight Planner — Step1→Step4</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
+      --accent:#7aa2ff; --ok:#2ad1a0; --warn:#ffb02e; --danger:#ff5a78;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1430);
+         color:var(--ink);font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:960px;margin:0 auto;padding:20px}
+    h1{margin:0 0 12px}
+    h2{margin:28px 0 10px;font-size:1.1rem;color:#dfe6ff}
+    .panel{background:var(--panel);border:1px solid #223061;border-radius:14px;padding:16px;margin:12px 0}
+    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
+    textarea,input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
+    textarea{min-height:160px;resize:vertical}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row > *{flex:1 1 240px}
+    .btn{background:var(--accent);border:none;font-weight:700;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0}
+    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.95rem}
+    th,td{border:1px solid #263565;padding:8px;text-align:center}
+    th{background:#18224a}
+    input[type="number"]{width:100%;text-align:right}
+    .stat{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+    .stat .card{flex:1 1 200px;border:1px solid #263565;border-radius:12px;padding:12px;background:#0e142b}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
+    .hint{color:var(--muted);font-size:.9rem}
+    .small{font-size:.85rem;color:var(--muted)}
+    .center{text-align:center}
+    .right{text-align:right}
+    .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Tonight Planner</h1>
+    <div class="small">Step 1→4：貼上原始日誌 → 自動抓今晚待辦 → 填時長與排名 → 檢查是否能在上床前完成 → 超時建議移到明天</div>
+
+    <!-- Step 1 -->
+    <h2>Step 1｜輸入原始文字 & 今晚時段</h2>
+    <div class="panel">
+      <label for="raw">貼上你今天的原始資料（可包含多日內容，我會只抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）</label>
+      <textarea id="raw" placeholder="[2025-10-10
+2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]
+
+[2025-10-09
+9:10pm ｜ Tonight: something | status=planned #tonighttodolist]"></textarea>
+
+      <div class="row">
+        <div>
+          <label for="homeTime">預計回到家時間（今天）</label>
+          <input id="homeTime" type="time" />
+        </div>
+        <div>
+          <label for="bedTime">上床時間（今天）</label>
+          <input id="bedTime" type="time" />
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="extractBtn">從 Step1 文字自動抽取今晚任務</button>
+        <button id="clearBtn">清空</button>
+      </div>
+
+      <div id="detectedWrap" style="margin-top:10px;display:none">
+        <div class="hint">已偵測到以下 Tonight 任務（僅列出「今天」且含 #tonighttodolist/#tongihttodolist 的項目）：</div>
+        <div id="detected" class="mono"></div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <h2>Step 2｜填每項「預估時長（分鐘）」與「Rank」（數字越小越優先）</h2>
+    <div class="panel">
+      <div class="hint">若在原文內寫了 `dur=30m`、`dur=1h`、`30min`、`est=45m` 等，會自動填入。</div>
+      <div class="hint">任務名稱由「Tonight: 任務名」擷取；可直接在表格內修改。</div>
+
+      <div style="overflow-x:auto">
+        <table id="taskTable">
+          <thead>
+            <tr>
+              <th style="width:40%">任務</th>
+              <th>預估時長 (分鐘)</th>
+              <th>Rank</th>
+              <th>原始標記</th>
+            </tr>
+          </thead>
+          <tbody id="taskTbody">
+            <!-- 動態產生 -->
+          </tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="recalcBtn">重新計算（Step 3 / Step 4）</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <h2>Step 3｜是否能在上床前做完？</h2>
+    <div class="panel">
+      <div class="stat">
+        <div class="card"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
+        <div class="card"><div class="small">任務總時長（分鐘）</div><div id="totalMins" class="mono">—</div></div>
+        <div class="card"><div class="small">差額（可用−需求）</div><div id="deltaMins" class="mono">—</div></div>
+      </div>
+      <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
+    </div>
+
+    <!-- Step 4 -->
+    <h2>Step 4｜若超時：建議改到明天的任務</h2>
+    <div class="panel">
+      <div id="suggestWrap">
+        <div class="hint">當任務總時長超過可用時間時，會依 Rank（數字大＝較不優先）建議移除到明天，直到剛好能符合上床時間。</div>
+        <div id="suggestList" class="mono" style="margin-top:8px">—</div>
+      </div>
+    </div>
+
+    <div class="sticky-footer small">
+      今天日期：<span id="todayStr"></span>
+    </div>
+  </div>
+
+  <script>
+    // —————————— 工具：日期與時間 ——————————
+    function pad2(n){ return n.toString().padStart(2,'0'); }
+    function getTodayStrLocal(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = pad2(d.getMonth()+1);
+      const dd = pad2(d.getDate());
+      return `${y}-${m}-${dd}`;
+    }
+    function timeStrToMinutesToday(tStr){
+      // tStr: "HH:MM"
+      if(!tStr || !/^\d{2}:\d{2}$/.test(tStr)) return null;
+      const [h,m] = tStr.split(':').map(Number);
+      return h*60 + m;
+    }
+
+    // —————————— 工具：字串解析 Tonight 任務 ——————————
+    // 支援格式（同一段裡）：
+    // [YYYY-MM-DD ... ｜ Tonight: 任務名 | ... #tonighttodolist ... dur=30m/1h/45min/est=20m ...]
+    // 亦能接受 #tongihttodolist 的常見拼寫誤差
+    const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
+
+    function parseDurationMinutes(text){
+      // 支援 dur=30m、dur=1h、dur=90min、est=45m、45min、90m、1h 等，取第一個命中
+      const patterns = [
+        /dur\s*=\s*(\d+)\s*m\b/i,
+        /dur\s*=\s*(\d+)\s*min\b/i,
+        /dur\s*=\s*(\d+)\s*h\b/i,
+        /est\s*=\s*(\d+)\s*m\b/i,
+        /est\s*=\s*(\d+)\s*min\b/i,
+        /est\s*=\s*(\d+)\s*h\b/i,
+        /\b(\d+)\s*min\b/i,
+        /\b(\d+)\s*m\b/i,
+        /\b(\d+)\s*h\b/i
+      ];
+      for(const re of patterns){
+        const m = text.match(re);
+        if(m){
+          const val = parseInt(m[1],10);
+          if(re.source.includes('\\s*h')) return val*60;
+          return val; // already minutes
+        }
+      }
+      return null;
+    }
+
+    function extractTonightItems(raw, todayStr){
+      // 以方括號段落或換行為基本單位，寬鬆擷取
+      // 1) 先切成段（方括號包的段落優先）
+      const chunks = [];
+      // 嘗試抓 [ ... ] 區塊
+      const blockRe = /\[[\s\S]*?\]/g;
+      const blocks = raw.match(blockRe);
+      if(blocks){
+        chunks.push(...blocks);
+      }else{
+        // 若沒有方括號，退而求其次以雙換行拆段
+        raw.split(/\n{2,}/).forEach(s => chunks.push(s));
+      }
+
+      const results = [];
+      for(const chunk of chunks){
+        // 檢查日期是否等於今天
+        const dateMatch = chunk.match(/(\d{4}-\d{2}-\d{2})/);
+        if(!dateMatch) continue;
+        const dateStr = dateMatch[1];
+        if(dateStr !== todayStr) continue;
+
+        // 檢查是否含 Tonight: 與 hashtag
+        if(!/Tonight\s*:/i.test(chunk)) continue;
+        if(!TAG_PATTERNS.test(chunk)) continue;
+
+        // 取 Tonight 後的任務名（到下一個 | 或 # 或換行前）
+        // 允許存在全形直線分隔符（｜）
+        const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
+        if(!m) continue;
+        const taskName = m[1].trim();
+
+        // 嘗試從 chunk 找時長
+        const mins = parseDurationMinutes(chunk);
+
+        results.push({
+          raw: chunk.trim(),
+          name: taskName,
+          minutes: mins, // 可能為 null
+          rank: ""
+        });
+      }
+      return results;
+    }
+
+    // —————————— App 狀態 ——————————
+    let tasks = [];
+    const todayStr = getTodayStrLocal();
+    document.getElementById('todayStr').textContent = todayStr;
+
+    // 預設將「回家時間」設為現在+30分鐘；「上床時間」設為 23:30（可自行改）
+    (function presetTimes(){
+      const now = new Date();
+      now.setMinutes(now.getMinutes()+30);
+      const hh = pad2(now.getHours());
+      const mm = pad2(now.getMinutes());
+      document.getElementById('homeTime').value = `${hh}:${mm}`;
+      document.getElementById('bedTime').value  = `23:30`;
+    })();
+
+    // —————————— DOM 連動 ——————————
+    const rawEl = document.getElementById('raw');
+    const detectedWrap = document.getElementById('detectedWrap');
+    const detectedEl = document.getElementById('detected');
+    const taskTbody = document.getElementById('taskTbody');
+    const availEl = document.getElementById('availMins');
+    const totalEl = document.getElementById('totalMins');
+    const deltaEl = document.getElementById('deltaMins');
+    const fitMsgEl = document.getElementById('fitMsg');
+    const suggestListEl = document.getElementById('suggestList');
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      rawEl.value = "";
+      tasks = [];
+      renderDetected([]);
+      renderTable();
+      renderStats();
+      suggestListEl.textContent = "—";
+    });
+
+    document.getElementById('extractBtn').addEventListener('click', ()=>{
+      tasks = extractTonightItems(rawEl.value || "", todayStr);
+      renderDetected(tasks);
+      renderTable();
+      renderStats(); // 也會把 Step3 清空
+      suggestListEl.textContent = "—";
+    });
+
+    document.getElementById('recalcBtn').addEventListener('click', ()=>{
+      syncTableToState();
+      renderStats();
+      makeSuggestions();
+    });
+
+    function renderDetected(items){
+      if(!items || items.length===0){
+        detectedWrap.style.display = "none";
+        detectedEl.innerHTML = "";
+        return;
+      }
+      detectedWrap.style.display = "";
+      detectedEl.innerHTML = items.map((it,i)=>(
+        `<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span>`
+      )).join("<br/>");
+    }
+
+    function renderTable(){
+      taskTbody.innerHTML = "";
+      if(!tasks.length){
+        taskTbody.innerHTML = `<tr><td colspan="4" class="center">（尚無任務，請先在 Step 1 貼上原文並按「自動抽取」）</td></tr>`;
+        return;
+      }
+      tasks.forEach((t,idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name ?? "")}" />
+          </td>
+          <td>
+            <input type="number" min="0" step="1" placeholder="(分鐘)" data-k="minutes" data-i="${idx}" value="${t.minutes!=null? t.minutes : ""}" />
+          </td>
+          <td>
+            <input type="number" min="1" step="1" placeholder="Rank（1=最高）" data-k="rank" data-i="${idx}" value="${t.rank ?? ""}" />
+          </td>
+          <td class="mono small">${escapeHtml(t.raw.slice(0,140))}${t.raw.length>140?'…':''}</td>
+        `;
+        taskTbody.appendChild(tr);
+      });
+
+      taskTbody.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change', ()=>{
+          const i = parseInt(inp.dataset.i,10);
+          const k = inp.dataset.k;
+          let v = inp.value;
+          if(k==='minutes' || k==='rank'){
+            v = v==="" ? "" : Number(v);
+          }
+          tasks[i][k] = v;
+        });
+      });
+    }
+
+    function syncTableToState(){
+      taskTbody.querySelectorAll('input').forEach(inp=>{
+        const i = parseInt(inp.dataset.i,10);
+        const k = inp.dataset.k;
+        let v = inp.value;
+        if(k==='minutes' || k==='rank'){
+          v = v==="" ? "" : Number(v);
+        }
+        if(tasks[i]) tasks[i][k] = v;
+      });
+    }
+
+    function renderStats(){
+      // 可用時間
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      let avail = null;
+      let msg = "";
+      if(home==null || bed==null){
+        msg = "請在 Step 1 輸入「回家時間」與「上床時間」。";
+      }else if(bed <= home){
+        msg = "上床時間需晚於回家時間。";
+      }else{
+        avail = bed - home;
+      }
+      availEl.textContent = (avail==null? "—" : avail);
+
+      // 任務總時長
+      const mins = tasks.reduce((sum,t)=>{
+        const m = (t.minutes==="" || t.minutes==null) ? 0 : Number(t.minutes);
+        return sum + (isFinite(m)? m : 0);
+      },0);
+      totalEl.textContent = tasks.length ? mins : "—";
+
+      // 差額與結論
+      if(avail==null || !tasks.length){
+        deltaEl.textContent = "—";
+        fitMsgEl.innerHTML = msg || "—";
+        fitMsgEl.className = "hint";
+        return;
+      }
+      const delta = avail - mins;
+      deltaEl.textContent = delta;
+      if(delta >= 0){
+        fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`;
+        fitMsgEl.className = "ok";
+      }else{
+        fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 請看 Step 4 建議。`;
+        fitMsgEl.className = "danger";
+      }
+    }
+
+    function makeSuggestions(){
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      if(home==null || bed==null || bed<=home || !tasks.length){
+        suggestListEl.textContent = "—";
+        return;
+      }
+      const avail = bed - home;
+      // 若不用建議
+      const total = tasks.reduce((s,t)=> s + (Number(t.minutes)||0), 0);
+      if(total <= avail){
+        suggestListEl.innerHTML = `<span class="ok">目前不需要移除任務。</span>`;
+        return;
+      }
+
+      // 依 Rank（數字大者優先移除；未填 Rank 視為極大（最低優先））
+      const sorted = tasks
+        .map((t,i)=>({
+          i, name:t.name, minutes:Number(t.minutes)||0,
+          rank: (t.rank==="" || t.rank==null || !isFinite(Number(t.rank))) ? Number.POSITIVE_INFINITY : Number(t.rank)
+        }))
+        .sort((a,b)=>{
+          // 移除時從 rank 大 → 小
+          if(a.rank === b.rank){
+            // rank 相等時，移除較耗時的
+            return b.minutes - a.minutes;
+          }
+          return b.rank - a.rank;
+        });
+
+      let keptTime = 0;
+      // 預先計算從高優先（rank 小）開始的保留集合
+      // 做法：先把任務按「保留」邏輯排序（rank 小在前），累加直到超標，超出者列入移除清單
+      const keepOrder = tasks
+        .map((t,i)=>({
+          i, name:t.name, minutes:Number(t.minutes)||0,
+          rank: (t.rank==="" || t.rank==null || !isFinite(Number(t.rank))) ? Number.POSITIVE_INFINITY : Number(t.rank)
+        }))
+        .sort((a,b)=>{
+          if(a.rank === b.rank) return a.minutes - b.minutes;
+          return a.rank - b.rank; // rank 小者先
+        });
+
+      const remove = [];
+      const keep = [];
+      for(const item of keepOrder){
+        if(keptTime + item.minutes <= avail){
+          keptTime += item.minutes;
+          keep.push(item);
+        }else{
+          remove.push(item);
+        }
+      }
+
+      // 輸出建議
+      const removeTotal = remove.reduce((s,x)=>s+x.minutes,0);
+      const keepTotal   = keep.reduce((s,x)=>s+x.minutes,0);
+      const overBy = (keepTotal + removeTotal) - avail;
+
+      if(remove.length===0){
+        // 理論上不會發生，因為進到這裡代表已超時
+        suggestListEl.innerHTML = "—";
+        return;
+      }
+
+      suggestListEl.innerHTML = `
+        <div class="warn">建議移到明天（由低優先到高優先）：</div>
+        <ul>
+          ${remove.map(x=>`<li>${escapeHtml(x.name)}（${x.minutes} 分鐘，Rank=${x.rank===Infinity?'未填':x.rank}）</li>`).join("")}
+        </ul>
+        <div class="small">
+          目前超出：<span class="danger mono">${overBy}</span> 分鐘；移除清單合計：<span class="mono">${removeTotal}</span> 分鐘；保留清單合計：<span class="mono">${keepTotal}</span> 分鐘。
+        </div>
+      `;
+    }
+
+    // —————————— 安全轉義 ——————————
+    function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,"&quot;"); }
+  </script>
+</body>
+</html>
 
