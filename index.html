@@ -3,78 +3,77 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tonight Planner — v2 Multi‑Page</title>
+  <title>Tonight Planner — Step1→Step4（Multipage）</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
       --accent:#7aa2ff; --ok:#2ad1a0; --warn:#ffb02e; --danger:#ff5a78;
-      --line:#223061; --chip:#0e142b;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1430);color:var(--ink);
-         font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:980px;margin:0 auto;padding:20px}
+    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1430);
+         color:var(--ink);font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:960px;margin:0 auto;padding:20px}
     h1{margin:0 0 12px}
-    h2{margin:8px 0 14px;font-size:1.12rem;color:#dfe6ff}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+    h2{margin:28px 0 10px;font-size:1.1rem;color:#dfe6ff}
+    .panel{background:var(--panel);border:1px solid #223061;border-radius:14px;padding:16px;margin:12px 0}
     label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
-    textarea,input,button,select{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
+    textarea,input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
     textarea{min-height:160px;resize:vertical}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .row > *{flex:1 1 240px}
     .btn{background:var(--accent);border:none;font-weight:700;cursor:pointer}
     .btn:active{transform:translateY(1px)}
-    .btn-sec{background:var(--chip)}
-    .pill,.chip{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;font-size:.95rem;border:1px solid var(--line);background:var(--chip);margin:6px 6px 0 0;cursor:pointer;user-select:none}
-    .chip.active{outline:2px solid var(--accent)}
-    .chip.sm{font-size:.9rem;padding:6px 10px}
-    .grid{display:grid;gap:10px}
-    .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0}
     table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.95rem}
     th,td{border:1px solid #263565;padding:8px;text-align:center}
     th{background:#18224a}
+    input[type="number"]{width:100%;text-align:right}
     .stat{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
-    .stat .card{flex:1 1 220px;border:1px solid #263565;border-radius:12px;padding:12px;background:#0e142b}
+    .stat .card{flex:1 1 200px;border:1px solid #263565;border-radius:12px;padding:12px;background:#0e142b}
     .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
-    .hint{color:var(--muted);font-size:.92rem}
+    .hint{color:var(--muted);font-size:.9rem}
     .small{font-size:.85rem;color:var(--muted)}
     .center{text-align:center}
+    .right{text-align:right}
+    .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061}
     .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
-    .sticky{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .steps{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
-    .step-dot{width:26px;height:26px;border-radius:999px;border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-weight:700}
-    .step-dot.active{background:var(--accent);border-color:var(--accent);color:#061333}
+    
+    /* multipage */
     .page{display:none}
     .page.active{display:block}
-    .topnav{display:flex;justify-content:space-between;align-items:center;gap:10px}
-    .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0a1130;border:1px solid #2a3767;border-radius:6px;padding:2px 6px;color:#b9c8ff}
-    .hl{color:#dfe6ff;font-weight:600}
-    .ghost{background:transparent;border:1px solid var(--line)}
+
+    /* Step 2 friendly controls */
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:8px 12px;border:1px solid #2a3767;border-radius:999px;background:#0e142b;cursor:pointer;user-select:none}
+    .chip.selected{outline:2px solid var(--accent)}
+    .rank-group{display:flex;gap:8px;flex-wrap:wrap}
+    .rank{width:42px;height:42px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;cursor:pointer;font-weight:700}
+    .rank.selected{outline:2px solid var(--accent)}
+    .tbl{overflow-x:auto}
+    .row-mid{display:grid;grid-template-columns:1.2fr 1fr 1fr 1.2fr;gap:8px;align-items:center}
+    .tag-warn{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #57401a;background:#2b1e0e;color:#ffd37a;font-size:.8rem}
+    .tag-ok{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #164932;background:#0f2b1e;color:#7dffca;font-size:.8rem}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="topnav">
-      <h1>Tonight Planner</h1>
-      <div class="small">把 Step 1→4 拆成「分頁」；Step 2 有更友善的 <span class="hl">時間</span> 與 <span class="hl">Rank 1–5</span> 選擇。</div>
-    </div>
+    <h1>Tonight Planner</h1>
+    <div class="small">Step 1→4：貼原始日誌 → 抽今晚待辦 → 友善填時長/Rank → 檢查是否能在上床前完成 → 超時建議</div>
 
-    <!-- Step indicator -->
-    <div class="steps" aria-label="步驟導覽">
-      <div class="step-dot" data-goto="1">1</div>
-      <div class="step-dot" data-goto="2">2</div>
-      <div class="step-dot" data-goto="3">3</div>
-      <div class="step-dot" data-goto="4">4</div>
-    </div>
+    <nav class="panel row">
+      <button id="goto1" class="btn">Step 1</button>
+      <button id="goto2" class="btn">Step 2</button>
+      <button id="goto3" class="btn">Step 3</button>
+      <button id="goto4" class="btn">Step 4</button>
+    </nav>
 
-    <!-- PAGE 1 -->
-    <section class="page active" id="page1" aria-label="Step 1">
+    <!-- Step 1 -->
+    <section id="page1" class="page active">
       <h2>Step 1｜輸入原始文字 & 今晚時段</h2>
       <div class="panel">
-        <label for="raw">貼上今天的原始資料（我只抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）</label>
-        <textarea id="raw" placeholder="[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]\n\n[2025-10-09\n9:10pm ｜ Tonight: something | status=planned #tonighttodolist]"></textarea>
+        <label for="raw">貼上你今天的原始資料（我會只抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）。也支援寫法：<span class="mono">Tonight: 整雞水 30mins, 運動</span></label>
+        <textarea id="raw" placeholder="[2025-10-12\n10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]\n\n[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
+
         <div class="row">
           <div>
             <label for="homeTime">預計回到家時間（今天）</label>
@@ -85,264 +84,391 @@
             <input id="bedTime" type="time" />
           </div>
         </div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn" id="extractBtn">從 Step 1 文字抽任務</button>
-          <button class="ghost" id="toStep2">下一步 → Step 2</button>
-          <button class="btn-sec" id="clearBtn">清空</button>
+
+        <div class="row">
+          <button class="btn" id="extractBtn">從 Step1 文字自動抽取今晚任務</button>
+          <button id="clearBtn">清空</button>
+          <button id="next1" class="btn">下一步 → Step 2</button>
         </div>
+
         <div id="detectedWrap" style="margin-top:10px;display:none">
-          <div class="hint">偵測到 Tonight 任務（僅列出今天，含 #tonighttodolist/#tongihttodolist）：</div>
+          <div class="hint">已偵測到以下 Tonight 任務（僅列出「今天」且含 #tonighttodolist/#tongihttodolist 的項目）：</div>
           <div id="detected" class="mono"></div>
         </div>
       </div>
     </section>
 
-    <!-- PAGE 2 -->
-    <section class="page" id="page2" aria-label="Step 2">
-      <h2>Step 2｜為每項填「預估時長」與「Rank 1–5」</h2>
+    <!-- Step 2 -->
+    <section id="page2" class="page">
+      <h2>Step 2｜友善填「預估時長」與「Rank」</h2>
       <div class="panel">
-        <div class="hint">可點選預設時長籤：<span class="kbd">5m</span>、<span class="kbd">15m</span>、<span class="kbd">30m</span>、<span class="kbd">1h</span>、<span class="kbd">1.5h</span>、<span class="kbd">2h</span>；也可直接輸入分鐘數。Rank 1＝最高優先。</div>
-        <div id="tasksList"></div>
-        <div class="row" style="margin-top:10px">
-          <button class="ghost" id="backTo1">← 回 Step 1</button>
-          <button class="btn" id="toStep3">下一步 → Step 3</button>
-          <button class="btn-sec" id="recalcFrom2">儲存 & 計算</button>
-        </div>
+        <div class="hint">若在原文內寫了 <span class="mono">dur=30m</span>、<span class="mono">30mins</span>、<span class="mono">1hr</span>、或在任務名稱後標註（如：<span class="mono">Tonight: 整雞水 30mins, 運動</span>），會自動填入。</div>
+      </div>
+
+      <div id="taskList" class="panel">
+        <!-- 動態渲染卡片 -->
+      </div>
+
+      <div class="row">
+        <button id="back2">← 上一步</button>
+        <button id="recalc2" class="btn">儲存 & 前往 Step 3</button>
       </div>
     </section>
 
-    <!-- PAGE 3 -->
-    <section class="page" id="page3" aria-label="Step 3">
-      <h2>Step 3｜能在上床前做完嗎？</h2>
+    <!-- Step 3 -->
+    <section id="page3" class="page">
+      <h2>Step 3｜是否能在上床前做完？</h2>
       <div class="panel">
         <div class="stat">
           <div class="card"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
           <div class="card"><div class="small">任務總時長（分鐘）</div><div id="totalMins" class="mono">—</div></div>
-          <div class="card"><div class="small">差額（可用 − 需求）</div><div id="deltaMins" class="mono">—</div></div>
+          <div class="card"><div class="small">差額（可用−需求）</div><div id="deltaMins" class="mono">—</div></div>
         </div>
         <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
-        <div class="row" style="margin-top:10px">
-          <button class="ghost" id="backTo2">← 回 Step 2</button>
-          <button class="btn" id="toStep4">下一步 → Step 4</button>
-          <button class="btn-sec" id="recalcBtn">重新計算</button>
-        </div>
+      </div>
+      <div class="row">
+        <button id="back3">← 上一步</button>
+        <button id="next3" class="btn">下一步 → Step 4</button>
       </div>
     </section>
 
-    <!-- PAGE 4 -->
-    <section class="page" id="page4" aria-label="Step 4">
-      <h2>Step 4｜若超時：建議改到明天</h2>
+    <!-- Step 4 -->
+    <section id="page4" class="page">
+      <h2>Step 4｜若超時：建議改到明天的任務</h2>
       <div class="panel">
-        <div class="hint">當任務總時長超過可用時間時，依 Rank（數字大＝較不優先）與耗時長短建議移除到明天。</div>
-        <div id="suggestList" class="mono" style="margin-top:8px">—</div>
-        <div class="row" style="margin-top:10px">
-          <button class="ghost" id="backTo3">← 回 Step 3</button>
-          <button class="btn" id="finishBtn">完成</button>
+        <div id="suggestWrap">
+          <div class="hint">當任務總時長超過可用時間時，會依 Rank（數字小＝較優先，數字大＝較不優先）建議移除到明天，直到剛好能符合上床時間。</div>
+          <div id="suggestList" class="mono" style="margin-top:8px">—</div>
         </div>
+      </div>
+      <div class="row">
+        <button id="back4">← 上一步</button>
       </div>
     </section>
 
-    <div class="sticky small">
+    <div class="sticky-footer small">
       今天日期：<span id="todayStr"></span>
-      <span style="flex:1"></span>
-      <span class="hint">快捷鍵：<span class="kbd">⌘/Ctrl + →</span> 下一步、<span class="kbd">⌘/Ctrl + ←</span> 上一步</span>
     </div>
   </div>
 
   <script>
     // —————————— 工具：日期與時間 ——————————
     function pad2(n){ return n.toString().padStart(2,'0'); }
-    function getTodayStrLocal(){ const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
-    function timeStrToMinutesToday(tStr){ if(!tStr || !/^\d{2}:\d{2}$/.test(tStr)) return null; const [h,m]=tStr.split(':').map(Number); return h*60+m; }
-    function minutesToLabel(m){ if(m%60===0) return (m/60)+"h"; if(m>60 && m%30===0) return (m/60).toFixed(1).replace('.0','')+"h"; return m+"m"; }
+    function getTodayStrLocal(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = pad2(d.getMonth()+1);
+      const dd = pad2(d.getDate());
+      return `${y}-${m}-${dd}`;
+    }
+    function timeStrToMinutesToday(tStr){
+      if(!tStr || !/^\d{2}:\d{2}$/.test(tStr)) return null;
+      const [h,m] = tStr.split(':').map(Number);
+      return h*60 + m;
+    }
 
-    // —————————— Tonight 解析（沿用 v1，略有整理） ——————————
+    // —————————— 工具：字串解析 Tonight 任務 ——————————
     const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
+
     function parseDurationMinutes(text){
-      const patterns=[/dur\s*=\s*(\d+)\s*m\b/i,/dur\s*=\s*(\d+)\s*min\b/i,/dur\s*=\s*(\d+)\s*h\b/i,/est\s*=\s*(\d+)\s*m\b/i,/est\s*=\s*(\d+)\s*min\b/i,/est\s*=\s*(\d+)\s*h\b/i,/\b(\d+)\s*min\b/i,/\b(\d+)\s*m\b/i,/\b(\d+)\s*h\b/i];
-      for(const re of patterns){ const m=text.match(re); if(m){ const val=parseInt(m[1],10); if(re.source.includes('\\s*h')) return val*60; return val; } }
+      // 取第一個命中的時長標記
+      const patterns = [
+        /dur\s*=\s*(\d+)\s*m\b/i,
+        /dur\s*=\s*(\d+)\s*min\b/i,
+        /dur\s*=\s*(\d+)\s*h\b/i,
+        /est\s*=\s*(\d+)\s*m\b/i,
+        /est\s*=\s*(\d+)\s*min\b/i,
+        /est\s*=\s*(\d+)\s*h\b/i,
+        /\b(\d+)\s*mins?\b/i,
+        /\b(\d+)\s*min\b/i,
+        /\b(\d+)\s*m\b/i,
+        /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i
+      ];
+      for(const re of patterns){
+        const m = text.match(re);
+        if(m){
+          const val = parseFloat(m[1]);
+          if(/h/.test(re.source)) return Math.round(val*60);
+          return Math.round(val);
+        }
+      }
       return null;
     }
-    function extractTonightItems(raw,todayStr){
-      const chunks=[]; const blockRe=/\[[\s\S]*?\]/g; const blocks=raw.match(blockRe); if(blocks){chunks.push(...blocks);} else { raw.split(/\n{2,}/).forEach(s=>chunks.push(s)); }
-      const results=[];
+
+    function splitTasksInline(titleText){
+      // 將 "整雞水 30mins, 運動" 解析為 [{name:"整雞水", minutes:30}, {name:"運動"}]
+      const parts = titleText.split(/[,，、]+/).map(s=>s.trim()).filter(Boolean);
+      const out = [];
+      for(const p of parts){
+        // 嘗試讀取末尾的時間
+        const dm = parseDurationMinutes(p);
+        if(dm!=null){
+          // 去掉時間字樣
+          const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
+          out.push({name, minutes:dm});
+        }else{
+          out.push({name:p, minutes:null});
+        }
+      }
+      return out;
+    }
+
+    function extractTonightItems(raw, todayStr){
+      const chunks = [];
+      const blockRe = /\[[\s\S]*?\]/g;
+      const blocks = raw.match(blockRe);
+      if(blocks){ chunks.push(...blocks); } else { raw.split(/\n{2,}/).forEach(s => chunks.push(s)); }
+
+      const results = [];
       for(const chunk of chunks){
-        const dateMatch=chunk.match(/(\d{4}-\d{2}-\d{2})/); if(!dateMatch) continue; const dateStr=dateMatch[1]; if(dateStr!==todayStr) continue;
-        if(!/Tonight\s*:/i.test(chunk)) continue; if(!TAG_PATTERNS.test(chunk)) continue;
-        const m=chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i); if(!m) continue; const taskName=m[1].trim();
-        const mins=parseDurationMinutes(chunk);
-        results.push({ raw:chunk.trim(), name:taskName, minutes:mins, rank:"" });
+        const dateMatch = chunk.match(/(\d{4}-\d{2}-\d{2})/);
+        if(!dateMatch) continue;
+        const dateStr = dateMatch[1];
+        if(dateStr !== todayStr) continue;
+        if(!/Tonight\s*:/i.test(chunk)) continue;
+        if(!TAG_PATTERNS.test(chunk)) continue;
+
+        // 允許全形直線
+        const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
+        if(!m) continue;
+        const title = m[1].trim();
+
+        // 先以 inline 切分多個任務
+        const inlineItems = splitTasksInline(title);
+        const durInChunk = parseDurationMinutes(chunk); // chunk 級別的 dur 也可用來填第一個未填的項目
+
+        let usedDur = false;
+        for(const it of inlineItems){
+          let minutes = it.minutes;
+          if(minutes==null){
+            minutes = parseDurationMinutes(it.name);
+          }
+          if(minutes==null && !usedDur && durInChunk!=null){
+            minutes = durInChunk; usedDur = true;
+          }
+          results.push({
+            raw: chunk.trim(),
+            name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
+            minutes: minutes, // 可為 null
+            rank: ""
+          });
+        }
       }
       return results;
     }
 
     // —————————— App 狀態 ——————————
-    let tasks=[];
-    const todayStr=getTodayStrLocal();
-    document.getElementById('todayStr').textContent=todayStr;
+    let tasks = [];
+    const todayStr = getTodayStrLocal();
+    document.getElementById('todayStr').textContent = todayStr;
 
-    // 預設時間：回家=現在+30m；上床=23:30
-    (function presetTimes(){ const now=new Date(); now.setMinutes(now.getMinutes()+30); const hh=pad2(now.getHours()); const mm=pad2(now.getMinutes());
-      document.getElementById('homeTime').value=`${hh}:${mm}`; document.getElementById('bedTime').value='23:30'; })();
+    // 預設時間
+    (function presetTimes(){
+      const now = new Date();
+      now.setMinutes(now.getMinutes()+30);
+      const hh = pad2(now.getHours());
+      const mm = pad2(now.getMinutes());
+      document.getElementById('homeTime').value = `${hh}:${mm}`;
+      document.getElementById('bedTime').value  = `23:30`;
+    })();
 
-    // —————————— Navigation（分頁控制） ——————————
-    const pages=[document.getElementById('page1'),document.getElementById('page2'),document.getElementById('page3'),document.getElementById('page4')];
-    const dots=[...document.querySelectorAll('.step-dot')];
-    let step=1;
-    function gotoStep(n){ step=Math.max(1,Math.min(4,n)); pages.forEach((p,i)=>p.classList.toggle('active',i===step-1)); dots.forEach((d,i)=>d.classList.toggle('active',i===step-1)); }
-    dots.forEach(d=>d.addEventListener('click',()=>gotoStep(Number(d.dataset.goto))));
-    document.getElementById('toStep2').addEventListener('click',()=>gotoStep(2));
-    document.getElementById('toStep3').addEventListener('click',()=>{ syncFromUI(); renderStats(); gotoStep(3); });
-    document.getElementById('toStep4').addEventListener('click',()=>{ syncFromUI(); renderStats(); makeSuggestions(); gotoStep(4); });
-    document.getElementById('backTo1').addEventListener('click',()=>gotoStep(1));
-    document.getElementById('backTo2').addEventListener('click',()=>gotoStep(2));
-    document.getElementById('backTo3').addEventListener('click',()=>gotoStep(3));
-    document.getElementById('finishBtn').addEventListener('click',()=>{ alert('今晚計劃完成 ✅'); });
+    // —————————— multipage 導覽 ——————————
+    const pages = ['page1','page2','page3','page4'];
+    function showPage(id){
+      pages.forEach(pid=>{
+        document.getElementById(pid).classList.toggle('active', pid===id);
+      });
+    }
+    document.getElementById('goto1').onclick=()=>showPage('page1');
+    document.getElementById('goto2').onclick=()=>showPage('page2');
+    document.getElementById('goto3').onclick=()=>{ renderStats(); showPage('page3'); };
+    document.getElementById('goto4').onclick=()=>{ makeSuggestions(); showPage('page4'); };
 
-    // 快捷鍵
-    window.addEventListener('keydown',(e)=>{
-      const mac = /Mac|iPhone|iPad/.test(navigator.platform);
-      const modOK = mac? e.metaKey : e.ctrlKey;
-      if(!modOK) return;
-      if(e.key==='ArrowRight'){ e.preventDefault(); if(step<4) document.querySelector('[id^="toStep"]')?.click() || gotoStep(step+1); }
-      if(e.key==='ArrowLeft'){ e.preventDefault(); gotoStep(Math.max(1,step-1)); }
+    // —————————— Step1 DOM ——————————
+    const rawEl = document.getElementById('raw');
+    const detectedWrap = document.getElementById('detectedWrap');
+    const detectedEl = document.getElementById('detected');
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      rawEl.value = "";
+      tasks = [];
+      renderDetected([]);
+      renderTaskCards();
+      resetStatsAndSuggest();
     });
+    document.getElementById('extractBtn').addEventListener('click', ()=>{
+      tasks = extractTonightItems(rawEl.value || "", todayStr);
+      renderDetected(tasks);
+      renderTaskCards();
+      resetStatsAndSuggest();
+    });
+    function resetStatsAndSuggest(){
+      document.getElementById('availMins').textContent = '—';
+      document.getElementById('totalMins').textContent = '—';
+      document.getElementById('deltaMins').textContent = '—';
+      document.getElementById('fitMsg').textContent = '—';
+      document.getElementById('suggestList').textContent = '—';
+    }
+    document.getElementById('next1').onclick=()=>{ if(!tasks.length){ alert('請先抽取今晚任務'); return; } showPage('page2'); };
 
-    // —————————— DOM 取得 ——————————
-    const rawEl=document.getElementById('raw');
-    const detectedWrap=document.getElementById('detectedWrap');
-    const detectedEl=document.getElementById('detected');
-    const availEl=document.getElementById('availMins');
-    const totalEl=document.getElementById('totalMins');
-    const deltaEl=document.getElementById('deltaMins');
-    const fitMsgEl=document.getElementById('fitMsg');
-    const suggestListEl=document.getElementById('suggestList');
-    const tasksListEl=document.getElementById('tasksList');
+    function renderDetected(items){
+      if(!items || items.length===0){ detectedWrap.style.display = 'none'; detectedEl.innerHTML = ""; return; }
+      detectedWrap.style.display = '';
+      detectedEl.innerHTML = items.map((it,i)=>(`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="tag-ok">${it.minutes}m</span>`:''}`)).join("<br/>");
+    }
 
-    // —————————— Actions Step1 ——————————
-    document.getElementById('clearBtn').addEventListener('click',()=>{ rawEl.value=""; tasks=[]; renderDetected([]); renderTasksList(); resetStats(); suggestListEl.textContent='—'; });
-    document.getElementById('extractBtn').addEventListener('click',()=>{ tasks=extractTonightItems(rawEl.value||"",todayStr); renderDetected(tasks); renderTasksList(); resetStats(); suggestListEl.textContent='—'; });
+    // —————————— Step2 友善輸入卡片 ——————————
+    const DUR_PRESETS = [5,15,30,60,90,120];
+    function renderTaskCards(){
+      const host = document.getElementById('taskList');
+      host.innerHTML = '';
+      if(!tasks.length){ host.innerHTML = '<div class="center small">（尚無任務，請先在 Step 1 貼上原文並按「自動抽取」）</div>'; return; }
 
-    function renderDetected(items){ if(!items||items.length===0){ detectedWrap.style.display='none'; detectedEl.innerHTML=''; return; } detectedWrap.style.display=''; detectedEl.innerHTML=items.map((it,i)=>(`<span class="pill">${i+1}</span><span class="mono">${escapeHtml(it.name)}</span>`)).join('<br/>'); }
-
-    // —————————— Step2：更友善的任務卡 ——————————
-    const PRESETS=[5,15,30,60,90,120];
-    function renderTasksList(){
-      if(!tasks.length){ tasksListEl.innerHTML = `<div class="center small">（尚無任務，請回 Step 1 抽取）</div>`; return; }
-      tasksListEl.innerHTML = tasks.map((t,idx)=>{
-        const m=t.minutes!=null && t.minutes!==''? Number(t.minutes):'';
-        const rank=(t.rank!=null && t.rank!=='')? Number(t.rank):'';
-        return `
-        <div class="panel" data-idx="${idx}">
+      tasks.forEach((t,idx)=>{
+        const card = document.createElement('div');
+        card.className = 'panel';
+        const dur = (t.minutes==null||t.minutes==='')? null : Number(t.minutes);
+        const rank = (t.rank==null||t.rank==='')? null : Number(t.rank);
+        card.innerHTML = `
           <div class="row">
             <div>
               <label>任務名稱</label>
-              <input data-k="name" value="${escapeAttr(t.name??'')}" />
+              <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name ?? '')}" />
             </div>
             <div>
-              <label>自訂分鐘（可留空用下方預設）</label>
-              <input type="number" min="0" step="1" placeholder="(分鐘)" data-k="minutes" value="${m}" />
-            </div>
-          </div>
-          <div class="row">
-            <div>
-              <div class="small">預設時長</div>
-              <div role="group" aria-label="預設時長">
-                ${PRESETS.map(p=>`<span class="chip sm dur-chip ${m===p?'active':''}" data-mins="${p}">${minutesToLabel(p)}</span>`).join('')}
+              <label>自訂時長（分鐘，可留空）</label>
+              <input type="number" min="0" step="1" placeholder="(分鐘)" data-k="minutes" data-i="${idx}" value="${dur??''}" />
+              <div class="small">或點選下列快速按鈕：</div>
+              <div class="chips" data-kind="dur" data-i="${idx}">
+                ${DUR_PRESETS.map(m=>`<div class="chip ${dur===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
               </div>
             </div>
             <div>
-              <div class="small">Rank（1=最高，5=最低）</div>
-              <div role="group" aria-label="Rank 選擇">
-                ${[1,2,3,4,5].map(r=>`<span class="chip sm rank-chip ${rank===r?'active':''}" data-rank="${r}">${r}</span>`).join('')}
+              <label>Rank（1=最高，5=最低）</label>
+              <div class="rank-group" data-kind="rank" data-i="${idx}">
+                ${[1,2,3,4,5].map(r=>`<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
               </div>
             </div>
           </div>
-          <div class="small mono" style="margin-top:6px">${escapeHtml((t.raw||'').slice(0,140))}${(t.raw||'').length>140?'…':''}</div>
-        </div>`;
-      }).join('');
-
-      // 綁定互動
-      tasksListEl.querySelectorAll('[data-k]').forEach(inp=>{
-        inp.addEventListener('change',()=>{
-          const card=inp.closest('.panel'); const i=Number(card.dataset.idx); const k=inp.dataset.k; let v=inp.value; if(k==='minutes'){ v = v===''? '': Number(v); } tasks[i][k]=v; });
+          <div class="small mono" style="margin-top:8px">原始標記：${escapeHtml((t.raw||'').slice(0,160))}${(t.raw||'').length>160?'…':''}</div>
+        `;
+        host.appendChild(card);
       });
-      tasksListEl.querySelectorAll('.dur-chip').forEach(chip=>{
-        chip.addEventListener('click',()=>{
-          const p=Number(chip.dataset.mins); const card=chip.closest('.panel'); const i=Number(card.dataset.idx); tasks[i].minutes=p; // 更新 state
-          // 更新 UI：對應 chip 狀態、輸入框值
-          card.querySelectorAll('.dur-chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); const minInp=card.querySelector('[data-k="minutes"]'); if(minInp){ minInp.value=p; }
+
+      // 綁定 chips & rank 點擊
+      host.querySelectorAll('.chips .chip').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          const i = Number(el.parentElement.dataset.i);
+          const v = Number(el.dataset.v);
+          tasks[i].minutes = v;
+          renderTaskCards(); // 重新渲染切換 selected 樣式
         });
       });
-      tasksListEl.querySelectorAll('.rank-chip').forEach(chip=>{
-        chip.addEventListener('click',()=>{
-          const r=Number(chip.dataset.rank); const card=chip.closest('.panel'); const i=Number(card.dataset.idx); tasks[i].rank=r; card.querySelectorAll('.rank-chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active');
+      host.querySelectorAll('.rank-group .rank').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = Number(btn.parentElement.dataset.i);
+          const v = Number(btn.dataset.v);
+          tasks[i].rank = v;
+          renderTaskCards();
+        });
+      });
+
+      // 綁定 input 同步
+      host.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change', ()=>{
+          const i = Number(inp.dataset.i);
+          const k = inp.dataset.k;
+          let v = inp.value;
+          if(k==='minutes' || k==='rank'){ v = v===''? '' : Number(v); }
+          tasks[i][k] = v;
         });
       });
     }
 
-    function syncFromUI(){ // Step2 → state
-      if(!tasks.length) return;
-      tasksListEl.querySelectorAll('.panel').forEach(card=>{
-        const i=Number(card.dataset.idx);
-        const name=card.querySelector('[data-k="name"]').value;
-        const minVal=card.querySelector('[data-k="minutes"]').value;
-        tasks[i].name=name;
-        tasks[i].minutes = minVal===''? '': Number(minVal);
-        const activeRank=card.querySelector('.rank-chip.active');
-        tasks[i].rank = activeRank? Number(activeRank.dataset.rank): tasks[i].rank;
-      });
-    }
+    document.getElementById('back2').onclick=()=>showPage('page1');
+    document.getElementById('recalc2').onclick=()=>{ renderStats(); showPage('page3'); };
 
-    document.getElementById('recalcFrom2').addEventListener('click',()=>{ syncFromUI(); renderStats(); alert('已儲存並重新計算 ✅'); });
+    // —————————— Step3/4 計算與建議 ——————————
+    const availEl = document.getElementById('availMins');
+    const totalEl = document.getElementById('totalMins');
+    const deltaEl = document.getElementById('deltaMins');
+    const fitMsgEl = document.getElementById('fitMsg');
+    const suggestListEl = document.getElementById('suggestList');
 
-    // —————————— Step3：統計 ——————————
-    function resetStats(){ availEl.textContent='—'; totalEl.textContent='—'; deltaEl.textContent='—'; fitMsgEl.textContent='—'; fitMsgEl.className='hint'; }
+    document.getElementById('back3').onclick=()=>showPage('page2');
+    document.getElementById('next3').onclick=()=>{ makeSuggestions(); showPage('page4'); };
+    document.getElementById('back4').onclick=()=>showPage('page3');
 
     function renderStats(){
-      const home=timeStrToMinutesToday(document.getElementById('homeTime').value);
-      const bed =timeStrToMinutesToday(document.getElementById('bedTime').value);
-      let avail=null; let msg="";
-      if(home==null||bed==null){ msg='請在 Step 1 輸入「回家時間」與「上床時間」。'; }
-      else if(bed<=home){ msg='上床時間需晚於回家時間。'; }
-      else { avail=bed-home; }
-      availEl.textContent = (avail==null? '—': avail);
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      let avail = null; let msg = '';
+      if(home==null || bed==null){ msg = '請在 Step 1 輸入「回家時間」與「上床時間」。'; }
+      else if(bed <= home){ msg = '上床時間需晚於回家時間。'; }
+      else { avail = bed - home; }
+      availEl.textContent = (avail==null? '—' : avail);
 
-      const mins=tasks.reduce((sum,t)=>{ const m=(t.minutes===''||t.minutes==null)?0:Number(t.minutes); return sum + (isFinite(m)? m:0); },0);
-      totalEl.textContent = tasks.length? mins : '—';
+      const mins = tasks.reduce((sum,t)=>{
+        const m = (t.minutes==='' || t.minutes==null) ? 0 : Number(t.minutes);
+        return sum + (isFinite(m)? m : 0);
+      },0);
+      totalEl.textContent = tasks.length ? mins : '—';
 
-      if(avail==null || !tasks.length){ deltaEl.textContent='—'; fitMsgEl.textContent=msg||'—'; fitMsgEl.className='hint'; return; }
-      const delta=avail-mins; deltaEl.textContent=delta;
-      if(delta>=0){ fitMsgEl.innerHTML=`<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`; fitMsgEl.className='ok'; }
-      else { fitMsgEl.innerHTML=`<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 請看 Step 4 建議。`; fitMsgEl.className='danger'; }
+      if(avail==null || !tasks.length){
+        deltaEl.textContent = '—';
+        fitMsgEl.innerHTML = msg || '—';
+        fitMsgEl.className = 'hint';
+        return;
+      }
+      const delta = avail - mins;
+      deltaEl.textContent = delta;
+      if(delta >= 0){
+        fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`;
+        fitMsgEl.className = 'ok';
+      }else{
+        fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 請看 Step 4 建議。`;
+        fitMsgEl.className = 'danger';
+      }
     }
 
-    // —————————— Step4：建議移到明天 ——————————
     function makeSuggestions(){
-      const home=timeStrToMinutesToday(document.getElementById('homeTime').value);
-      const bed =timeStrToMinutesToday(document.getElementById('bedTime').value);
-      if(home==null||bed==null||bed<=home||!tasks.length){ suggestListEl.textContent='—'; return; }
-      const avail=bed-home; const total=tasks.reduce((s,t)=> s+(Number(t.minutes)||0),0);
-      if(total<=avail){ suggestListEl.innerHTML = `<span class="ok">目前不需要移除任務。</span>`; return; }
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      if(home==null || bed==null || bed<=home || !tasks.length){ suggestListEl.textContent = '—'; return; }
+      const avail = bed - home;
+      const total = tasks.reduce((s,t)=> s + (Number(t.minutes)||0), 0);
+      if(total <= avail){ suggestListEl.innerHTML = `<span class="ok">目前不需要移除任務。</span>`; return; }
 
-      const keepOrder=tasks.map((t,i)=>({ i, name:t.name, minutes:Number(t.minutes)||0, rank:(t.rank===''||t.rank==null||!isFinite(Number(t.rank)))? Number.POSITIVE_INFINITY: Number(t.rank) }))
-        .sort((a,b)=> (a.rank===b.rank)? (a.minutes-b.minutes) : (a.rank-b.rank));
+      // Rank 小者優先保留；Rank 未填視為 Infinity
+      const keepOrder = tasks.map((t,i)=>({
+        i, name:t.name, minutes:Number(t.minutes)||0,
+        rank: (t.rank==='' || t.rank==null || !isFinite(Number(t.rank))) ? Number.POSITIVE_INFINITY : Number(t.rank)
+      })).sort((a,b)=>{ if(a.rank===b.rank) return a.minutes-b.minutes; return a.rank-b.rank; });
 
-      const remove=[]; const keep=[]; let keptTime=0;
-      for(const item of keepOrder){ if(keptTime + item.minutes <= avail){ keptTime+=item.minutes; keep.push(item); } else { remove.push(item); } }
+      const remove = []; const keep = []; let keptTime = 0;
+      for(const item of keepOrder){
+        if(keptTime + item.minutes <= avail){ keptTime += item.minutes; keep.push(item); }
+        else { remove.push(item); }
+      }
 
-      const removeTotal=remove.reduce((s,x)=>s+x.minutes,0); const keepTotal=keep.reduce((s,x)=>s+x.minutes,0); const overBy=(keepTotal+removeTotal)-avail;
-      if(!remove.length){ suggestListEl.textContent='—'; return; }
+      const removeTotal = remove.reduce((s,x)=>s+x.minutes,0);
+      const keepTotal   = keep.reduce((s,x)=>s+x.minutes,0);
+      const overBy = (keepTotal + removeTotal) - avail;
 
+      if(remove.length===0){ suggestListEl.innerHTML = '—'; return; }
       suggestListEl.innerHTML = `
         <div class="warn">建議移到明天（由低優先到高優先）：</div>
-        <ul>${remove.map(x=>`<li>${escapeHtml(x.name)}（${x.minutes} 分鐘，Rank=${x.rank===Infinity?'未填':x.rank}）</li>`).join('')}</ul>
-        <div class="small">目前超出：<span class="danger mono">${overBy}</span> 分鐘；移除合計：<span class="mono">${removeTotal}</span> 分鐘；保留合計：<span class="mono">${keepTotal}</span> 分鐘。</div>`;
+        <ul>
+          ${remove.map(x=>`<li>${escapeHtml(x.name)}（${x.minutes} 分鐘，Rank=${x.rank===Infinity?'未填':x.rank}）</li>`).join('')}
+        </ul>
+        <div class="small">
+          目前超出：<span class="danger mono">${overBy}</span> 分鐘；移除清單合計：<span class="mono">${removeTotal}</span> 分鐘；保留清單合計：<span class="mono">${keepTotal}</span> 分鐘。
+        </div>
+      `;
     }
 
     // —————————— 安全轉義 ——————————
-    function escapeHtml(s){ return (s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
-    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+    function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+    function escapeAttr(s){ return escapeHtml(s).replace(/\"/g,"&quot;"); }
   </script>
 </body>
 </html>
