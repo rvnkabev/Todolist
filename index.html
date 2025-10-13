@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tonight Planner — Timetable v2（iPhone-friendly）</title>
+  <title>Tonight Planner — Step1→Step4（Multipage, Timetable版）</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
@@ -14,294 +14,541 @@
          color:var(--ink);font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial}
     .wrap{max-width:960px;margin:0 auto;padding:20px}
     h1{margin:0 0 12px}
-    h2{margin:24px 0 10px;font-size:1.1rem;color:#dfe6ff}
+    h2{margin:28px 0 10px;font-size:1.1rem;color:#dfe6ff}
     .panel{background:var(--panel);border:1px solid #223061;border-radius:14px;padding:16px;margin:12px 0}
     label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
-    textarea,input,button{width:100%;padding:12px;border-radius:12px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
-    textarea{min-height:140px;resize:vertical}
+    textarea,input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
+    textarea{min-height:160px;resize:vertical}
     .row{display:flex;gap:12px;flex-wrap:wrap}
-    .row > *{flex:1 1 220px}
+    .row > *{flex:1 1 240px}
     .btn{background:var(--accent);border:none;font-weight:700;cursor:pointer}
     .btn:active{transform:translateY(1px)}
-    .small{font-size:.9rem;color:var(--muted)}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
-    .hint{color:var(--muted);font-size:.9rem}
-
-    /* iPhone-friendly touch targets */
-    .touch-btn{padding:12px 14px;border-radius:12px;border:1px solid #2a3767;background:#0e142b;min-width:44px;min-height:44px}
-
-    /* Timetable */
-    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:1rem}
-    th,td{border:1px solid #263565;padding:10px;text-align:center}
-    th{background:#18224a}
-
-    /* Task editor list */
-    .task-card{display:grid;grid-template-columns:1.4fr 0.9fr 0.8fr 0.9fr;gap:8px;align-items:center}
-    .task-row{border:1px solid #263565;border-radius:12px;padding:10px;background:#0e142b;margin-bottom:10px}
-    .mv{display:flex;gap:8px;justify-content:center}
-    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
-    .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061}
     .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0}
+    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.95rem}
+    th,td{border:1px solid #263565;padding:8px;text-align:center}
+    th{background:#18224a}
+    input[type="number"]{width:100%;text-align:right}
+    .stat{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+    .stat .card{flex:1 1 200px;border:1px solid #263565;border-radius:12px;padding:12px;background:#0e142b}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
+    .hint{color:var(--muted);font-size:.9rem}
+    .small{font-size:.85rem;color:var(--muted)}
+    .center{text-align:center}
+    .right{text-align:right}
+    .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+
+    /* multipage */
+    .page{display:none}
+    .page.active{display:block}
+
+    /* Step 2 friendly controls */
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:8px 12px;border:1px solid #2a3767;border-radius:999px;background:#0e142b;cursor:pointer;user-select:none}
+    .chip.selected{outline:2px solid var(--accent)}
+    .rank-group{display:flex;gap:8px;flex-wrap:wrap}
+    .rank{width:42px;height:42px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;cursor:pointer;font-weight:700}
+    .rank.selected{outline:2px solid var(--accent)}
+
+    /* Step 4 timetable */
+    .timetable{border:1px solid #223061;border-radius:12px;overflow:hidden}
+    .t-row{display:grid;grid-template-columns:92px 1fr 96px 96px 112px;gap:8px;align-items:center;padding:10px;border-top:1px solid #223061}
+    .t-row:first-child{border-top:none}
+    .t-head{background:#18224a;font-weight:700}
+    .t-controls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .icon-btn{padding:8px;border:1px solid #2a3767;border-radius:8px;background:#0e142b;cursor:pointer}
+    .drag-hint{font-size:.85rem;color:#a8b6f5}
+    .ghost{opacity:.6;outline:2px dashed #7aa2ff}
+
+    /* iPhone friendly touch targets */
+    .icon-btn, .rank, .chip { touch-action: manipulation; }
+
+    /* copy toast */
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0e142b;border:1px solid #2a3767;color:var(--ink);padding:10px 14px;border-radius:10px;opacity:0;transition:opacity .25s ease}
+    .toast.show{opacity:1}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Tonight Planner</h1>
-    <div class="small">貼原始日誌 → 一鍵抽取與安排 → 拖改順序/時長，自動重排時間 → 一鍵複製到 iPhone 備忘錄</div>
+    <div class="small">Step 1→4：貼原始日誌 → 抽今晚待辦 → 友善填時長/Rank → 檢查是否能在上床前完成 → 以「時間軸Timetable」輸出（可複製到 iPhone 備忘錄）</div>
 
-    <!-- Input (Step 1 merged) -->
-    <section class="panel" id="inputPanel">
-      <h2>輸入原始文字 & 今晚時段</h2>
-      <label for="raw">貼上你今天的原始資料（僅抽取「今天」且含 #tonighttodolist/#tongihttodolist 的 <span class="mono">Tonight:</span> 記錄）。也支援：<span class="mono">Tonight: 整雞水 30mins, 運動</span></label>
-      <textarea id="raw" placeholder="[2025-10-12\n10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]\n\n[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
-      <div class="row">
-        <div>
-          <label for="homeTime">預計回到家時間（今天）</label>
-          <input id="homeTime" type="time" />
+    <!-- 已移除 Step1~Step4 導覽按鈕 -->
+
+    <!-- Step 1 -->
+    <section id="page1" class="page active">
+      <h2>Step 1｜輸入原始文字 & 今晚時段</h2>
+      <div class="panel">
+        <label for="raw">貼上你今天的原始資料（我會只抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）。也支援寫法：<span class="mono">Tonight: 整雞水 30mins, 運動</span></label>
+        <textarea id="raw" placeholder="[2025-10-12\n10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]\n\n[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
+
+        <div class="row">
+          <div>
+            <label for="homeTime">預計回到家時間（今天）</label>
+            <input id="homeTime" type="time" />
+          </div>
+          <div>
+            <label for="bedTime">上床時間（今天）</label>
+            <input id="bedTime" type="time" />
+          </div>
         </div>
-        <div>
-          <label for="bedTime">上床時間（今天）</label>
-          <input id="bedTime" type="time" />
+
+        <div class="row">
+          <button class="btn" id="oneClickExtract">一鍵抽取 → 進入 Step 2</button>
+          <button id="clearBtn">清空</button>
+        </div>
+
+        <div id="detectedWrap" style="margin-top:10px;display:none">
+          <div class="hint">已偵測到以下 Tonight 任務（僅列出「今天」且含 #tonighttodolist/#tongihttodolist 的項目）：</div>
+          <div id="detected" class="mono"></div>
         </div>
       </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section id="page2" class="page">
+      <h2>Step 2｜友善填「預估時長」與「Rank」</h2>
+      <div class="panel">
+        <div class="hint">若在原文內寫了 <span class="mono">dur=30m</span>、<span class="mono">30mins</span>、<span class="mono">1hr</span>、或在任務名稱後標註（如：<span class="mono">Tonight: 整雞水 30mins, 運動</span>），會自動填入。</div>
+      </div>
+
+      <div id="taskList" class="panel">
+        <!-- 動態渲染卡片 -->
+      </div>
+
       <div class="row">
-        <button id="autoBtn" class="btn">一鍵抽取 → 安排時間表</button>
-        <button id="clearBtn" class="touch-btn">清空</button>
-      </div>
-      <div id="detectedWrap" style="margin-top:10px;display:none">
-        <div class="hint">已偵測到以下 Tonight 任務：</div>
-        <div id="detected" class="mono"></div>
+        <button id="back2">← 返回 Step 1</button>
+        <button id="toStep3" class="btn">儲存 & 前往 Step 3</button>
       </div>
     </section>
 
-    <!-- Editor (Step 2 + Step 4 merged) -->
-    <section class="panel" id="editorPanel" style="display:none">
-      <h2>任務編輯（可即時調整順序與時長，時間會自動重排）</h2>
-      <div id="taskList"></div>
+    <!-- Step 3 -->
+    <section id="page3" class="page">
+      <h2>Step 3｜是否能在上床前做完？</h2>
+      <div class="panel">
+        <div class="stat">
+          <div class="card"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
+          <div class="card"><div class="small">任務總時長（分鐘）</div><div id="totalMins" class="mono">—</div></div>
+          <div class="card"><div class="small">差額（可用−需求）</div><div id="deltaMins" class="mono">—</div></div>
+        </div>
+        <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
+      </div>
       <div class="row">
-        <button id="add5Btn" class="touch-btn">所有任務 +5 分</button>
-        <button id="minus5Btn" class="touch-btn">所有任務 -5 分</button>
+        <button id="back3">← 返回 Step 2</button>
+        <button id="toStep4" class="btn">下一步 → Step 4（Timetable）</button>
       </div>
     </section>
 
-    <!-- Timetable (Step 3 view) -->
-    <section class="panel" id="tablePanel" style="display:none">
-      <h2>時間表</h2>
-      <div class="small">回家 → 上床：<span id="windowStr" class="mono"></span>；可用分鐘：<span id="availMins" class="mono">—</span>；任務總分鐘：<span id="totalMins" class="mono">—</span>；差額：<span id="deltaMins" class="mono">—</span>。</div>
-      <div id="fitMsg" class="hint" style="margin:6px 0">—</div>
-      <div class="tbl">
-        <table id="ttTable">
-          <thead><tr><th>#</th><th>開始</th><th>結束</th><th>任務</th><th>時長</th><th>Rank</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <button id="copyBtn" class="btn">複製到備忘錄（純文字）</button>
-        <button id="backToInput" class="touch-btn">返回編輯</button>
+    <!-- Step 4 Timetable -->
+    <section id="page4" class="page">
+      <h2>Step 4｜時間軸 Timetable（iPhone 友善：可調整順序與時間）</h2>
+      <div class="panel">
+        <div class="hint drag-hint">提示：點「↑ / ↓」可調整任務次序；修改「時長」或「開始時間」時，後續任務會自動順延。完成後可按下方「複製到備忘錄」。</div>
+        <div class="timetable" id="timetable"></div>
+        <div class="row" style="margin-top:12px">
+          <button id="copyBtn" class="btn">複製 Timetable 到 iPhone 備忘錄</button>
+          <button id="back4">← 返回 Step 3</button>
+        </div>
       </div>
     </section>
 
-    <div class="sticky-footer small">今天日期：<span id="todayStr"></span></div>
+    <div class="sticky-footer small">
+      今天日期：<span id="todayStr"></span>
+    </div>
   </div>
 
-  <script>
-    // ———— 工具：日期與時間 ————
-    function pad2(n){ return n.toString().padStart(2,'0'); }
-    function getTodayStrLocal(){ const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
-    function timeStrToMinutes(tStr){ if(!tStr||!/\d{2}:\d{2}/.test(tStr)) return null; const [h,m]=tStr.split(':').map(Number); return h*60+m; }
-    function minutesToTimeStr(mins){ const h=Math.floor(mins/60)%24; const m=mins%60; return `${pad2(h)}:${pad2(m)}`; }
+  <div id="toast" class="toast">已複製到剪貼簿！</div>
 
-    // ———— Tonight 任務解析（沿用你原本規則，稍作精簡） ————
+  <script>
+    // —————————— 工具：日期與時間 ——————————
+    function pad2(n){ return n.toString().padStart(2,'0'); }
+    function getTodayStrLocal(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = pad2(d.getMonth()+1);
+      const dd = pad2(d.getDate());
+      return `${y}-${m}-${dd}`;
+    }
+    function timeStrToMinutesToday(tStr){
+      if(!tStr || !/^\d{2}:\d{2}$/.test(tStr)) return null;
+      const [h,m] = tStr.split(':').map(Number);
+      return h*60 + m;
+    }
+    function minutesToHHMM(m){
+      m = Math.round(m);
+      const h = Math.floor(m/60);
+      const mm = m%60;
+      return `${pad2(h)}:${pad2(mm)}`;
+    }
+
+    // —————————— 工具：字串解析 Tonight 任務 ——————————
     const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
+
     function parseDurationMinutes(text){
-      const patterns=[
-        /dur\s*=\s*(\d+)\s*m\b/i, /dur\s*=\s*(\d+)\s*min\b/i, /dur\s*=\s*(\d+)\s*h\b/i,
-        /est\s*=\s*(\d+)\s*m\b/i, /est\s*=\s*(\d+)\s*min\b/i, /est\s*=\s*(\d+)\s*h\b/i,
-        /\b(\d+)\s*mins?\b/i, /\b(\d+)\s*min\b/i, /\b(\d+)\s*m\b/i, /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i
+      // 取第一個命中的時長標記
+      const patterns = [
+        /dur\s*=\s*(\d+)\s*m\b/i,
+        /dur\s*=\s*(\d+)\s*min\b/i,
+        /dur\s*=\s*(\d+)\s*h\b/i,
+        /est\s*=\s*(\d+)\s*m\b/i,
+        /est\s*=\s*(\d+)\s*min\b/i,
+        /est\s*=\s*(\d+)\s*h\b/i,
+        /\b(\d+)\s*mins?\b/i,
+        /\b(\d+)\s*min\b/i,
+        /\b(\d+)\s*m\b/i,
+        /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i
       ];
-      for(const re of patterns){ const m=text.match(re); if(m){ const v=parseFloat(m[1]); return /h/.test(re.source)?Math.round(v*60):Math.round(v); } }
+      for(const re of patterns){
+        const m = text.match(re);
+        if(m){
+          const val = parseFloat(m[1]);
+          if(/h/.test(re.source)) return Math.round(val*60);
+          return Math.round(val);
+        }
+      }
       return null;
     }
+
     function splitTasksInline(titleText){
+      // 將 "整雞水 30mins, 運動" 解析為 [{name:"整雞水", minutes:30}, {name:"運動"}]
       const parts = titleText.split(/[,，、]+/).map(s=>s.trim()).filter(Boolean);
-      const out=[]; for(const p of parts){ const dm=parseDurationMinutes(p);
-        const name=p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
-        out.push({name, minutes:dm}); }
+      const out = [];
+      for(const p of parts){
+        const dm = parseDurationMinutes(p);
+        if(dm!=null){
+          const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
+          out.push({name, minutes:dm});
+        }else{
+          out.push({name:p, minutes:null});
+        }
+      }
       return out;
     }
+
     function extractTonightItems(raw, todayStr){
-      const chunks=[]; const blockRe=/\[[\s\S]*?\]/g; const blocks=raw.match(blockRe);
-      if(blocks){ chunks.push(...blocks); } else { raw.split(/\n{2,}/).forEach(s=>chunks.push(s)); }
-      const results=[];
+      const chunks = [];
+      const blockRe = /\[[\s\S]*?\]/g;
+      const blocks = raw.match(blockRe);
+      if(blocks){ chunks.push(...blocks); } else { raw.split(/\n{2,}/).forEach(s => chunks.push(s)); }
+
+      const results = [];
       for(const chunk of chunks){
-        const dateMatch=chunk.match(/(\d{4}-\d{2}-\d{2})/); if(!dateMatch) continue; const dStr=dateMatch[1];
-        if(dStr!==todayStr) continue; if(!/Tonight\s*:/i.test(chunk)) continue; if(!TAG_PATTERNS.test(chunk)) continue;
-        const m=chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i); if(!m) continue; const title=m[1].trim();
-        const inline=splitTasksInline(title); const durInChunk=parseDurationMinutes(chunk); let used=false;
-        for(const it of inline){ let minutes=it.minutes; if(minutes==null && !used && durInChunk!=null){ minutes=durInChunk; used=true; }
-          results.push({ raw:chunk.trim(), name:it.name, minutes:minutes, rank:"" }); }
+        const dateMatch = chunk.match(/(\d{4}-\d{2}-\d{2})/);
+        if(!dateMatch) continue;
+        const dateStr = dateMatch[1];
+        if(dateStr !== todayStr) continue;
+        if(!/Tonight\s*:/i.test(chunk)) continue;
+        if(!TAG_PATTERNS.test(chunk)) continue;
+
+        const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
+        if(!m) continue;
+        const title = m[1].trim();
+
+        const inlineItems = splitTasksInline(title);
+        const durInChunk = parseDurationMinutes(chunk);
+
+        let usedDur = false;
+        for(const it of inlineItems){
+          let minutes = it.minutes;
+          if(minutes==null){ minutes = parseDurationMinutes(it.name); }
+          if(minutes==null && !usedDur && durInChunk!=null){ minutes = durInChunk; usedDur = true; }
+          results.push({
+            raw: chunk.trim(),
+            name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
+            minutes: minutes, // 可為 null
+            rank: ""
+          });
+        }
       }
       return results;
     }
 
-    // ———— 狀態 ————
-    let tasks=[]; // {name, minutes, rank}
-    const todayStr=getTodayStrLocal();
-    document.getElementById('todayStr').textContent=todayStr;
+    // —————————— App 狀態 ——————————
+    let tasks = [];
+    const todayStr = getTodayStrLocal();
+    document.getElementById('todayStr').textContent = todayStr;
 
-    // 預設時間：30 分鐘後到家，23:30 就寢
-    (function preset(){ const now=new Date(); now.setMinutes(now.getMinutes()+30);
-      document.getElementById('homeTime').value=`${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-      document.getElementById('bedTime').value='23:30'; })();
+    // 預設時間
+    (function presetTimes(){
+      const now = new Date();
+      now.setMinutes(now.getMinutes()+30);
+      const hh = pad2(now.getHours());
+      const mm = pad2(now.getMinutes());
+      document.getElementById('homeTime').value = `${hh}:${mm}`;
+      document.getElementById('bedTime').value  = `23:30`;
+    })();
 
-    // ———— DOM ————
-    const detectedWrap=document.getElementById('detectedWrap');
-    const detectedEl=document.getElementById('detected');
-    function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    // multipage 顯示
+    const pages = ['page1','page2','page3','page4'];
+    function showPage(id){ pages.forEach(pid=>{ document.getElementById(pid).classList.toggle('active', pid===id); }); }
+
+    // Step1 DOM
+    const rawEl = document.getElementById('raw');
+    const detectedWrap = document.getElementById('detectedWrap');
+    const detectedEl = document.getElementById('detected');
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      rawEl.value = ""; tasks = []; renderDetected([]); renderTaskCards(); resetStats(); renderTimetable();
+      showPage('page1');
+    });
+
+    document.getElementById('oneClickExtract').addEventListener('click', ()=>{
+      tasks = extractTonightItems(rawEl.value || "", todayStr);
+      renderDetected(tasks);
+      renderTaskCards();
+      if(!tasks.length){ alert('未找到今晚任務（需同時符合：今天日期 + #tonighttodolist/#tongihttodolist + "Tonight:"）。'); return; }
+      showPage('page2');
+    });
 
     function renderDetected(items){
-      if(!items.length){ detectedWrap.style.display='none'; detectedEl.innerHTML=''; return; }
-      detectedWrap.style.display='';
-      detectedEl.innerHTML=items.map((it,i)=>`<span class="pill">${i+1}</span><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="pill">${it.minutes}m</span>`:''}`).join('<br/>');
+      if(!items || items.length===0){ detectedWrap.style.display = 'none'; detectedEl.innerHTML = ""; return; }
+      detectedWrap.style.display = '';
+      detectedEl.innerHTML = items.map((it,i)=>(`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="pill" style="border-color:#164932;color:#7dffca">${it.minutes}m</span>`:''}`)).join("<br/>");
     }
 
-    // ———— 一鍵抽取 → 安排 ————
-    document.getElementById('autoBtn').addEventListener('click', ()=>{
-      const raw=document.getElementById('raw').value||"";
-      tasks=extractTonightItems(raw, todayStr);
-      if(!tasks.length){ alert('未偵測到今晚上有 #tonighttodolist/#tongihttodolist 的任務。'); return; }
-      // 預設 rank 依序 1..n（若使用者未填）
-      tasks.forEach((t,i)=>{ if(t.rank===''||t.rank==null) t.rank = (i+1); if(t.minutes==null) t.minutes=30; });
-      renderDetected(tasks);
-      document.getElementById('inputPanel').style.display='none';
-      document.getElementById('editorPanel').style.display='';
-      document.getElementById('tablePanel').style.display='';
-      renderTaskEditor();
-      recomputeAndRender();
-      window.scrollTo({top:0,behavior:'smooth'});
-    });
+    // Step2 友善輸入卡片
+    const DUR_PRESETS = [5,15,30,60,90,120];
+    function renderTaskCards(){
+      const host = document.getElementById('taskList');
+      host.innerHTML = '';
+      if(!tasks.length){ host.innerHTML = '<div class="center small">（尚無任務，請回 Step 1 貼上原文並按「一鍵抽取」。）</div>'; return; }
 
-    document.getElementById('clearBtn').addEventListener('click', ()=>{
-      document.getElementById('raw').value=''; tasks=[]; renderDetected([]);
-      document.getElementById('editorPanel').style.display='none';
-      document.getElementById('tablePanel').style.display='none';
-    });
-
-    // ———— 任務編輯（iPhone 友善：大按鈕，上/下移） ————
-    function renderTaskEditor(){
-      const host=document.getElementById('taskList'); host.innerHTML='';
-      if(!tasks.length){ host.innerHTML='<div class="small">（尚無任務）</div>'; return; }
       tasks.forEach((t,idx)=>{
-        const row=document.createElement('div'); row.className='task-row';
-        row.innerHTML=`
-          <div class="task-card">
-            <input data-k="name" data-i="${idx}" value="${escapeHtml(t.name)}" />
-            <input type="number" min="0" step="1" data-k="minutes" data-i="${idx}" value="${Number(t.minutes)||0}" />
-            <input type="number" min="1" max="9" step="1" data-k="rank" data-i="${idx}" value="${Number(t.rank)||1}" />
-            <div class="mv">
-              <button class="touch-btn" data-act="up" data-i="${idx}">↑</button>
-              <button class="touch-btn" data-act="down" data-i="${idx}">↓</button>
-              <button class="touch-btn" data-act="del" data-i="${idx}">刪</button>
+        const card = document.createElement('div');
+        card.className = 'panel';
+        const dur = (t.minutes==null||t.minutes==='')? null : Number(t.minutes);
+        const rank = (t.rank==null||t.rank==='')? null : Number(t.rank);
+        card.innerHTML = `
+          <div class="row">
+            <div>
+              <label>任務名稱</label>
+              <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name ?? '')}" />
             </div>
-          </div>`;
+            <div>
+              <label>自訂時長（分鐘，可留空）</label>
+              <input type="number" min="0" step="1" placeholder="(分鐘)" data-k="minutes" data-i="${idx}" value="${dur??''}" />
+              <div class="small">或點選下列快速按鈕：</div>
+              <div class="chips" data-kind="dur" data-i="${idx}">
+                ${DUR_PRESETS.map(m=>`<div class="chip ${dur===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
+              </div>
+            </div>
+            <div>
+              <label>Rank（1=最高，5=最低）</label>
+              <div class="rank-group" data-kind="rank" data-i="${idx}">
+                ${[1,2,3,4,5].map(r=>`<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="small mono" style="margin-top:8px">原始標記：${escapeHtml((t.raw||'').slice(0,160))}${(t.raw||'').length>160?'…':''}</div>
+        `;
+        host.appendChild(card);
+      });
+
+      // chips & rank
+      host.querySelectorAll('.chips .chip').forEach(el=>{
+        el.addEventListener('click', ()=>{ const i=Number(el.parentElement.dataset.i); const v=Number(el.dataset.v); tasks[i].minutes = v; renderTaskCards(); });
+      });
+      host.querySelectorAll('.rank-group .rank').forEach(btn=>{
+        btn.addEventListener('click', ()=>{ const i=Number(btn.parentElement.dataset.i); const v=Number(btn.dataset.v); tasks[i].rank = v; renderTaskCards(); });
+      });
+      host.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change', ()=>{ const i=Number(inp.dataset.i); const k=inp.dataset.k; let v=inp.value; if(k==='minutes' || k==='rank'){ v = v===''? '' : Number(v); } tasks[i][k]=v; });
+      });
+    }
+
+    document.getElementById('back2').onclick=()=>showPage('page1');
+    document.getElementById('toStep3').onclick=()=>{ renderStats(); showPage('page3'); };
+
+    // Step3 計算
+    const availEl = document.getElementById('availMins');
+    const totalEl = document.getElementById('totalMins');
+    const deltaEl = document.getElementById('deltaMins');
+    const fitMsgEl = document.getElementById('fitMsg');
+
+    document.getElementById('back3').onclick=()=>showPage('page2');
+    document.getElementById('toStep4').onclick=()=>{ buildInitialSchedule(); renderTimetable(); showPage('page4'); };
+
+    function resetStats(){
+      availEl.textContent = '—'; totalEl.textContent = '—'; deltaEl.textContent = '—'; fitMsgEl.textContent = '—'; fitMsgEl.className='hint';
+    }
+    function renderStats(){
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      let avail = null; let msg = '';
+      if(home==null || bed==null){ msg = '請在 Step 1 輸入「回家時間」與「上床時間」。'; }
+      else if(bed <= home){ msg = '上床時間需晚於回家時間。'; }
+      else { avail = bed - home; }
+      availEl.textContent = (avail==null? '—' : avail);
+
+      const mins = tasks.reduce((sum,t)=>{ const m = (t.minutes==='' || t.minutes==null) ? 0 : Number(t.minutes); return sum + (isFinite(m)? m : 0); },0);
+      totalEl.textContent = tasks.length ? mins : '—';
+
+      if(avail==null || !tasks.length){
+        deltaEl.textContent = '—';
+        fitMsgEl.innerHTML = msg || '—';
+        fitMsgEl.className = 'hint';
+        return;
+      }
+      const delta = avail - mins;
+      deltaEl.textContent = delta;
+      if(delta >= 0){
+        fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`;
+        fitMsgEl.className = 'ok';
+      }else{
+        fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 將在下一步自動排程，並可調整。`;
+        fitMsgEl.className = 'danger';
+      }
+    }
+
+    // —————————— Step4：Timetable（可調序、可改時間） ——————————
+    let schedule = []; // [{name, minutes, start, end, rank}]
+
+    function buildInitialSchedule(){
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      if(home==null || bed==null || bed<=home){ schedule = []; return; }
+
+      // 以 Rank 由小到大排序，未填視為 Infinity；同Rank依原本序
+      const order = tasks.map((t,i)=>({
+        idx:i,
+        name:t.name,
+        minutes: Number(t.minutes)||0,
+        rank: (t.rank===''||t.rank==null||!isFinite(Number(t.rank))) ? Number.POSITIVE_INFINITY : Number(t.rank)
+      })).sort((a,b)=> a.rank===b.rank ? a.idx-b.idx : a.rank-b.rank);
+
+      // 若總時間超過可用，仍先全部排進，最後顯示超時
+      let cur = home;
+      schedule = order.map(o=>{
+        const start = cur;
+        const end = cur + o.minutes;
+        cur = end;
+        return { name:o.name, minutes:o.minutes, start, end, rank:o.rank };
+      });
+
+      // 若最後超過就標記，但不砍項目（交給使用者調整）
+    }
+
+    function recomputeFrom(index){
+      // 從 index 之後的 start/end 依目前 minutes 重新順延
+      for(let i=index+1;i<schedule.length;i++){
+        schedule[i].start = schedule[i-1].end;
+        schedule[i].end = schedule[i].start + schedule[i].minutes;
+      }
+    }
+
+    function renderTimetable(){
+      const host = document.getElementById('timetable');
+      host.innerHTML = '';
+      if(!schedule.length){ host.innerHTML = '<div class="center small">（尚無可排程的任務）</div>'; return; }
+
+      // 表頭
+      const head = document.createElement('div');
+      head.className = 't-row t-head';
+      head.innerHTML = `
+        <div>開始</div>
+        <div>任務</div>
+        <div>時長(分)</div>
+        <div>結束</div>
+        <div class="right">操作</div>
+      `;
+      host.appendChild(head);
+
+      schedule.forEach((it, i)=>{
+        const row = document.createElement('div');
+        row.className = 't-row';
+
+        row.innerHTML = `
+          <input class="mono" type="time" value="${minutesToHHMM(it.start)}" data-i="${i}" data-k="start" />
+          <input class="mono" value="${escapeAttr(it.name)}" data-i="${i}" data-k="name" />
+          <div class="t-controls">
+            <button class="icon-btn" data-i="${i}" data-act="minus5">-5</button>
+            <input class="mono" style="width:70px;text-align:right" type="number" min="0" step="1" value="${it.minutes}" data-i="${i}" data-k="minutes" />
+            <button class="icon-btn" data-i="${i}" data-act="plus5">+5</button>
+          </div>
+          <div class="mono">${minutesToHHMM(it.end)}</div>
+          <div class="t-controls">
+            <button class="icon-btn" data-i="${i}" data-act="up">↑</button>
+            <button class="icon-btn" data-i="${i}" data-act="down">↓</button>
+            <button class="icon-btn" data-i="${i}" data-act="delete">刪除</button>
+          </div>
+        `;
         host.appendChild(row);
       });
-      // 綁定 input
+
+      // 綁定操作
+      host.querySelectorAll('button.icon-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = Number(btn.dataset.i);
+          const act = btn.dataset.act;
+          if(act==='minus5'){ schedule[i].minutes = Math.max(0, (schedule[i].minutes||0)-5); schedule[i].end = schedule[i].start + schedule[i].minutes; recomputeFrom(i); renderTimetable(); return; }
+          if(act==='plus5'){ schedule[i].minutes = (schedule[i].minutes||0)+5; schedule[i].end = schedule[i].start + schedule[i].minutes; recomputeFrom(i); renderTimetable(); return; }
+          if(act==='up' && i>0){ const tmp = schedule[i-1]; schedule[i-1] = schedule[i]; schedule[i] = tmp; // 重新串接時間
+            schedule[0].start = schedule[0].start; schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
+          if(act==='down' && i<schedule.length-1){ const tmp = schedule[i+1]; schedule[i+1] = schedule[i]; schedule[i] = tmp; schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
+          if(act==='delete'){ schedule.splice(i,1); if(schedule[0]){ schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); } renderTimetable(); return; }
+        });
+      });
+
       host.querySelectorAll('input').forEach(inp=>{
         inp.addEventListener('change', ()=>{
-          const i=Number(inp.dataset.i); const k=inp.dataset.k; let v=inp.value;
-          if(k!=='name'){ v=v===''?0:Number(v); }
-          tasks[i][k]=v; recomputeAndRender();
+          const i = Number(inp.dataset.i); const k = inp.dataset.k; let v = inp.value;
+          if(k==='start'){
+            const mm = timeStrToMinutesToday(v);
+            if(mm==null){ alert('時間格式錯誤'); inp.value = minutesToHHMM(schedule[i].start); return; }
+            const delta = mm - schedule[i].start;
+            schedule[i].start = mm; schedule[i].end = schedule[i].start + schedule[i].minutes;
+            // 將後續整段平移 delta
+            for(let j=i+1;j<schedule.length;j++){ schedule[j].start += delta; schedule[j].end += delta; }
+            renderTimetable(); return;
+          }
+          if(k==='minutes'){
+            const mv = Math.max(0, Number(v)||0);
+            schedule[i].minutes = mv; schedule[i].end = schedule[i].start + schedule[i].minutes; recomputeFrom(i); renderTimetable(); return;
+          }
+          if(k==='name'){ schedule[i].name = v; }
         });
       });
-      // 綁定移動/刪除
-      host.querySelectorAll('button[data-act]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const i=Number(btn.dataset.i); const act=btn.dataset.act;
-          if(act==='up' && i>0){ const t=tasks.splice(i,1)[0]; tasks.splice(i-1,0,t); }
-          if(act==='down' && i<tasks.length-1){ const t=tasks.splice(i,1)[0]; tasks.splice(i+1,0,t); }
-          if(act==='del'){ tasks.splice(i,1); }
-          renderTaskEditor(); recomputeAndRender();
-        });
-      });
+
+      // 顯示超時與複製文字
+      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+      const over = schedule.length ? (schedule[schedule.length-1].end - bed) : 0;
+      const warnDiv = document.createElement('div');
+      warnDiv.className = 'small';
+      warnDiv.style.marginTop = '10px';
+      warnDiv.innerHTML = over>0 ? `<span class="danger">⛔ 目前超出上床時間 ${over} 分鐘，請調整。</span>` : `<span class="ok">✅ 已符合上床時間。</span>`;
+      host.appendChild(warnDiv);
     }
 
-    document.getElementById('add5Btn').onclick=()=>{ tasks.forEach(t=>t.minutes=(Number(t.minutes)||0)+5); renderTaskEditor(); recomputeAndRender(); };
-    document.getElementById('minus5Btn').onclick=()=>{ tasks.forEach(t=>t.minutes=Math.max(0,(Number(t.minutes)||0)-5)); renderTaskEditor(); recomputeAndRender(); };
-
-    // ———— 計算時間表 ————
-    function recomputeAndRender(){
-      const home = timeStrToMinutes(document.getElementById('homeTime').value);
-      const bed  = timeStrToMinutes(document.getElementById('bedTime').value);
-      const availEl=document.getElementById('availMins');
-      const totalEl=document.getElementById('totalMins');
-      const deltaEl=document.getElementById('deltaMins');
-      const fitMsgEl=document.getElementById('fitMsg');
-      const windowStr=document.getElementById('windowStr');
-
-      if(home==null||bed==null){ fitMsgEl.textContent='請輸入回家與上床時間'; fitMsgEl.className='hint'; return; }
-      if(bed<=home){ fitMsgEl.textContent='上床時間需晚於回家時間'; fitMsgEl.className='danger'; return; }
-
-      const avail=bed-home; windowStr.textContent=`${minutesToTimeStr(home)} → ${minutesToTimeStr(bed)}`;
-      let cur=home; let total=0; const rows=[];
-      tasks.forEach((t,i)=>{
-        const m = Number(t.minutes)||0; const start=cur; const end=start+m; total+=m; cur=end;
-        rows.push({idx:i+1, start, end, name:t.name, minutes:m, rank:Number(t.rank)||1});
-      });
-      // 排序顯示：當前順序即為使用者決定的執行順序
-      renderTable(rows, bed);
-
-      availEl.textContent=avail; totalEl.textContent=total; const delta=avail-total; deltaEl.textContent=delta;
-      if(delta>=0){ fitMsgEl.innerHTML=`<span class="ok">✅ 可在上床前完成</span>（餘 ${delta} 分）`; fitMsgEl.className='ok'; }
-      else{ fitMsgEl.innerHTML=`<span class="danger">⛔ 超時 ${Math.abs(delta)} 分</span>；請調整順序或縮短時長。`; fitMsgEl.className='danger'; }
+    // 產生可複製的文字
+    function generateCopyText(){
+      if(!schedule.length) return '';
+      return schedule.map(it=>`• ${minutesToHHMM(it.start)}–${minutesToHHMM(it.end)}  ${it.name}  (${it.minutes}m)`).join('\n');
     }
 
-    function renderTable(rows, bed){
-      const tbody=document.querySelector('#ttTable tbody'); tbody.innerHTML='';
-      rows.forEach(r=>{
-        const tr=document.createElement('tr');
-        const overflow = r.end>bed;
-        tr.innerHTML=`
-          <td>${r.idx}</td>
-          <td>${minutesToTimeStr(r.start)}</td>
-          <td class="${overflow?'danger':''}">${minutesToTimeStr(Math.min(r.end, r.end))}</td>
-          <td style="text-align:left">${escapeHtml(r.name)}</td>
-          <td>${r.minutes}m</td>
-          <td>${r.rank}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ———— 複製到備忘錄（純文字） ————
-    document.getElementById('copyBtn').addEventListener('click', ()=>{
-      const home = timeStrToMinutes(document.getElementById('homeTime').value);
-      const bed  = timeStrToMinutes(document.getElementById('bedTime').value);
-      if(home==null||bed==null){ alert('請先填寫時間'); return; }
-      let cur=home; let lines=[];
-      tasks.forEach((t,i)=>{ const m=Number(t.minutes)||0; const start=cur; const end=start+m; cur=end;
-        lines.push(`${i+1}. ${minutesToTimeStr(start)}–${minutesToTimeStr(end)}  ${t.name}  (${m}m / R${Number(t.rank)||1})`);
-      });
-      lines.push(`\nWindow: ${minutesToTimeStr(home)}–${minutesToTimeStr(bed)} | Total ${tasks.reduce((s,t)=>s+(Number(t.minutes)||0),0)}m`);
-      const txt=lines.join('\n');
-      copyText(txt);
+    // 複製到剪貼簿（iPhone Safari 需使用者手勢）
+    document.getElementById('copyBtn').addEventListener('click', async ()=>{
+      const text = generateCopyText();
+      if(!text){ alert('沒有可複製的 Timetable'); return; }
+      try{
+        await navigator.clipboard.writeText(text);
+        showToast('已複製到剪貼簿！');
+      }catch(e){
+        // 後備方案：建立隱藏 textarea
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+        const ok = document.execCommand('copy'); document.body.removeChild(ta);
+        showToast(ok? '已複製到剪貼簿！' : '請長按手動複製');
+        if(!ok){ alert(text); }
+      }
     });
 
-    function copyText(text){
-      if(navigator.clipboard && window.isSecureContext){
-        navigator.clipboard.writeText(text).then(()=>alert('已複製到剪貼簿，可貼到備忘錄')); return;
-      }
-      const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
-      try{ document.execCommand('copy'); alert('已複製到剪貼簿，可貼到備忘錄'); } catch(e){ prompt('複製失敗，請手動全選並複製：', text); }
-      document.body.removeChild(ta);
+    function showToast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1400);
     }
 
-    // 回到編輯
-    document.getElementById('backToInput').onclick=()=>{
-      document.getElementById('inputPanel').style.display='';
-      document.getElementById('editorPanel').style.display='';
-      document.getElementById('tablePanel').style.display='';
-      window.scrollTo({top:0,behavior:'smooth'});
-    };
+    // 安全轉義
+    function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+    function escapeAttr(s){ return escapeHtml(s).replace(/\"/g,"&quot;"); }
   </script>
 </body>
 </html>
