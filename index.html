@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tonight Planner — Step1→Step4（Multipage）</title>
+  <title>Tonight Planner — Step1→Step4（Multipage, Timeline, Reorder）</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
@@ -14,15 +14,17 @@
          color:var(--ink);font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial}
     .wrap{max-width:960px;margin:0 auto;padding:20px}
     h1{margin:0 0 12px}
-    h2{margin:28px 0 10px;font-size:1.1rem;color:#dfe6ff}
+    h2{margin:28px 0 10px;font-size:1.05rem;color:#dfe6ff}
     .panel{background:var(--panel);border:1px solid #223061;border-radius:14px;padding:16px;margin:12px 0}
     label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
-    textarea,input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
+    textarea,input,button{width:100%;padding:10px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:.95rem}
     textarea{min-height:160px;resize:vertical}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .row > *{flex:1 1 240px}
     .btn{background:var(--accent);border:none;font-weight:700;cursor:pointer}
     .btn:active{transform:translateY(1px)}
+    .btn-sm{padding:6px 10px;font-size:.9rem;border-radius:9px}
+    .btn-ghost{background:#0e142b;border:1px solid #2a3767}
     .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0}
     table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.95rem}
     th,td{border:1px solid #263565;padding:8px;text-align:center}
@@ -37,7 +39,7 @@
     .right{text-align:right}
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061}
     .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
-    
+
     /* multipage */
     .page{display:none}
     .page.active{display:block}
@@ -47,24 +49,38 @@
     .chip{padding:8px 12px;border:1px solid #2a3767;border-radius:999px;background:#0e142b;cursor:pointer;user-select:none}
     .chip.selected{outline:2px solid var(--accent)}
     .rank-group{display:flex;gap:8px;flex-wrap:wrap}
-    .rank{width:42px;height:42px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;cursor:pointer;font-weight:700}
+    .rank{width:40px;height:40px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;cursor:pointer;font-weight:700}
     .rank.selected{outline:2px solid var(--accent)}
-    .tbl{overflow-x:auto}
-    .row-mid{display:grid;grid-template-columns:1.2fr 1fr 1fr 1.2fr;gap:8px;align-items:center}
-    .tag-warn{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #57401a;background:#2b1e0e;color:#ffd37a;font-size:.8rem}
-    .tag-ok{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #164932;background:#0f2b1e;color:#7dffca;font-size:.8rem}
+
+    /* Timeline */
+    .timeline{position:relative;padding-left:18px;margin-top:8px}
+    .timeline:before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:#25325f;border-radius:2px}
+    .titem{position:relative;margin:10px 0;padding-left:6px}
+    .titem:before{content:"";position:absolute;left:-1px;top:8px;width:10px;height:10px;border-radius:50%;background:#7aa2ff}
+
+    /* Step4 Reorder list */
+    .draglist{display:flex;flex-direction:column;gap:8px}
+    .drow{display:grid;grid-template-columns:auto 1fr 110px 95px 95px auto;gap:8px;align-items:center;border:1px solid #263565;background:#0e142b;border-radius:12px;padding:10px}
+    .handle{cursor:grab;font-size:1.2rem;user-select:none;padding:4px 8px}
+    .drow.dragging{opacity:.7;outline:2px dashed #7aa2ff}
+    .dname input{width:100%}
+
+    .ghost{opacity:.3}
+
+    nav.navbar{display:flex;gap:8px;flex-wrap:wrap}
+    nav.navbar .btn{flex:0 0 auto}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Tonight Planner</h1>
-    <div class="small">Step 1→4：貼原始日誌 → 抽今晚待辦 → 友善填時長/Rank → 檢查是否能在上床前完成 → 超時建議</div>
+    <div class="small">Step 1→4：貼原始日誌 → 抽今晚待辦 → 填時長/Rank → 檢查能否於上床前完成 → 超時時重排</div>
 
-    <nav class="panel row">
-      <button id="goto1" class="btn">Step 1</button>
-      <button id="goto2" class="btn">Step 2</button>
-      <button id="goto3" class="btn">Step 3</button>
-      <button id="goto4" class="btn">Step 4</button>
+    <nav class="panel navbar">
+      <button id="goto1" class="btn btn-sm">Step 1</button>
+      <button id="goto2" class="btn btn-sm">Step 2</button>
+      <button id="goto3" class="btn btn-sm">Step 3</button>
+      <button id="goto4" class="btn btn-sm">Step 4</button>
     </nav>
 
     <!-- Step 1 -->
@@ -86,9 +102,9 @@
         </div>
 
         <div class="row">
-          <button class="btn" id="extractBtn">從 Step1 文字自動抽取今晚任務</button>
-          <button id="clearBtn">清空</button>
-          <button id="next1" class="btn">下一步 → Step 2</button>
+          <button class="btn btn-sm" id="extractBtn">從 Step1 文字自動抽取今晚任務</button>
+          <button id="clearBtn" class="btn btn-sm btn-ghost">清空</button>
+          <button id="next1" class="btn btn-sm">下一步 → Step 2</button>
         </div>
 
         <div id="detectedWrap" style="margin-top:10px;display:none">
@@ -110,14 +126,14 @@
       </div>
 
       <div class="row">
-        <button id="back2">← 上一步</button>
-        <button id="recalc2" class="btn">儲存 & 前往 Step 3</button>
+        <button id="back2" class="btn btn-sm btn-ghost">← 上一步</button>
+        <button id="recalc2" class="btn btn-sm">儲存 & 前往 Step 3</button>
       </div>
     </section>
 
     <!-- Step 3 -->
     <section id="page3" class="page">
-      <h2>Step 3｜是否能在上床前做完？</h2>
+      <h2>Step 3｜是否能在上床前做完？＋ 時間軸 Timetable</h2>
       <div class="panel">
         <div class="stat">
           <div class="card"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
@@ -126,23 +142,40 @@
         </div>
         <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
       </div>
+
+      <div class="panel">
+        <div class="row" style="align-items:center">
+          <div class="small">按目前順序輸出 <b>時間軸 Timetable</b>（自回家時間起算）：</div>
+          <div class="right"><button id="copyNotes" class="btn btn-sm">複製到備忘錄（iPhone Notes）</button></div>
+        </div>
+        <div id="timetable" class="timeline"></div>
+      </div>
+
       <div class="row">
-        <button id="back3">← 上一步</button>
-        <button id="next3" class="btn">下一步 → Step 4</button>
+        <button id="back3" class="btn btn-sm btn-ghost">← 上一步</button>
+        <button id="next3" class="btn btn-sm">下一步 → Step 4</button>
       </div>
     </section>
 
     <!-- Step 4 -->
     <section id="page4" class="page">
-      <h2>Step 4｜若超時：建議改到明天的任務</h2>
+      <h2>Step 4｜重排順序 & 調整時間段（自動順延）</h2>
       <div class="panel">
-        <div id="suggestWrap">
-          <div class="hint">當任務總時長超過可用時間時，會依 Rank（數字小＝較優先，數字大＝較不優先）建議移除到明天，直到剛好能符合上床時間。</div>
-          <div id="suggestList" class="mono" style="margin-top:8px">—</div>
-        </div>
+        <div class="hint">拖曳左側把手或用 ↑/↓ 調整次序；可直接改 <b>開始時間</b> 或 <b>分鐘</b>，之後所有後續任務會自動順延排列，不重疊。</div>
       </div>
+
+      <div id="reorderList" class="draglist"></div>
+
+      <div class="panel">
+        <div class="row" style="align-items:center">
+          <div class="small">重排後的 <b>時間軸 Timetable</b>：</div>
+          <div class="right"><button id="copyNotes2" class="btn btn-sm">複製到備忘錄</button></div>
+        </div>
+        <div id="timetable2" class="timeline"></div>
+      </div>
+
       <div class="row">
-        <button id="back4">← 上一步</button>
+        <button id="back4" class="btn btn-sm btn-ghost">← 上一步</button>
       </div>
     </section>
 
@@ -166,12 +199,14 @@
       const [h,m] = tStr.split(':').map(Number);
       return h*60 + m;
     }
+    function minutesToTimeStr(mins){
+      const h = Math.floor(mins/60)%24; const m = mins%60; return `${pad2(h)}:${pad2(m)}`;
+    }
 
     // —————————— 工具：字串解析 Tonight 任務 ——————————
     const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
 
     function parseDurationMinutes(text){
-      // 取第一個命中的時長標記
       const patterns = [
         /dur\s*=\s*(\d+)\s*m\b/i,
         /dur\s*=\s*(\d+)\s*min\b/i,
@@ -196,14 +231,11 @@
     }
 
     function splitTasksInline(titleText){
-      // 將 "整雞水 30mins, 運動" 解析為 [{name:"整雞水", minutes:30}, {name:"運動"}]
       const parts = titleText.split(/[,，、]+/).map(s=>s.trim()).filter(Boolean);
       const out = [];
       for(const p of parts){
-        // 嘗試讀取末尾的時間
         const dm = parseDurationMinutes(p);
         if(dm!=null){
-          // 去掉時間字樣
           const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
           out.push({name, minutes:dm});
         }else{
@@ -222,110 +254,79 @@
       const results = [];
       for(const chunk of chunks){
         const dateMatch = chunk.match(/(\d{4}-\d{2}-\d{2})/);
-        if(!dateMatch) continue;
-        const dateStr = dateMatch[1];
+        if(!dateMatch) continue; const dateStr = dateMatch[1];
         if(dateStr !== todayStr) continue;
         if(!/Tonight\s*:/i.test(chunk)) continue;
         if(!TAG_PATTERNS.test(chunk)) continue;
-
-        // 允許全形直線
-        const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
-        if(!m) continue;
+        const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i); if(!m) continue;
         const title = m[1].trim();
 
-        // 先以 inline 切分多個任務
         const inlineItems = splitTasksInline(title);
-        const durInChunk = parseDurationMinutes(chunk); // chunk 級別的 dur 也可用來填第一個未填的項目
-
+        const durInChunk = parseDurationMinutes(chunk);
         let usedDur = false;
         for(const it of inlineItems){
           let minutes = it.minutes;
-          if(minutes==null){
-            minutes = parseDurationMinutes(it.name);
-          }
-          if(minutes==null && !usedDur && durInChunk!=null){
-            minutes = durInChunk; usedDur = true;
-          }
-          results.push({
-            raw: chunk.trim(),
-            name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
-            minutes: minutes, // 可為 null
-            rank: ""
-          });
+          if(minutes==null){ minutes = parseDurationMinutes(it.name); }
+          if(minutes==null && !usedDur && durInChunk!=null){ minutes = durInChunk; usedDur = true; }
+          results.push({ id: crypto.randomUUID(), raw: chunk.trim(), name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(), minutes: minutes, rank: "" });
         }
       }
       return results;
     }
 
     // —————————— App 狀態 ——————————
-    let tasks = [];
+    let tasks = [];// {id,name,minutes,rank}
     const todayStr = getTodayStrLocal();
     document.getElementById('todayStr').textContent = todayStr;
 
-    // 預設時間
     (function presetTimes(){
-      const now = new Date();
-      now.setMinutes(now.getMinutes()+30);
-      const hh = pad2(now.getHours());
-      const mm = pad2(now.getMinutes());
+      const now = new Date(); now.setMinutes(now.getMinutes()+30);
+      const hh = pad2(now.getHours()); const mm = pad2(now.getMinutes());
       document.getElementById('homeTime').value = `${hh}:${mm}`;
       document.getElementById('bedTime').value  = `23:30`;
     })();
 
     // —————————— multipage 導覽 ——————————
     const pages = ['page1','page2','page3','page4'];
-    function showPage(id){
-      pages.forEach(pid=>{
-        document.getElementById(pid).classList.toggle('active', pid===id);
-      });
-    }
+    function showPage(id){ pages.forEach(pid=>{ document.getElementById(pid).classList.toggle('active', pid===id); }); }
     document.getElementById('goto1').onclick=()=>showPage('page1');
     document.getElementById('goto2').onclick=()=>showPage('page2');
-    document.getElementById('goto3').onclick=()=>{ renderStats(); showPage('page3'); };
-    document.getElementById('goto4').onclick=()=>{ makeSuggestions(); showPage('page4'); };
+    document.getElementById('goto3').onclick=()=>{ renderStats(); renderTimetables(); showPage('page3'); };
+    document.getElementById('goto4').onclick=()=>{ ensureSchedule(); renderReorder(); renderTimetables(); showPage('page4'); };
 
     // —————————— Step1 DOM ——————————
     const rawEl = document.getElementById('raw');
     const detectedWrap = document.getElementById('detectedWrap');
     const detectedEl = document.getElementById('detected');
     document.getElementById('clearBtn').addEventListener('click', ()=>{
-      rawEl.value = "";
-      tasks = [];
-      renderDetected([]);
-      renderTaskCards();
-      resetStatsAndSuggest();
+      rawEl.value = ""; tasks = []; renderDetected([]); renderTaskCards(); resetStatsAndSuggest(); resetTimetables();
     });
     document.getElementById('extractBtn').addEventListener('click', ()=>{
       tasks = extractTonightItems(rawEl.value || "", todayStr);
-      renderDetected(tasks);
-      renderTaskCards();
-      resetStatsAndSuggest();
+      renderDetected(tasks); renderTaskCards(); resetStatsAndSuggest(); resetTimetables();
     });
     function resetStatsAndSuggest(){
       document.getElementById('availMins').textContent = '—';
       document.getElementById('totalMins').textContent = '—';
       document.getElementById('deltaMins').textContent = '—';
       document.getElementById('fitMsg').textContent = '—';
-      document.getElementById('suggestList').textContent = '—';
     }
+    function resetTimetables(){ document.getElementById('timetable').innerHTML=''; document.getElementById('timetable2').innerHTML=''; }
     document.getElementById('next1').onclick=()=>{ if(!tasks.length){ alert('請先抽取今晚任務'); return; } showPage('page2'); };
 
     function renderDetected(items){
       if(!items || items.length===0){ detectedWrap.style.display = 'none'; detectedEl.innerHTML = ""; return; }
       detectedWrap.style.display = '';
-      detectedEl.innerHTML = items.map((it,i)=>(`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="tag-ok">${it.minutes}m</span>`:''}`)).join("<br/>");
+      detectedEl.innerHTML = items.map((it,i)=>(`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="pill">${it.minutes}m</span>`:''}`)).join("<br/>");
     }
 
     // —————————— Step2 友善輸入卡片 ——————————
     const DUR_PRESETS = [5,15,30,60,90,120];
     function renderTaskCards(){
-      const host = document.getElementById('taskList');
-      host.innerHTML = '';
+      const host = document.getElementById('taskList'); host.innerHTML = '';
       if(!tasks.length){ host.innerHTML = '<div class="center small">（尚無任務，請先在 Step 1 貼上原文並按「自動抽取」）</div>'; return; }
-
       tasks.forEach((t,idx)=>{
-        const card = document.createElement('div');
-        card.className = 'panel';
+        const card = document.createElement('div'); card.className = 'panel';
         const dur = (t.minutes==null||t.minutes==='')? null : Number(t.minutes);
         const rank = (t.rank==null||t.rank==='')? null : Number(t.rank);
         card.innerHTML = `
@@ -354,48 +355,28 @@
         host.appendChild(card);
       });
 
-      // 綁定 chips & rank 點擊
       host.querySelectorAll('.chips .chip').forEach(el=>{
-        el.addEventListener('click', ()=>{
-          const i = Number(el.parentElement.dataset.i);
-          const v = Number(el.dataset.v);
-          tasks[i].minutes = v;
-          renderTaskCards(); // 重新渲染切換 selected 樣式
-        });
+        el.addEventListener('click', ()=>{ const i = Number(el.parentElement.dataset.i); const v = Number(el.dataset.v); tasks[i].minutes = v; renderTaskCards(); });
       });
       host.querySelectorAll('.rank-group .rank').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const i = Number(btn.parentElement.dataset.i);
-          const v = Number(btn.dataset.v);
-          tasks[i].rank = v;
-          renderTaskCards();
-        });
+        btn.addEventListener('click', ()=>{ const i = Number(btn.parentElement.dataset.i); const v = Number(btn.dataset.v); tasks[i].rank = v; renderTaskCards(); });
       });
-
-      // 綁定 input 同步
       host.querySelectorAll('input').forEach(inp=>{
-        inp.addEventListener('change', ()=>{
-          const i = Number(inp.dataset.i);
-          const k = inp.dataset.k;
-          let v = inp.value;
-          if(k==='minutes' || k==='rank'){ v = v===''? '' : Number(v); }
-          tasks[i][k] = v;
-        });
+        inp.addEventListener('change', ()=>{ const i = Number(inp.dataset.i); const k = inp.dataset.k; let v = inp.value; if(k==='minutes' || k==='rank'){ v = v===''? '' : Number(v); } tasks[i][k] = v; });
       });
     }
 
     document.getElementById('back2').onclick=()=>showPage('page1');
-    document.getElementById('recalc2').onclick=()=>{ renderStats(); showPage('page3'); };
+    document.getElementById('recalc2').onclick=()=>{ renderStats(); renderTimetables(); showPage('page3'); };
 
-    // —————————— Step3/4 計算與建議 ——————————
+    // —————————— Step3/排程計算 ——————————
     const availEl = document.getElementById('availMins');
     const totalEl = document.getElementById('totalMins');
     const deltaEl = document.getElementById('deltaMins');
     const fitMsgEl = document.getElementById('fitMsg');
-    const suggestListEl = document.getElementById('suggestList');
 
     document.getElementById('back3').onclick=()=>showPage('page2');
-    document.getElementById('next3').onclick=()=>{ makeSuggestions(); showPage('page4'); };
+    document.getElementById('next3').onclick=()=>{ ensureSchedule(); renderReorder(); renderTimetables(); showPage('page4'); };
     document.getElementById('back4').onclick=()=>showPage('page3');
 
     function renderStats(){
@@ -407,68 +388,139 @@
       else { avail = bed - home; }
       availEl.textContent = (avail==null? '—' : avail);
 
-      const mins = tasks.reduce((sum,t)=>{
-        const m = (t.minutes==='' || t.minutes==null) ? 0 : Number(t.minutes);
-        return sum + (isFinite(m)? m : 0);
-      },0);
+      const mins = tasks.reduce((sum,t)=>{ const m = (t.minutes==='' || t.minutes==null) ? 0 : Number(t.minutes); return sum + (isFinite(m)? m : 0); },0);
       totalEl.textContent = tasks.length ? mins : '—';
 
-      if(avail==null || !tasks.length){
-        deltaEl.textContent = '—';
-        fitMsgEl.innerHTML = msg || '—';
-        fitMsgEl.className = 'hint';
-        return;
-      }
-      const delta = avail - mins;
-      deltaEl.textContent = delta;
-      if(delta >= 0){
-        fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`;
-        fitMsgEl.className = 'ok';
-      }else{
-        fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 請看 Step 4 建議。`;
-        fitMsgEl.className = 'danger';
-      }
+      if(avail==null || !tasks.length){ deltaEl.textContent = '—'; fitMsgEl.textContent = msg || '—'; fitMsgEl.className = 'hint'; return; }
+      const delta = avail - mins; deltaEl.textContent = delta;
+      if(delta >= 0){ fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`; fitMsgEl.className = 'ok'; }
+      else{ fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 請看 Step 4 建議。`; fitMsgEl.className = 'danger'; }
     }
 
-    function makeSuggestions(){
+    // 建立一個工作序列（順序 = 目前 tasks 順序；若要 Rank 自動排序，可切換排序方式）
+    function getOrderedTasks(){ return tasks.map((t,i)=>({ ...t, idx:i })); }
+
+    function ensureSchedule(){
+      // 依目前順序產生 start/end（若已存在自訂 start 也會以該起點開始並順延）
       const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
-      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
-      if(home==null || bed==null || bed<=home || !tasks.length){ suggestListEl.textContent = '—'; return; }
-      const avail = bed - home;
-      const total = tasks.reduce((s,t)=> s + (Number(t.minutes)||0), 0);
-      if(total <= avail){ suggestListEl.innerHTML = `<span class="ok">目前不需要移除任務。</span>`; return; }
+      if(home==null) return;
+      let t = home;
+      const ordered = getOrderedTasks();
+      ordered.forEach(item=>{
+        const m = Number(item.minutes)||0;
+        if(item.startMinutes!=null && isFinite(item.startMinutes)){
+          t = item.startMinutes; // 若使用者曾指定此任務起點，以它為準
+        }
+        item.startMinutes = t; item.endMinutes = t + m; t = item.endMinutes;
+      });
+      // 回寫
+      ordered.forEach(o=>{
+        const ref = tasks.find(x=>x.id===o.id); if(!ref) return; ref.startMinutes=o.startMinutes; ref.endMinutes=o.endMinutes;
+      });
+    }
 
-      // Rank 小者優先保留；Rank 未填視為 Infinity
-      const keepOrder = tasks.map((t,i)=>({
-        i, name:t.name, minutes:Number(t.minutes)||0,
-        rank: (t.rank==='' || t.rank==null || !isFinite(Number(t.rank))) ? Number.POSITIVE_INFINITY : Number(t.rank)
-      })).sort((a,b)=>{ if(a.rank===b.rank) return a.minutes-b.minutes; return a.rank-b.rank; });
+    function renderTimetables(){
+      const t1 = document.getElementById('timetable');
+      const t2 = document.getElementById('timetable2');
+      const ordered = getOrderedTasks();
+      if(!ordered.length){ t1.innerHTML=''; t2.innerHTML=''; return; }
+      ensureSchedule();
+      const html = ordered.map(it=>`<div class="titem"><div class="mono">${minutesToTimeStr(it.startMinutes)} → ${minutesToTimeStr(it.endMinutes)}</div><div>${escapeHtml(it.name)}（${Number(it.minutes)||0} 分）</div></div>`).join('');
+      t1.innerHTML = html; t2.innerHTML = html;
+    }
 
-      const remove = []; const keep = []; let keptTime = 0;
-      for(const item of keepOrder){
-        if(keptTime + item.minutes <= avail){ keptTime += item.minutes; keep.push(item); }
-        else { remove.push(item); }
+    function buildPlainTextSchedule(){
+      const ordered = getOrderedTasks(); if(!ordered.length) return '';
+      ensureSchedule();
+      const lines = ordered.map(it=>`${minutesToTimeStr(it.startMinutes)}–${minutesToTimeStr(it.endMinutes)}  ${it.name}  (${Number(it.minutes)||0}m)`);
+      const home = document.getElementById('homeTime').value || '';
+      const bed  = document.getElementById('bedTime').value || '';
+      return `Tonight (${todayStr})\nHome: ${home}  →  Bed: ${bed}\n` + lines.join('\n');
+    }
+
+    async function copyToClipboard(txt){
+      try{ await navigator.clipboard.writeText(txt); alert('已複製到剪貼簿，可貼到 iPhone 備忘錄。'); }
+      catch(e){ console.error(e); alert('複製失敗：瀏覽器不允許。請手動選取內容複製。'); }
+    }
+
+    document.getElementById('copyNotes').addEventListener('click', ()=>{ const txt = buildPlainTextSchedule(); if(txt) copyToClipboard(txt); });
+    document.getElementById('copyNotes2').addEventListener('click', ()=>{ const txt = buildPlainTextSchedule(); if(txt) copyToClipboard(txt); });
+
+    // —————————— Step4：重排 & 調整時間（自動順延） ——————————
+    const reorderHost = document.getElementById('reorderList');
+
+    function renderReorder(){
+      reorderHost.innerHTML = '';
+      if(!tasks.length){ reorderHost.innerHTML = '<div class="center small">尚無任務</div>'; return; }
+      const ordered = getOrderedTasks(); ensureSchedule();
+      ordered.forEach((it, idx)=>{
+        const row = document.createElement('div'); row.className = 'drow'; row.draggable = true; row.dataset.id = it.id;
+        row.innerHTML = `
+          <div class="handle" title="拖曳重排" aria-label="drag">☰</div>
+          <div class="dname"><input value="${escapeAttr(it.name)}" /></div>
+          <div><input type="time" value="${minutesToTimeStr(it.startMinutes)}" /></div>
+          <div><input type="number" min="0" step="1" value="${Number(it.minutes)||0}" /> 分</div>
+          <div class="mono">${minutesToTimeStr(it.endMinutes)}</div>
+          <div class="right">
+            <button class="btn btn-sm btn-ghost up">↑</button>
+            <button class="btn btn-sm btn-ghost down">↓</button>
+          </div>
+        `;
+        // Drag events
+        row.addEventListener('dragstart', e=>{ row.classList.add('dragging'); e.dataTransfer.setData('text/plain', it.id); });
+        row.addEventListener('dragend', ()=>{ row.classList.remove('dragging'); applyOrderFromDOM(); renderTimetables(); });
+        row.addEventListener('dragover', e=>{ e.preventDefault(); const dragging = reorderHost.querySelector('.dragging'); if(!dragging) return; const after = getDragAfterElement(reorderHost, e.clientY); if(after==null){ reorderHost.appendChild(dragging);} else { reorderHost.insertBefore(dragging, after); } });
+        // Inputs change
+        const [nameInp, startInp, minInp] = row.querySelectorAll('input');
+        nameInp.addEventListener('change', ()=>{ const ref = tasks.find(x=>x.id===it.id); if(ref){ ref.name = nameInp.value; renderTimetables(); }});
+        startInp.addEventListener('change', ()=>{ const ref = tasks.find(x=>x.id===it.id); const m = timeStrToMinutesToday(startInp.value); if(ref && m!=null){ ref.startMinutes = m; ref.endMinutes = m + (Number(ref.minutes)||0); // 重新計算後續
+          cascadeTimesFrom(it.id); renderReorder(); renderTimetables(); }});
+        minInp.addEventListener('change', ()=>{ const ref = tasks.find(x=>x.id===it.id); const mv = Number(minInp.value)||0; if(ref){ ref.minutes = mv; ref.endMinutes = (ref.startMinutes||timeStrToMinutesToday(document.getElementById('homeTime').value)||0) + mv; cascadeTimesFrom(it.id); renderReorder(); renderTimetables(); }});
+        // Up/Down buttons
+        row.querySelector('.up').addEventListener('click', ()=>{ moveRow(it.id, -1); });
+        row.querySelector('.down').addEventListener('click', ()=>{ moveRow(it.id, +1); });
+        reorderHost.appendChild(row);
+      });
+    }
+
+    function getDragAfterElement(container, y){
+      const els = [...container.querySelectorAll('.drow:not(.dragging)')];
+      return els.reduce((closest,child)=>{
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height/2;
+        if(offset<0 && offset>closest.offset){ return {offset, element:child}; }
+        else return closest;
+      }, {offset: Number.NEGATIVE_INFINITY}).element;
+    }
+
+    function applyOrderFromDOM(){
+      const ids = [...reorderHost.querySelectorAll('.drow')].map(el=>el.dataset.id);
+      tasks.sort((a,b)=> ids.indexOf(a.id) - ids.indexOf(b.id));
+      ensureSchedule(); renderReorder(); renderTimetables();
+    }
+
+    function moveRow(id, delta){
+      const i = tasks.findIndex(x=>x.id===id); if(i<0) return;
+      const j = i + delta; if(j<0 || j>=tasks.length) return;
+      const tmp = tasks[i]; tasks[i] = tasks[j]; tasks[j] = tmp; ensureSchedule(); renderReorder(); renderTimetables();
+    }
+
+    function cascadeTimesFrom(id){
+      const startIdx = tasks.findIndex(x=>x.id===id); if(startIdx<0) return;
+      for(let k=startIdx+1; k<tasks.length; k++){
+        const prev = tasks[k-1]; const cur = tasks[k];
+        const start = (prev.endMinutes!=null)? prev.endMinutes : (prev.startMinutes||0) + (Number(prev.minutes)||0);
+        const dur = Number(cur.minutes)||0;
+        cur.startMinutes = start; cur.endMinutes = start + dur;
       }
-
-      const removeTotal = remove.reduce((s,x)=>s+x.minutes,0);
-      const keepTotal   = keep.reduce((s,x)=>s+x.minutes,0);
-      const overBy = (keepTotal + removeTotal) - avail;
-
-      if(remove.length===0){ suggestListEl.innerHTML = '—'; return; }
-      suggestListEl.innerHTML = `
-        <div class="warn">建議移到明天（由低優先到高優先）：</div>
-        <ul>
-          ${remove.map(x=>`<li>${escapeHtml(x.name)}（${x.minutes} 分鐘，Rank=${x.rank===Infinity?'未填':x.rank}）</li>`).join('')}
-        </ul>
-        <div class="small">
-          目前超出：<span class="danger mono">${overBy}</span> 分鐘；移除清單合計：<span class="mono">${removeTotal}</span> 分鐘；保留清單合計：<span class="mono">${keepTotal}</span> 分鐘。
-        </div>
-      `;
     }
 
     // —————————— 安全轉義 ——————————
     function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
     function escapeAttr(s){ return escapeHtml(s).replace(/\"/g,"&quot;"); }
+
+    // 初次渲染
+    renderTaskCards();
   </script>
 </body>
 </html>
