@@ -52,13 +52,16 @@
 
     /* Step 4 timetable */
     .timetable{border:1px solid #223061;border-radius:12px;overflow:hidden}
-    .t-row{display:grid;grid-template-columns:92px 1fr 96px 96px 112px;gap:8px;align-items:center;padding:10px;border-top:1px solid #223061}
+    .t-row{display:grid;grid-template-columns:52px 92px 1fr 96px 96px 136px;gap:8px;align-items:center;padding:10px;border-top:1px solid #223061}
     .t-row:first-child{border-top:none}
     .t-head{background:#18224a;font-weight:700}
     .t-controls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
     .icon-btn{padding:8px;border:1px solid #2a3767;border-radius:8px;background:#0e142b;cursor:pointer}
     .drag-hint{font-size:.85rem;color:#a8b6f5}
     .ghost{opacity:.6;outline:2px dashed #7aa2ff}
+    .handle{display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:grab;color:#a8b6f5}
+    .dragging{opacity:.7}
+    .placeholder{height:52px;border:2px dashed #7aa2ff;border-radius:10px;margin:6px 0}
 
     /* iPhone friendly touch targets */
     .icon-btn, .rank, .chip { touch-action: manipulation; }
@@ -444,6 +447,7 @@
       const head = document.createElement('div');
       head.className = 't-row t-head';
       head.innerHTML = `
+        <div></div>
         <div>開始</div>
         <div>任務</div>
         <div>時長(分)</div>
@@ -455,8 +459,10 @@
       schedule.forEach((it, i)=>{
         const row = document.createElement('div');
         row.className = 't-row';
+        row.dataset.i = i;
 
         row.innerHTML = `
+          <div class="handle" title="拖曳調序" data-i="${i}">☰</div>
           <input class="mono" type="time" value="${minutesToHHMM(it.start)}" data-i="${i}" data-k="start" />
           <input class="mono" value="${escapeAttr(it.name)}" data-i="${i}" data-k="name" />
           <div class="t-controls">
@@ -466,8 +472,10 @@
           </div>
           <div class="mono">${minutesToHHMM(it.end)}</div>
           <div class="t-controls">
+            <button class="icon-btn" data-i="${i}" data-act="top">Top</button>
             <button class="icon-btn" data-i="${i}" data-act="up">↑</button>
             <button class="icon-btn" data-i="${i}" data-act="down">↓</button>
+            <button class="icon-btn" data-i="${i}" data-act="bottom">Bottom</button>
             <button class="icon-btn" data-i="${i}" data-act="delete">刪除</button>
           </div>
         `;
@@ -481,12 +489,16 @@
           const act = btn.dataset.act;
           if(act==='minus5'){ schedule[i].minutes = Math.max(0, (schedule[i].minutes||0)-5); schedule[i].end = schedule[i].start + schedule[i].minutes; recomputeFrom(i); renderTimetable(); return; }
           if(act==='plus5'){ schedule[i].minutes = (schedule[i].minutes||0)+5; schedule[i].end = schedule[i].start + schedule[i].minutes; recomputeFrom(i); renderTimetable(); return; }
-          if(act==='up' && i>0){ const tmp = schedule[i-1]; schedule[i-1] = schedule[i]; schedule[i] = tmp; // 重新串接時間
-            schedule[0].start = schedule[0].start; schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
+          if(act==='top' && i>0){ const item = schedule.splice(i,1)[0]; schedule.unshift(item); schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
+          if(act==='bottom' && i<schedule.length-1){ const item = schedule.splice(i,1)[0]; schedule.push(item); schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
+          if(act==='up' && i>0){ const tmp = schedule[i-1]; schedule[i-1] = schedule[i]; schedule[i] = tmp; schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
           if(act==='down' && i<schedule.length-1){ const tmp = schedule[i+1]; schedule[i+1] = schedule[i]; schedule[i] = tmp; schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); renderTimetable(); return; }
           if(act==='delete'){ schedule.splice(i,1); if(schedule[0]){ schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); } renderTimetable(); return; }
         });
       });
+
+      // 觸控拖曳排序（iPhone Safari 友善）
+      enableDragReorder(host);
 
       host.querySelectorAll('input').forEach(inp=>{
         inp.addEventListener('change', ()=>{
@@ -516,6 +528,67 @@
       warnDiv.style.marginTop = '10px';
       warnDiv.innerHTML = over>0 ? `<span class="danger">⛔ 目前超出上床時間 ${over} 分鐘，請調整。</span>` : `<span class="ok">✅ 已符合上床時間。</span>`;
       host.appendChild(warnDiv);
+    }
+
+    // 觸控拖曳排序實作
+    function enableDragReorder(host){
+      const rows = Array.from(host.querySelectorAll('.t-row'));
+      if(rows.length<=1) return;
+      const header = rows.shift();
+      let dragging = null; // {idx, row, startY}
+      let placeholder = null;
+
+      rows.forEach((row, idx)=>{
+        const handle = row.querySelector('.handle');
+        if(!handle) return;
+        handle.addEventListener('pointerdown', (e)=>{
+          e.preventDefault();
+          row.classList.add('dragging');
+          dragging = { idx, row, startY: e.clientY };
+          placeholder = document.createElement('div');
+          placeholder.className = 'placeholder';
+          row.after(placeholder);
+          row.style.position = 'absolute';
+          row.style.left = host.getBoundingClientRect().left + 'px';
+          row.style.right = '20px';
+          row.style.width = (host.clientWidth - 20) + 'px';
+          row.style.zIndex = 9;
+          moveRow(e.clientY);
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp, { once:true });
+        });
+      });
+
+      function onMove(e){ moveRow(e.clientY); }
+      function moveRow(clientY){ if(!dragging) return; const y = clientY; const hostTop = host.getBoundingClientRect().top + window.scrollY; dragging.row.style.top = (y - 30 + window.scrollY) + 'px';
+        // 找到應插入的位置（相對於其他 row）
+        const others = Array.from(host.querySelectorAll('.t-row')).slice(1).filter(r=>r!==dragging.row);
+        let insertBefore = null;
+        for(const r of others){ const rect = r.getBoundingClientRect(); const mid = rect.top + rect.height/2; if(y < mid){ insertBefore = r; break; } }
+        if(insertBefore){ insertBefore.before(placeholder); } else { host.appendChild(placeholder); }
+      }
+      function onUp(){
+        window.removeEventListener('pointermove', onMove);
+        if(!dragging) return;
+        const newIndex = Array.from(host.querySelectorAll('.t-row')).indexOf(placeholder) - 1; // 去掉表頭
+        dragging.row.classList.remove('dragging');
+        dragging.row.style.position = '';
+        dragging.row.style.left = '';
+        dragging.row.style.right = '';
+        dragging.row.style.width = '';
+        dragging.row.style.top = '';
+        placeholder.replaceWith(dragging.row);
+        placeholder = null;
+
+        // 重新排序資料陣列
+        const item = schedule.splice(dragging.idx,1)[0];
+        const target = Math.max(0, Math.min(newIndex, schedule.length));
+        schedule.splice(target, 0, item);
+        if(schedule[0]){ schedule[0].end = schedule[0].start + schedule[0].minutes; recomputeFrom(0); }
+        renderTimetable();
+        dragging = null;
+      }
+    }
     }
 
     // 產生可複製的文字
