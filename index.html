@@ -56,19 +56,20 @@
     /* Step 4 reorder */
     .draglist{list-style:none;padding:0;margin:0}
     .draglist li{display:grid;grid-template-columns:28px 1fr 120px 140px;gap:8px;align-items:center;padding:10px;border:1px dashed #2a3767;border-radius:12px;margin:8px 0;background:#0e142b}
-    .handle{cursor:grab;user-select:none}
+    .handle{cursor:grab;user-select:none;touch-action:none}
     .handle:active{cursor:grabbing}
     .timebox{display:flex;gap:8px;align-items:center}
     .timebox input[type="time"]{width:auto}
     .ghost{opacity:.4}
+
+    /* Dev tests */
+    #tests{font-size:.85rem;color:#cbd5ff;white-space:pre-wrap}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Tonight Planner</h1>
     <div class="small">Step 1→4：貼原始日誌 → 抽今晚待辦 → 友善填時長/Rank → 檢查是否能在上床前完成 → 以時間軸輸出 Timetable + 可拖曳重排</div>
-
-    <!-- ⛳ 移除 Step1~4 導覽按鈕，保留分頁流程 -->
 
     <!-- Step 1 -->
     <section id="page1" class="page active">
@@ -153,6 +154,11 @@
         </div>
       </div>
     </section>
+
+    <div class="panel" id="devpanel">
+      <div class="small">Dev Tests（自動在載入時執行）</div>
+      <div id="tests" class="mono">—</div>
+    </div>
 
     <div class="sticky-footer small">今天日期：<span id="todayStr"></span></div>
   </div>
@@ -249,7 +255,7 @@
           results.push({
             raw: chunk.trim(),
             name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
-            minutes: minutes, // 可為 null
+            minutes: minutes,
             rank: ""
           });
         }
@@ -328,7 +334,7 @@
             <div>
               <label>Rank（1=最高，5=最低）</label>
               <div class="rank-group" data-kind="rank" data-i="${idx}">
-                ${[1,2,3,4,5].map(r=>`<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
+                ${[1,2,3,4,5].map(r=>`<button type=\"button\" class=\"rank ${rank===r?'selected':''}\" data-v=\"${r}\">${r}</button>`).join('')}
               </div>
             </div>
           </div>
@@ -430,7 +436,6 @@
       const text = `${header}\n\n${body}`;
       try{ await navigator.clipboard.writeText(text); alert('已複製到剪貼簿，請到 iPhone「備忘錄」貼上。'); }
       catch(e){
-        // iOS Safari 有時需使用選取方式備援
         const ta = document.createElement('textarea');
         ta.value = text; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
         const ok = document.execCommand('copy'); document.body.removeChild(ta);
@@ -438,9 +443,8 @@
       }
     });
 
-    // —————————— Step4 拖曳重排 + 直接改時間段 ——————————
+    // —————————— Step4 拖曳重排 + 直接改時間段（支援手機 Pointer Events） ——————————
     const reorderList = document.getElementById('reorderList');
-    let dragSrcEl = null;
 
     function renderReorderList(){
       reorderList.innerHTML = '';
@@ -448,10 +452,10 @@
       let cur = startAt;
       tasks.forEach((t, idx)=>{
         const li = document.createElement('li');
-        li.draggable = true; li.dataset.index = idx;
+        li.dataset.index = idx;
         const m = Number(t.minutes)||0; const start=cur; const end=cur+m; cur=end;
         li.innerHTML = `
-          <div class="handle">☰</div>
+          <div class="handle" aria-label="拖曳調整">☰</div>
           <div>
             <div class="mono">${escapeHtml(t.name)}</div>
             <div class="small">Rank: ${t.rank===''||t.rank==null? '未填' : t.rank}</div>
@@ -468,24 +472,51 @@
             <div class="small mono">結束：<span data-role="end">${minutesToTimeStr(end)}</span></div>
           </div>
         `;
-        hookDnD(li);
         reorderList.appendChild(li);
       });
+      enablePointerReorder();
       validateOverflow();
     }
 
-    function hookDnD(el){
-      el.addEventListener('dragstart', e=>{ dragSrcEl = el; el.classList.add('ghost'); e.dataTransfer.effectAllowed='move'; });
-      el.addEventListener('dragend', ()=>{ el.classList.remove('ghost'); dragSrcEl=null; });
-      el.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
-      el.addEventListener('drop', e=>{
-        e.preventDefault();
-        if(!dragSrcEl || dragSrcEl===el) return;
-        const src = Number(dragSrcEl.dataset.index);
-        const dst = Number(el.dataset.index);
-        const item = tasks.splice(src,1)[0];
-        tasks.splice(dst,0,item);
-        renderReorderList(); // 重新渲染並重排索引
+    function enablePointerReorder(){
+      const rows = Array.from(reorderList.children);
+      rows.forEach((row)=>{
+        const handle = row.querySelector('.handle');
+        let startY = 0; let startIndex = 0; let dragging = false;
+
+        function onDown(e){
+          e.preventDefault();
+          dragging = true;
+          startY = e.clientY ?? 0;
+          startIndex = Array.from(reorderList.children).indexOf(row);
+          row.classList.add('ghost');
+          window.addEventListener('pointermove', onMove, {passive:false});
+          window.addEventListener('pointerup', onUp, {once:true});
+        }
+        function onMove(e){
+          if(!dragging) return;
+          e.preventDefault();
+          const y = e.clientY ?? 0;
+          const elem = document.elementFromPoint(e.clientX || 1, y);
+          const li = elem ? elem.closest('li') : null;
+          if(li && li.parentElement === reorderList && li !== row){
+            const liIndex = Array.from(reorderList.children).indexOf(li);
+            if(liIndex > startIndex){
+              reorderList.insertBefore(row, li.nextSibling);
+            }else{
+              reorderList.insertBefore(row, li);
+            }
+            startIndex = Array.from(reorderList.children).indexOf(row);
+          }
+        }
+        function onUp(){
+          if(!dragging) return; dragging = false; row.classList.remove('ghost');
+          window.removeEventListener('pointermove', onMove, {passive:false});
+          const newOrder = Array.from(reorderList.children).map(li=> Number(li.dataset.index));
+          tasks = newOrder.map(i=> tasks[i]);
+          Array.from(reorderList.children).forEach((li, i)=> li.dataset.index = i);
+        }
+        handle.addEventListener('pointerdown', onDown);
       });
     }
 
@@ -501,49 +532,24 @@
       }
       if(k==='start'){
         const startMin = timeStrToMinutesToday(e.target.value);
-        const delta = startMin - sequentialStartAt(i);
-        shiftFromIndex(i, delta);
+        const segments = buildSequentialSchedule();
+        const targetAbs = startMin;
+        let insertPos = tasks.length;
+        for(let p=0;p<segments.length;p++){
+          if(targetAbs <= segments[p].start){ insertPos = p; break; }
+        }
+        const moving = tasks.splice(i,1)[0];
+        tasks.splice(insertPos>i? insertPos-1: insertPos, 0, moving);
       }
       renderReorderList();
     });
-
-    function sequentialStartAt(index){
-      const startAt = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
-      let cur = startAt;
-      for(let j=0;j<index;j++){ cur += Number(tasks[j].minutes)||0; }
-      return cur;
-    }
-    function shiftFromIndex(index, delta){
-      // 將 index 及其後所有任務的起點整體平移 delta（正=往後，負=往前）
-      if(!delta) return;
-      // 平移從 index 開始的片段，使 index 的開始時間變為新指定時間
-      // 實作上：我們只需要記錄新起點，然後依 minutes 依序重建
-      // 這裡不需要單獨存 start；重渲染時會根據順序與 minutes 自動排
-      // 因此此函式實際不修改資料，只觸發重渲染；視覺上會以新開始時間呈現
-      // 為達到效果：我們臨時在 DOM 層改變第一個開始，然後算後續
-      // 簡化：直接把 homeTime 也平移？不行，會影響全部。故改成：在渲染時計入一個偏移量 tempOffsets
-      // 為保持資料單純，採：將第 index 個任務的 minutes 改為自身 minutes（不變），但把前面任務總和調整為對應差距 → 等同重排
-      // 更直觀作法：計算目前 index 前總長 realStart，若 startMin < realStart，則嘗試把此任務與前一個交換直到符合；若 > realStart，則與後面交換直到達到大致位置。
-      // 為避免過度複雜，這裡採最簡：直接把 tasks 切成三段，重新以新開始時間為基準重建 timetable（其實等同在 Step3 的 sequential）。
-      // 使用者改開始時間後，我們將其視為把該任務移到最接近該時間的位置：
-      const startAt = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
-      const targetAbs = startMin;
-      // 計算每個任務的原始區段
-      const segments = buildSequentialSchedule().map((seg,idx)=>({idx, start:seg.start, end:seg.end}));
-      // 依開始時間排序（原本已排序）
-      // 找到插入點
-      let insertPos = tasks.length;
-      for(let p=0;p<segments.length;p++){
-        if(targetAbs <= segments[p].start){ insertPos = p; break; }
-      }
-      const moving = tasks.splice(i,1)[0];
-      tasks.splice(insertPos>i? insertPos-1: insertPos, 0, moving);
-    }
 
     function validateOverflow(){
       const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
       const rows = buildSequentialSchedule();
       const endAll = rows.length? rows[rows.length-1].end : null;
+      const old = reorderList.parentElement.querySelector('.danger');
+      if(old) old.remove();
       if(endAll!=null && bed!=null && endAll>bed){
         const over = endAll - bed;
         const warn = document.createElement('div');
@@ -551,10 +557,6 @@
         warn.style.marginTop='8px';
         warn.textContent = `⛔ 超時 ${over} 分鐘，請調整順序或縮短時長。`;
         reorderList.parentElement.appendChild(warn);
-      } else {
-        // 清理舊警告
-        const sib = reorderList.parentElement.querySelector('.danger');
-        if(sib) sib.remove();
       }
     }
 
@@ -573,6 +575,30 @@
       document.getElementById('fitMsg').textContent = '—';
       document.getElementById('timetable').textContent = '—';
     }
+
+    // —————————— Dev 自動化測試（不改動功能，只驗證解析與流程） ——————————
+    (function runDevTests(){
+      const out = [];
+      function ok(name, cond){ out.push(`${cond? '✅ PASS':'❌ FAIL'}  ${name}`); }
+      // parseDurationMinutes
+      ok('parseDurationMinutes("dur=30m") === 30', parseDurationMinutes('dur=30m')===30);
+      ok('parseDurationMinutes("est=2h") === 120', parseDurationMinutes('est=2h')===120);
+      ok('parseDurationMinutes("洗碗 45min") === 45', parseDurationMinutes('洗碗 45min')===45);
+      // splitTasksInline
+      const st = splitTasksInline('整雞水 30mins, 運動');
+      ok('splitTasksInline 長度=2', st.length===2);
+      ok('第一項 minutes=30', st[0].minutes===30);
+      ok('第二項 minutes=null', st[1].minutes==null);
+      // extractTonightItems（使用今天日期）
+      const today = todayStr;
+      const sample = `[${today}\n10:00am ｜ Tonight: 測試A 20m, 測試B | status=planned #tonighttodolist]`;
+      const items = extractTonightItems(sample, today);
+      ok('extractTonightItems 抽到2項', items.length===2);
+      ok('第一項=測試A minutes=20', items[0].name.includes('測試A') && items[0].minutes===20);
+      ok('第二項=測試B minutes=null', items[1].name.includes('測試B') && items[1].minutes==null);
+      document.getElementById('tests').textContent = out.join('\n');
+      console.log('[DevTests]', out.join('\n'));
+    })();
   </script>
 </body>
 </html>
