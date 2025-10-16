@@ -153,7 +153,7 @@
           <ol class="small">
             <li>先由用戶確認任務次序。</li>
             <li>在固定次序前提下，若你更改任務的「開始時間」或「時長」，該任務之後的任務時間會依序順延。</li>
-            <li>第 1 個任務開始時間預設等於「回家時間」，<u>若你最近 15 秒內在此頁手動修改並按「更新 Timetable」保存</u>，將暫時把第 1 個任務開始時間的預設改為你剛剛設定的時間（有效 15 秒）。</li>
+            <li>第 1 個任務開始時間預設等於「回家時間」，除非你手動修改它。</li>
           </ol>
         </div>
       </div>
@@ -311,12 +311,6 @@
     const todayStr = getTodayStrLocal();
     document.getElementById('todayStr').textContent = todayStr;
 
-    // 【NEW】第一個任務「手動開始時間」偏好（保存鍵按下且 15 秒內生效）
-    let firstTaskPreferred = null;          // 分鐘（當天）
-    let firstTaskPreferredUntil = 0;        // 時間戳（ms），現在時間 <= 這個值時生效
-    let lastFirstStartEditAt = null;        // 最近一次在 Step4 改第1項開始時間的時刻
-    let lastFirstStartEditedValue = null;   // 該次改動的數值（分鐘）
-
     // 預設時間
     (function presetTimes(){
       const now = new Date();
@@ -337,11 +331,6 @@
     const detectedEl = document.getElementById('detected');
     document.getElementById('clearBtn').addEventListener('click', ()=>{
       rawEl.value = ""; tasks = []; renderDetected([]); renderTaskCards(); resetStatsAndSuggest();
-      // 清掉偏好
-      firstTaskPreferred = null;
-      firstTaskPreferredUntil = 0;
-      lastFirstStartEditAt = null;
-      lastFirstStartEditedValue = null;
     });
 
     document.getElementById('extractAndNext').addEventListener('click', ()=>{
@@ -466,9 +455,8 @@
       }
     }
 
-    // 以「確認的次序」+「使用者覆寫的開始時間/短期偏好」計算時間表
+    // 以「確認的次序」+「使用者覆寫的開始時間」計算時間表
     function buildSchedule(){
-      const nowTs = Date.now();
       const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
       let cur = null;
       const rows = [];
@@ -476,14 +464,7 @@
         const m = Math.max(0, Number(t.minutes)||0);
         let start;
         if (idx === 0){
-          // 優先順序：顯性覆寫 > 15秒內保存的偏好 > 回家時間
-          if (t.startOverride!=null){
-            start = t.startOverride;
-          } else if (firstTaskPreferred!=null && nowTs <= firstTaskPreferredUntil){
-            start = firstTaskPreferred;
-          } else {
-            start = home;
-          }
+          start = (t.startOverride!=null) ? t.startOverride : home;
           cur = start + m;
         }else{
           start = (t.startOverride!=null) ? t.startOverride : (cur ?? home);
@@ -589,7 +570,7 @@
           // 重建 tasks 的次序
           const newOrder = Array.from(reorderList.children).map(li=> Number(li.dataset.index));
           tasks = newOrder.map(i=> tasks[i]);
-          // 依規則：重排後先清空所有覆寫，讓時間依序從「回家時間」或偏好開始
+          // 依規則：重排後先清空所有覆寫，讓時間依序從「回家時間」開始
           clearOverridesFrom(0);
           // 重新渲染
           Array.from(reorderList.children).forEach((li, i)=> li.dataset.index = String(i));
@@ -620,11 +601,6 @@
         const newStart = timeStrToMinutesToday(e.target.value);
         if(newStart==null) return;
         tasks[i].startOverride = newStart;
-        // 【NEW】若為第 1 個任務，記錄「最近一次手動修改」時間與數值
-        if(i === 0){
-          lastFirstStartEditAt = Date.now();
-          lastFirstStartEditedValue = newStart;
-        }
         clearOverridesFrom(i+1);
       }
 
@@ -648,14 +624,7 @@
     }
 
     document.getElementById('back4').onclick=()=>showPage('page3');
-    document.getElementById('done4').onclick=()=>{
-      // 【NEW】在「更新 Timetable」時，若使用者在最近 15 秒內修改了第 1 個任務的開始時間，建立 15 秒有效的預設偏好
-      if (lastFirstStartEditAt && (Date.now() - lastFirstStartEditAt) <= 15000 && Number.isInteger(lastFirstStartEditedValue)){
-        firstTaskPreferred = lastFirstStartEditedValue;
-        firstTaskPreferredUntil = Date.now() + 15000; // 有效 15 秒
-      }
-      renderStats(); renderTimetable(); showPage('page3');
-    };
+    document.getElementById('done4').onclick=()=>{ renderStats(); renderTimetable(); showPage('page3'); };
 
     // —————————— 安全轉義 ——————————
     function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
@@ -700,7 +669,7 @@
       ok('整雞水(1.5hr) minutes=90', items[1].name==='整雞水' && items[1].minutes===90);
       ok('整雞水(30mins) minutes=30', items[2].name==='整雞水' && items[2].minutes===30);
 
-      // Step4 順延邏輯 + 第1項偏好檢查（模擬）
+      // Step4 順延邏輯基本檢查（模擬）
       tasks = [
         {name:'T1', minutes:30, rank:1, raw:'', startOverride:null},
         {name:'T2', minutes:20, rank:2, raw:'', startOverride:null},
@@ -708,27 +677,14 @@
       ];
       document.getElementById('homeTime').value = '19:30';
       document.getElementById('bedTime').value = '23:30';
-
-      // 初始：第1項應為回家時間
       let rows = buildSchedule();
       ok('初始 T1=19:30', minutesToTimeStr(rows[0].start)==='19:30');
-
-      // 模擬用戶在 Step4 改第1項開始時間為 20:05，然後 5 秒內按保存
-      lastFirstStartEditedValue = 20*60 + 5;
-      lastFirstStartEditAt = Date.now();
-      // 觸發保存偏好
-      firstTaskPreferred = lastFirstStartEditedValue;
-      firstTaskPreferredUntil = Date.now() + 15000;
-
-      rows = buildSchedule();
-      ok('偏好生效 T1=20:05', minutesToTimeStr(rows[0].start)==='20:05');
-
-      // 手動把 T2 開始改為 20:20，T3 應順延到 20:40
-      tasks[1].startOverride = 20*60 + 20;
+      // 手動把 T2 開始改為 20:00，T3 應順延到 20:20
+      tasks[1].startOverride = 20*60;
       clearOverridesFrom(2);
       rows = buildSchedule();
-      ok('T2=20:20', minutesToTimeStr(rows[1].start)==='20:20');
-      ok('T3=20:40', minutesToTimeStr(rows[2].start)==='20:40');
+      ok('T2=20:00', minutesToTimeStr(rows[1].start)==='20:00');
+      ok('T3=20:20', minutesToTimeStr(rows[2].start)==='20:20');
 
       document.getElementById('tests').textContent = out.join('\n');
       console.log('[DevTests]', out.join('\n'));
