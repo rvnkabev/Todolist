@@ -76,11 +76,7 @@
       <h2>Step 1｜輸入原始文字 & 今晚時段</h2>
       <div class="panel">
         <label for="raw">貼上你今天的原始資料（僅抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）。也支援寫法：<span class="mono">Tonight: 整雞水 30mins, 運動</span></label>
-        <textarea id="raw" placeholder="[2025-10-12
-10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]
-
-[2025-10-10
-2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
+        <textarea id="raw" placeholder="[2025-10-12\n10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]\n\n[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
 
         <div class="row">
           <div>
@@ -148,7 +144,14 @@
     <section id="page4" class="page">
       <h2>Step 4｜拖曳調整順序 & 直接改時間段（會自動重排後續）</h2>
       <div class="panel">
-        <div class="hint">拖動左側把手可更改任務次序；修改某項的「開始時間」或「時長」後，後面的任務會依序自動排列；若超過上床時間會警示。<br/>提示：拖動更換次序時，第一項會保留其原本開始時間，後續順延。</div>
+        <div class="hint">
+          邏輯：
+          <ol class="small">
+            <li>先由用戶確認任務次序。</li>
+            <li>在固定次序前提下，若你更改任務的「開始時間」或「時長」，該任務之後的任務時間會依序順延。</li>
+            <li>第 1 個任務開始時間預設等於「回家時間」，除非你手動修改它。</li>
+          </ol>
+        </div>
       </div>
       <div class="panel">
         <ul id="reorderList" class="draglist"></ul>
@@ -260,7 +263,8 @@
             raw: chunk.trim(),
             name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
             minutes: minutes,
-            rank: ""
+            rank: "",
+            startOverride: null // 使用者在 Step4 手動指定的開始時間（分鐘，當天）
           });
         }
       }
@@ -271,9 +275,6 @@
     let tasks = [];
     const todayStr = getTodayStrLocal();
     document.getElementById('todayStr').textContent = todayStr;
-
-    // ★ Step4 用：錨定第一項開始時間（拖動重排時保持）
-    let step4AnchorStartMin = null;
 
     // 預設時間
     (function presetTimes(){
@@ -341,7 +342,7 @@
             <div>
               <label>Rank（1=最高，5=最低）</label>
               <div class="rank-group" data-kind="rank" data-i="${idx}">
-                ${[1,2,3,4,5].map(r=>`<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
+                ${[1,2,3,4,5].map(r=>`<button type=\"button\" class=\"rank ${rank===r?'selected':''}\" data-v=\"${r}\">${r}</button>`).join('')}
               </div>
             </div>
           </div>
@@ -354,7 +355,10 @@
         el.addEventListener('click', ()=>{
           const i = Number(el.parentElement.dataset.i);
           const v = Number(el.dataset.v);
-          tasks[i].minutes = v; renderTaskCards();
+          tasks[i].minutes = v;
+          // 若在 Step4 已有時間覆寫，將後續清空以確保順延邏輯
+          if (tasks[i].startOverride != null) { clearOverridesFrom(i+1); }
+          renderTaskCards();
         });
       });
       host.querySelectorAll('.rank-group .rank').forEach(btn=>{
@@ -386,12 +390,7 @@
     const timetableEl = document.getElementById('timetable');
 
     document.getElementById('back3').onclick=()=>showPage('page2');
-    document.getElementById('goStep4').onclick=()=>{
-      // 進入 Step4 時，用「回家時間」作為初始錨點
-      step4AnchorStartMin = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
-      renderReorderList();
-      showPage('page4');
-    };
+    document.getElementById('goStep4').onclick=()=>{ renderReorderList(); showPage('page4'); };
 
     function renderStats(){
       const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
@@ -421,23 +420,32 @@
       }
     }
 
-    // 調整後：支援自訂起點（Step4 錨點）來產生序列表
-    function buildSequentialSchedule(customStart){
-      const startAt = (customStart!=null)
-        ? customStart
-        : timeStrToMinutesToday(document.getElementById('homeTime').value);
-      let cur = startAt;
-      return tasks.map(t=>{
-        const m = Number(t.minutes)||0;
-        const item = {name:t.name, start:cur, end:cur+m, minutes:m};
-        cur += m; return item;
+    // 以「確認的次序」+「使用者覆寫的開始時間」計算時間表
+    function buildSchedule(){
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
+      let cur = null;
+      const rows = [];
+      tasks.forEach((t, idx)=>{
+        const m = Math.max(0, Number(t.minutes)||0);
+        let start;
+        if (idx === 0){
+          // 第 1 項：預設用回家時間；若使用者曾手動改過，沿用覆寫
+          start = (t.startOverride!=null) ? t.startOverride : home;
+          cur = start + m;
+        }else{
+          // 後續：若該項有覆寫，用覆寫；否則銜接前一項 end
+          start = (t.startOverride!=null) ? t.startOverride : (cur ?? home);
+          cur = start + m;
+        }
+        rows.push({name:t.name, start, end:start+m, minutes:m, idx});
       });
+      return rows;
     }
 
     function renderTimetable(){
       if(!tasks.length){ timetableEl.textContent = '—'; return; }
       const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
-      const rows = buildSequentialSchedule();
+      const rows = buildSchedule();
       let lines = rows.map(r=>`${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
       const endAll = rows.length? rows[rows.length-1].end : null;
       if(endAll!=null && bed!=null && endAll>bed){ lines.push(`\n⚠️ 超過上床時間：${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
@@ -458,21 +466,16 @@
       }
     });
 
-    // —————————— Step4 拖曳重排 + 直接改時間段（支援手機 Pointer Events） ——————————
+    // —————————— Step4：拖曳重排 + 修改時間/時長 的「順延」核心邏輯 ——————————
     const reorderList = document.getElementById('reorderList');
 
     function renderReorderList(){
       reorderList.innerHTML = '';
-      // 用錨點開頭（若無則用回家時間）
-      const startAt = (step4AnchorStartMin!=null)
-        ? step4AnchorStartMin
-        : (timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0);
-
-      let cur = startAt;
-      tasks.forEach((t, idx)=>{
+      const rows = buildSchedule();
+      rows.forEach((r, visIdx)=>{
+        const t = tasks[visIdx];
         const li = document.createElement('li');
-        li.dataset.index = idx;
-        const m = Number(t.minutes)||0; const start=cur; const end=cur+m; cur=end;
+        li.dataset.index = String(visIdx);
         li.innerHTML = `
           <div class="handle" aria-label="拖曳調整">☰</div>
           <div>
@@ -481,14 +484,14 @@
           </div>
           <div>
             <label class="small">開始時間</label>
-            <input type="time" data-k="start" data-i="${idx}" value="${minutesToTimeStr(start)}" />
+            <input type="time" data-k="start" data-i="${visIdx}" value="${minutesToTimeStr(r.start)}" />
           </div>
           <div class="timebox">
             <div style="flex:1">
               <label class="small">時長（分）</label>
-              <input type="number" min="0" step="5" data-k="minutes" data-i="${idx}" value="${m}" />
+              <input type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes||0}" />
             </div>
-            <div class="small mono">結束：<span data-role="end">${minutesToTimeStr(end)}</span></div>
+            <div class="small mono">結束：<span data-role="end">${minutesToTimeStr(r.end)}</span></div>
           </div>
         `;
         reorderList.appendChild(li);
@@ -508,15 +511,6 @@
           dragging = true;
           startY = e.clientY ?? 0;
           startIndex = Array.from(reorderList.children).indexOf(row);
-
-          // ★ 在開始拖曳前，記錄目前第一項的開始時間作為錨點，確保重排後第一項保留原開始時間
-          const seqBefore = buildSequentialSchedule(step4AnchorStartMin!=null
-            ? step4AnchorStartMin
-            : timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0);
-          if(seqBefore.length){
-            step4AnchorStartMin = seqBefore[0].start;
-          }
-
           row.classList.add('ghost');
           window.addEventListener('pointermove', onMove, {passive:false});
           window.addEventListener('pointerup', onUp, {once:true});
@@ -539,57 +533,57 @@
         }
         function onUp(){
           if(!dragging) return; dragging = false; row.classList.remove('ghost');
-          window.removeEventListener('pointermove', onMove);
-
-          // 依據新的順序重建 tasks
+          window.removeEventListener('pointermove', onMove, {passive:false});
+          // 重建 tasks 的次序
           const newOrder = Array.from(reorderList.children).map(li=> Number(li.dataset.index));
           tasks = newOrder.map(i=> tasks[i]);
-          // 重新標記索引
-          Array.from(reorderList.children).forEach((li, i)=> li.dataset.index = i);
-
-          // ★ 重新渲染（使用錨點保持第一項開始時間不變）
+          // 依規則：重排後先清空所有覆寫，讓時間依序從「回家時間」開始
+          clearOverridesFrom(0);
+          // 重新渲染
+          Array.from(reorderList.children).forEach((li, i)=> li.dataset.index = String(i));
           renderReorderList();
         }
         handle.addEventListener('pointerdown', onDown);
       });
     }
 
-    // 監聽 Step4 中的時間/時長修改，並自動順延後續
+    // 從 index 起，清空 startOverride（確保「其後」任務時間順延）
+    function clearOverridesFrom(indexInclusive){
+      for(let j=indexInclusive; j<tasks.length; j++){ tasks[j].startOverride = null; }
+    }
+
+    // 監聽 Step4 中的時間/時長修改
     reorderList.addEventListener('change', (e)=>{
       const i = Number(e.target.dataset.i);
       const k = e.target.dataset.k;
       if(Number.isNaN(i) || !k) return;
 
+      // 先拿到修改前的時間表，供判斷
+      const before = buildSchedule();
+
       if(k==='minutes'){
         const v = Math.max(0, Math.round(Number(e.target.value)||0));
         tasks[i].minutes = v;
-        // ★ 更改某任務時長：保持錨點，後續自動順延
-        renderReorderList();
+        // 只要改了某任務的時長，清空「其後」任務的覆寫，讓它們跟隨此任務的結束時間順延
+        clearOverridesFrom(i+1);
       }
-      if(k==='start'){
-        const startMin = timeStrToMinutesToday(e.target.value);
-        const segments = buildSequentialSchedule(step4AnchorStartMin!=null
-          ? step4AnchorStartMin
-          : timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0);
-        // 以目標開始時間做排序參考，將該任務移到對應位置
-        const targetAbs = startMin;
-        let insertPos = tasks.length;
-        for(let p=0;p<segments.length;p++){
-          if(targetAbs <= segments[p].start){ insertPos = p; break; }
-        }
-        const moving = tasks.splice(i,1)[0];
-        tasks.splice(insertPos>i? insertPos-1: insertPos, 0, moving);
 
-        // 不改變錨點，保持第一項開始時間
-        renderReorderList();
+      if(k==='start'){
+        const newStart = timeStrToMinutesToday(e.target.value);
+        if(newStart==null) return;
+        // 設定此任務的覆寫開始時間
+        tasks[i].startOverride = newStart;
+        // 根據規則：更改第 i 項開始時間，不影響第 1..i-1 項；清空 i 之後所有覆寫，讓其後順延
+        clearOverridesFrom(i+1);
+        // 額外規則：若 i==0，代表使用者手動改過第 1 項，往後都從它的 end 順延
       }
+
+      renderReorderList();
     });
 
     function validateOverflow(){
       const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
-      const rows = buildSequentialSchedule(step4AnchorStartMin!=null
-        ? step4AnchorStartMin
-        : timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0);
+      const rows = buildSchedule();
       const endAll = rows.length? rows[rows.length-1].end : null;
       const old = reorderList.parentElement.querySelector('.danger');
       if(old) old.remove();
@@ -620,7 +614,7 @@
     }
 
     // —————————— Dev 自動化測試（不改動功能，只驗證解析與流程） ——————————
-    (function runDevTests(){
+    ;(function runDevTests(){
       const out = [];
       function ok(name, cond){ out.push(`${cond? '✅ PASS':'❌ FAIL'}  ${name}`); }
       // parseDurationMinutes
@@ -634,12 +628,28 @@
       ok('第二項 minutes=null', st[1].minutes==null);
       // extractTonightItems（使用今天日期）
       const today = todayStr;
-      const sample = `[${today}
-10:00am ｜ Tonight: 測試A 20m, 測試B | status=planned #tonighttodolist]`;
+      const sample = `[${today}\n10:00am ｜ Tonight: 測試A 20m, 測試B | status=planned #tonighttodolist]`;
       const items = extractTonightItems(sample, today);
       ok('extractTonightItems 抽到2項', items.length===2);
       ok('第一項=測試A minutes=20', items[0].name.includes('測試A') && items[0].minutes===20);
       ok('第二項=測試B minutes=null', items[1].name.includes('測試B') && items[1].minutes==null);
+      // Step4 順延邏輯基本檢查（模擬）
+      // 建三項
+      tasks = [
+        {name:'T1', minutes:30, rank:1, raw:'', startOverride:null},
+        {name:'T2', minutes:20, rank:2, raw:'', startOverride:null},
+        {name:'T3', minutes:10, rank:3, raw:'', startOverride:null},
+      ];
+      document.getElementById('homeTime').value = '19:30';
+      document.getElementById('bedTime').value = '23:30';
+      let rows = buildSchedule();
+      ok('初始 T1=19:30', minutesToTimeStr(rows[0].start)==='19:30');
+      // 手動把 T2 開始改為 20:00，T3 應順延到 20:20
+      tasks[1].startOverride = 20*60;
+      clearOverridesFrom(2);
+      rows = buildSchedule();
+      ok('T2=20:00', minutesToTimeStr(rows[1].start)==='20:00');
+      ok('T3=20:20', minutesToTimeStr(rows[2].start)==='20:20');
       document.getElementById('tests').textContent = out.join('\n');
       console.log('[DevTests]', out.join('\n'));
     })();
