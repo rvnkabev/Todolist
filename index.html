@@ -76,7 +76,11 @@
       <h2>Step 1｜輸入原始文字 & 今晚時段</h2>
       <div class="panel">
         <label for="raw">貼上你今天的原始資料（僅抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）。也支援寫法：<span class="mono">Tonight: 整雞水 30mins, 運動</span></label>
-        <textarea id="raw" placeholder="[2025-10-12\n10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]\n\n[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
+        <textarea id="raw" placeholder="[2025-10-12
+10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]
+
+[2025-10-10
+2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
 
         <div class="row">
           <div>
@@ -105,7 +109,7 @@
     <section id="page2" class="page">
       <h2>Step 2｜友善填「預估時長」與「Rank」</h2>
       <div class="panel">
-        <div class="hint">若在原文內寫了 <span class="mono">dur=30m</span>、<span class="mono">30mins</span>、<span class="mono">1hr</span>、或在任務名稱後標註（如：<span class="mono">Tonight: 整雞水 30mins, 運動</span>），會自動填入。</div>
+        <div class="hint">若在原文內寫了 <span class="mono">dur=30m</span>、<span class="mono">30mins</span>、<span class="mono">1hr</span>、<span class="mono">1.5hr</span>，或在任務名稱後標註（如：<span class="mono">Tonight: 整雞水 1.5hr, 整雞水 30mins</span>），會自動填入。</div>
       </div>
       <div id="taskList" class="panel"></div>
       <div class="row">
@@ -191,47 +195,70 @@
     }
 
     // —————————— 工具：字串解析 Tonight 任務 ——————————
+    // 支援 #tonighttodolist 與常見錯字 #tongihttodolist
     const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
 
+    // 解析「時長」字串 → 分鐘
+    // 支援：dur=30m / est=2h / 45min / 1.5h / 1.5hr / 90m / 中文「1小時」「30分鐘」「半小時」
     function parseDurationMinutes(text){
+      if(!text) return null;
+
+      // 先處理中文「半小時」
+      if(/半\s*小?時/.test(text)) return 30;
+
+      // 結構化搜尋（優先帶單位的鍵值）
       const patterns = [
         /dur\s*=\s*(\d+)\s*m\b/i,
         /dur\s*=\s*(\d+)\s*min\b/i,
-        /dur\s*=\s*(\d+)\s*h\b/i,
+        /dur\s*=\s*(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i,
+        /dur\s*=\s*(\d+(?:\.\d+)?)\s*hr\b/i,
+
         /est\s*=\s*(\d+)\s*m\b/i,
         /est\s*=\s*(\d+)\s*min\b/i,
-        /est\s*=\s*(\d+)\s*h\b/i,
+        /est\s*=\s*(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i,
+        /est\s*=\s*(\d+(?:\.\d+)?)\s*hr\b/i,
+
         /\b(\d+)\s*mins?\b/i,
         /\b(\d+)\s*min\b/i,
         /\b(\d+)\s*m\b/i,
-        /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i
+        /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i,
+        /\b(\d+(?:\.\d+)?)\s*hr\b/i,
+
+        // 中文
+        /(\d+(?:\.\d+)?)\s*小?時/i,
+        /(\d+)\s*分(?:鐘)?/i
       ];
+
       for(const re of patterns){
         const m = text.match(re);
         if(m){
           const val = parseFloat(m[1]);
-          if(/h/.test(re.source)) return Math.round(val*60);
+          // 判斷是否為小時單位
+          if(/h(?:ours?)?|hr|小?時/i.test(re.source)) return Math.round(val * 60);
           return Math.round(val);
         }
       }
       return null;
     }
 
+    // 將「Tonight: A 30min, B, C 1.5hr」拆成多個項目，並儘量帶出各自時長
     function splitTasksInline(titleText){
       const parts = titleText.split(/[,，、]+/).map(s=>s.trim()).filter(Boolean);
       const out = [];
       for(const p of parts){
         const dm = parseDurationMinutes(p);
-        if(dm!=null){
-          const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
-          out.push({name, minutes:dm});
-        }else{
-          out.push({name:p, minutes:null});
-        }
+        // 產生名稱：去掉時長標註（含中英）
+        const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hr|hours?)\b/ig,'')
+                      .replace(/(\d+(?:\.\d+)?)\s*小?時/ig,'')
+                      .replace(/(\d+)\s*分(?:鐘)?/ig,'')
+                      .replace(/半\s*小?時/ig,'')
+                      .trim();
+        out.push({name, minutes: dm ?? null});
       }
       return out;
     }
 
+    // 從原文中抽取「今天 + Tonight: + tag」的任務
     function extractTonightItems(raw, todayStr){
       const chunks = [];
       const blockRe = /\[[\s\S]*?\]/g;
@@ -247,21 +274,29 @@
         if(!/Tonight\s*:/i.test(chunk)) continue;
         if(!TAG_PATTERNS.test(chunk)) continue;
 
+        // 抓 Tonight: 後面直到 | 或 # 或換行
         const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
         if(!m) continue;
         const title = m[1].trim();
 
         const inlineItems = splitTasksInline(title);
+        // 若整段（chunk）也有 dur=xxx，僅套用到第一個未帶時長的項目（避免污染全部）
         const durInChunk = parseDurationMinutes(chunk);
-
         let usedDur = false;
+
         for(const it of inlineItems){
           let minutes = it.minutes;
-          if(minutes==null){ minutes = parseDurationMinutes(it.name); }
-          if(minutes==null && !usedDur && durInChunk!=null){ minutes = durInChunk; usedDur = true; }
+          if(minutes==null){ minutes = parseDurationMinutes(it.name); } // 名稱內若有時長
+          if(minutes==null && !usedDur && durInChunk!=null){
+            minutes = durInChunk; usedDur = true;
+          }
           results.push({
             raw: chunk.trim(),
-            name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
+            name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hr|hours?)\b/ig,'')
+                         .replace(/(\d+(?:\.\d+)?)\s*小?時/ig,'')
+                         .replace(/(\d+)\s*分(?:鐘)?/ig,'')
+                         .replace(/半\s*小?時/ig,'')
+                         .trim(),
             minutes: minutes,
             rank: "",
             startOverride: null // 使用者在 Step4 手動指定的開始時間（分鐘，當天）
@@ -342,7 +377,7 @@
             <div>
               <label>Rank（1=最高，5=最低）</label>
               <div class="rank-group" data-kind="rank" data-i="${idx}">
-                ${[1,2,3,4,5].map(r=>`<button type=\"button\" class=\"rank ${rank===r?'selected':''}\" data-v=\"${r}\">${r}</button>`).join('')}
+                ${[1,2,3,4,5].map(r=>`<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
               </div>
             </div>
           </div>
@@ -429,11 +464,9 @@
         const m = Math.max(0, Number(t.minutes)||0);
         let start;
         if (idx === 0){
-          // 第 1 項：預設用回家時間；若使用者曾手動改過，沿用覆寫
           start = (t.startOverride!=null) ? t.startOverride : home;
           cur = start + m;
         }else{
-          // 後續：若該項有覆寫，用覆寫；否則銜接前一項 end
           start = (t.startOverride!=null) ? t.startOverride : (cur ?? home);
           cur = start + m;
         }
@@ -558,24 +591,17 @@
       const k = e.target.dataset.k;
       if(Number.isNaN(i) || !k) return;
 
-      // 先拿到修改前的時間表，供判斷
-      const before = buildSchedule();
-
       if(k==='minutes'){
         const v = Math.max(0, Math.round(Number(e.target.value)||0));
         tasks[i].minutes = v;
-        // 只要改了某任務的時長，清空「其後」任務的覆寫，讓它們跟隨此任務的結束時間順延
         clearOverridesFrom(i+1);
       }
 
       if(k==='start'){
         const newStart = timeStrToMinutesToday(e.target.value);
         if(newStart==null) return;
-        // 設定此任務的覆寫開始時間
         tasks[i].startOverride = newStart;
-        // 根據規則：更改第 i 項開始時間，不影響第 1..i-1 項；清空 i 之後所有覆寫，讓其後順延
         clearOverridesFrom(i+1);
-        // 額外規則：若 i==0，代表使用者手動改過第 1 項，往後都從它的 end 順延
       }
 
       renderReorderList();
@@ -617,24 +643,33 @@
     ;(function runDevTests(){
       const out = [];
       function ok(name, cond){ out.push(`${cond? '✅ PASS':'❌ FAIL'}  ${name}`); }
+
       // parseDurationMinutes
       ok('parseDurationMinutes("dur=30m") === 30', parseDurationMinutes('dur=30m')===30);
       ok('parseDurationMinutes("est=2h") === 120', parseDurationMinutes('est=2h')===120);
       ok('parseDurationMinutes("洗碗 45min") === 45', parseDurationMinutes('洗碗 45min')===45);
-      // splitTasksInline
-      const st = splitTasksInline('整雞水 30mins, 運動');
-      ok('splitTasksInline 長度=2', st.length===2);
-      ok('第一項 minutes=30', st[0].minutes===30);
-      ok('第二項 minutes=null', st[1].minutes==null);
-      // extractTonightItems（使用今天日期）
+      ok('parseDurationMinutes("1.5hr") === 90', parseDurationMinutes('1.5hr')===90);
+      ok('parseDurationMinutes("半小時") === 30', parseDurationMinutes('半小時')===30);
+      ok('parseDurationMinutes("2小時") === 120', parseDurationMinutes('2小時')===120);
+      ok('parseDurationMinutes("30分鐘") === 30', parseDurationMinutes('30分鐘')===30);
+
+      // splitTasksInline：雙「整雞水」不同時長要分別保留
+      const st = splitTasksInline('買雞, 整雞水 1.5hr, 整雞水 30mins');
+      ok('splitTasksInline 長度=3', st.length===3);
+      ok('第二項 minutes=90', st[1].minutes===90);
+      ok('第三項 minutes=30', st[2].minutes===30);
+      ok('名稱去掉時長字樣', st[1].name==='整雞水' && st[2].name==='整雞水');
+
+      // extractTonightItems（使用今天日期 + 範例字串）
       const today = todayStr;
-      const sample = `[${today}\n10:00am ｜ Tonight: 測試A 20m, 測試B | status=planned #tonighttodolist]`;
+      const sample = `[${today}
+9:53am ｜ Tonight: 買雞, 整雞水 1.5hr, 整雞水 30mins | status=planned #tonighttodolist]`;
       const items = extractTonightItems(sample, today);
-      ok('extractTonightItems 抽到2項', items.length===2);
-      ok('第一項=測試A minutes=20', items[0].name.includes('測試A') && items[0].minutes===20);
-      ok('第二項=測試B minutes=null', items[1].name.includes('測試B') && items[1].minutes==null);
+      ok('extractTonightItems 抽到3項', items.length===3);
+      ok('整雞水(1.5hr) minutes=90', items[1].name==='整雞水' && items[1].minutes===90);
+      ok('整雞水(30mins) minutes=30', items[2].name==='整雞水' && items[2].minutes===30);
+
       // Step4 順延邏輯基本檢查（模擬）
-      // 建三項
       tasks = [
         {name:'T1', minutes:30, rank:1, raw:'', startOverride:null},
         {name:'T2', minutes:20, rank:2, raw:'', startOverride:null},
@@ -650,6 +685,7 @@
       rows = buildSchedule();
       ok('T2=20:00', minutesToTimeStr(rows[1].start)==='20:00');
       ok('T3=20:20', minutesToTimeStr(rows[2].start)==='20:20');
+
       document.getElementById('tests').textContent = out.join('\n');
       console.log('[DevTests]', out.join('\n'));
     })();
