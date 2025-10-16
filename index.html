@@ -1,604 +1,479 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tonight Planner — Step1→Step4（Multipage, Timetable）</title>
-  <style>
-    :root{
-      --bg:#0b1020; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
-      --accent:#7aa2ff; --ok:#2ad1a0; --warn:#ffb02e; --danger:#ff5a78;
+<script>
+  // —————————— 工具：日期與時間 ——————————
+  function pad2(n){ return n.toString().padStart(2,'0'); }
+  function getTodayStrLocal(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = pad2(d.getMonth()+1);
+    const dd = pad2(d.getDate());
+    return `${y}-${m}-${dd}`;
+  }
+  function timeStrToMinutesToday(tStr){
+    if(!tStr || !/^\d{2}:\d{2}$/.test(tStr)) return null;
+    const [h,m] = tStr.split(':').map(Number);
+    return h*60 + m;
+  }
+  function minutesToTimeStr(m){
+    const hh = Math.floor(m/60)%24; const mm = m%60;
+    return `${pad2(hh)}:${pad2(mm)}`;
+  }
+
+  // —————————— 工具：字串解析 Tonight 任務（保留原樣） ——————————
+  const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
+  function parseDurationMinutes(text){
+    const patterns = [
+      /dur\s*=\s*(\d+)\s*m\b/i,
+      /dur\s*=\s*(\d+)\s*min\b/i,
+      /dur\s*=\s*(\d+)\s*h\b/i,
+      /est\s*=\s*(\d+)\s*m\b/i,
+      /est\s*=\s*(\d+)\s*min\b/i,
+      /est\s*=\s*(\d+)\s*h\b/i,
+      /\b(\d+)\s*mins?\b/i,
+      /\b(\d+)\s*min\b/i,
+      /\b(\d+)\s*m\b/i,
+      /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i
+    ];
+    for(const re of patterns){
+      const m = text.match(re);
+      if(m){
+        const val = parseFloat(m[1]);
+        if(/h/.test(re.source)) return Math.round(val*60);
+        return Math.round(val);
+      }
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1430);
-         color:var(--ink);font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:960px;margin:0 auto;padding:20px}
-    h1{margin:0 0 12px}
-    h2{margin:28px 0 10px;font-size:1.1rem;color:#dfe6ff}
-    .panel{background:var(--panel);border:1px solid #223061;border-radius:14px;padding:16px;margin:12px 0}
-    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
-    textarea,input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);font-size:1rem}
-    textarea{min-height:160px;resize:vertical}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .row > *{flex:1 1 240px}
-    .btn{background:var(--accent);border:none;font-weight:700;cursor:pointer}
-    .btn:active{transform:translateY(1px)}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0}
-    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.95rem}
-    th,td{border:1px solid #263565;padding:8px;text-align:center}
-    th{background:#18224a}
-    input[type="number"]{width:100%;text-align:right}
-    .stat{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
-    .stat .card{flex:1 1 200px;border:1px solid #263565;border-radius:12px;padding:12px;background:#0e142b}
-    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
-    .hint{color:var(--muted);font-size:.9rem}
-    .small{font-size:.85rem;color:var(--muted)}
-    .center{text-align:center}
-    .right{text-align:right}
-    .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    return null;
+  }
+  function splitTasksInline(titleText){
+    const parts = titleText.split(/[,，、]+/).map(s=>s.trim()).filter(Boolean);
+    const out = [];
+    for(const p of parts){
+      const dm = parseDurationMinutes(p);
+      if(dm!=null){
+        const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
+        out.push({name, minutes:dm});
+      }else{
+        out.push({name:p, minutes:null});
+      }
+    }
+    return out;
+  }
+  function extractTonightItems(raw, todayStr){
+    const chunks = [];
+    const blockRe = /\[[\s\S]*?\]/g;
+    const blocks = raw.match(blockRe);
+    if(blocks){ chunks.push(...blocks); } else { raw.split(/\n{2,}/).forEach(s => chunks.push(s)); }
 
-    /* multipage */
-    .page{display:none}
-    .page.active{display:block}
+    const results = [];
+    for(const chunk of chunks){
+      const dateMatch = chunk.match(/(\d{4}-\d{2}-\d{2})/);
+      if(!dateMatch) continue;
+      const dateStr = dateMatch[1];
+      if(dateStr !== todayStr) continue;
+      if(!/Tonight\s*:/i.test(chunk)) continue;
+      if(!TAG_PATTERNS.test(chunk)) continue;
 
-    /* Step 2 friendly controls */
-    .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{padding:8px 12px;border:1px solid #2a3767;border-radius:999px;background:#0e142b;cursor:pointer;user-select:none}
-    .chip.selected{outline:2px solid var(--accent)}
-    .rank-group{display:flex;gap:8px;flex-wrap:wrap}
-    .rank{width:42px;height:42px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;cursor:pointer;font-weight:700}
-    .rank.selected{outline:2px solid var(--accent)}
-    .row-mid{display:grid;grid-template-columns:1.2fr 1fr 1fr 1.2fr;gap:8px;align-items:center}
-    .tag-warn{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #57401a;background:#2b1e0e;color:#ffd37a;font-size:.8rem}
-    .tag-ok{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #164932;background:#0f2b1e;color:#7dffca;font-size:.8rem}
+      const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
+      if(!m) continue;
+      const title = m[1].trim();
 
-    /* Step 4 reorder */
-    .draglist{list-style:none;padding:0;margin:0}
-    .draglist li{display:grid;grid-template-columns:28px 1fr 120px 140px;gap:8px;align-items:center;padding:10px;border:1px dashed #2a3767;border-radius:12px;margin:8px 0;background:#0e142b}
-    .handle{cursor:grab;user-select:none;touch-action:none}
-    .handle:active{cursor:grabbing}
-    .timebox{display:flex;gap:8px;align-items:center}
-    .timebox input[type="time"]{width:auto}
-    .ghost{opacity:.4}
+      const inlineItems = splitTasksInline(title);
+      const durInChunk = parseDurationMinutes(chunk);
+      let usedDur = false;
+      for(const it of inlineItems){
+        let minutes = it.minutes;
+        if(minutes==null){ minutes = parseDurationMinutes(it.name); }
+        if(minutes==null && !usedDur && durInChunk!=null){ minutes = durInChunk; usedDur = true; }
+        results.push({
+          raw: chunk.trim(),
+          name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
+          minutes: minutes,
+          rank: ""
+        });
+      }
+    }
+    return results;
+  }
 
-    /* Dev tests */
-    #tests{font-size:.85rem;color:#cbd5ff;white-space:pre-wrap}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>Tonight Planner</h1>
-    <div class="small">Step 1→4：貼原始日誌 → 抽今晚待辦 → 友善填時長/Rank → 檢查是否能在上床前完成 → 以時間軸輸出 Timetable + 可拖曳重排</div>
+  // —————————— App 狀態 ——————————
+  let tasks = [];
+  const todayStr = getTodayStrLocal();
+  document.getElementById('todayStr').textContent = todayStr;
 
-    <!-- Step 1 -->
-    <section id="page1" class="page active">
-      <h2>Step 1｜輸入原始文字 & 今晚時段</h2>
-      <div class="panel">
-        <label for="raw">貼上你今天的原始資料（僅抽「今天 + #tonighttodolist/#tongihttodolist + Tonight:」）。也支援寫法：<span class="mono">Tonight: 整雞水 30mins, 運動</span></label>
-        <textarea id="raw" placeholder="[2025-10-12\n10:56am ｜ Tonight: 整雞水 30mins, 運動 | status=planned #tonighttodolist]\n\n[2025-10-10\n2:50pm ｜ Tonight: No3 test | status=planned #tonighttodolist dur=30m]"></textarea>
+  // ★ 新增：Step4 用的錨點開始時間（分鐘）。null 時使用 homeTime。
+  let anchorStartMin = null;
 
+  // ★ 新增：取得目前應用的開始錨點
+  function getAnchorStart(){
+    const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+    return (anchorStartMin==null ? home : anchorStartMin) ?? 0;
+  }
+
+  // 預設時間
+  (function presetTimes(){
+    const now = new Date();
+    now.setMinutes(now.getMinutes()+30);
+    const hh = pad2(now.getHours());
+    const mm = pad2(now.getMinutes());
+    document.getElementById('homeTime').value = `${hh}:${mm}`;
+    document.getElementById('bedTime').value  = `23:30`;
+  })();
+
+  // multipage
+  const pages = ['page1','page2','page3','page4'];
+  function showPage(id){ pages.forEach(pid=>{ document.getElementById(pid).classList.toggle('active', pid===id); }); }
+
+  // Step1 DOM
+  const rawEl = document.getElementById('raw');
+  const detectedWrap = document.getElementById('detectedWrap');
+  const detectedEl = document.getElementById('detected');
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    rawEl.value = ""; tasks = []; renderDetected([]); renderTaskCards(); resetStatsAndSuggest();
+    anchorStartMin = null; // ★ 新增：清空時也重置錨點
+  });
+
+  document.getElementById('extractAndNext').addEventListener('click', ()=>{
+    tasks = extractTonightItems(rawEl.value || "", todayStr);
+    renderDetected(tasks);
+    renderTaskCards();
+    resetStatsAndSuggest();
+    anchorStartMin = null; // ★ 新增：重新抽取後，先跟隨 homeTime
+    if(!tasks.length){ alert('沒有找到今晚任務，請檢查是否包含「今天日期 + Tonight: + #tonighttodolist/#tongihttodolist」。'); return; }
+    showPage('page2');
+  });
+
+  function renderDetected(items){
+    if(!items || items.length===0){ detectedWrap.style.display = 'none'; detectedEl.innerHTML = ""; return; }
+    detectedWrap.style.display = '';
+    detectedEl.innerHTML = items.map((it,i)=>(`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="tag-ok">${it.minutes}m</span>`:''}`)).join("<br/>");
+  }
+
+  // Step2 友善輸入卡片（保留原樣）
+  const DUR_PRESETS = [5,15,30,60,90,120];
+  function renderTaskCards(){
+    const host = document.getElementById('taskList');
+    host.innerHTML = '';
+    if(!tasks.length){ host.innerHTML = '<div class="center small">（尚無任務，請先在 Step 1 貼上原文並點「一鍵自動抽取」）</div>'; return; }
+
+    tasks.forEach((t,idx)=>{
+      const card = document.createElement('div');
+      card.className = 'panel';
+      const dur = (t.minutes==null||t.minutes==='')? null : Number(t.minutes);
+      const rank = (t.rank==null||t.rank==='')? null : Number(t.rank);
+      card.innerHTML = `
         <div class="row">
           <div>
-            <label for="homeTime">預計回到家時間（今天）</label>
-            <input id="homeTime" type="time" />
+            <label>任務名稱</label>
+            <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name ?? '')}" />
           </div>
           <div>
-            <label for="bedTime">上床時間（今天）</label>
-            <input id="bedTime" type="time" />
-          </div>
-        </div>
-
-        <div class="row">
-          <button class="btn" id="extractAndNext">一鍵自動抽取 & 進入 Step 2</button>
-          <button id="clearBtn">清空</button>
-        </div>
-
-        <div id="detectedWrap" style="margin-top:10px;display:none">
-          <div class="hint">已偵測到以下 Tonight 任務（僅列出「今天」且含 #tonighttodolist/#tongihttodolist 的項目）：</div>
-          <div id="detected" class="mono"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Step 2 -->
-    <section id="page2" class="page">
-      <h2>Step 2｜友善填「預估時長」與「Rank」</h2>
-      <div class="panel">
-        <div class="hint">若在原文內寫了 <span class="mono">dur=30m</span>、<span class="mono">30mins</span>、<span class="mono">1hr</span>、或在任務名稱後標註（如：<span class="mono">Tonight: 整雞水 30mins, 運動</span>），會自動填入。</div>
-      </div>
-      <div id="taskList" class="panel"></div>
-      <div class="row">
-        <button id="back2">← 回 Step 1</button>
-        <button id="toStep3" class="btn">儲存 & 前往 Step 3</button>
-      </div>
-    </section>
-
-    <!-- Step 3 -->
-    <section id="page3" class="page">
-      <h2>Step 3｜是否能在上床前做完？（同時輸出 Timetable 預覽 + 一鍵複製）</h2>
-      <div class="panel">
-        <div class="stat">
-          <div class="card"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
-          <div class="card"><div class="small">任務總時長（分鐘）</div><div id="totalMins" class="mono">—</div></div>
-          <div class="card"><div class="small">差額（可用−需求）</div><div id="deltaMins" class="mono">—</div></div>
-        </div>
-        <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
-      </div>
-
-      <div class="panel">
-        <div class="row">
-          <button id="copyNotes" class="btn">複製 Timetable（貼到 iPhone「備忘錄」）</button>
-          <button id="goStep4" class="btn">下一步 → 調整順序與時間</button>
-        </div>
-        <div class="small" style="margin-top:8px">Timetable 預覽</div>
-        <div id="timetable" class="mono" style="white-space:pre-wrap"></div>
-      </div>
-
-      <div class="row">
-        <button id="back3">← 回 Step 2</button>
-      </div>
-    </section>
-
-    <!-- Step 4 -->
-    <section id="page4" class="page">
-      <h2>Step 4｜拖曳調整順序 & 直接改時間段（會自動重排後續）</h2>
-      <div class="panel">
-        <div class="hint">拖動左側把手可更改任務次序；修改某項的「開始時間」或「時長」後，後面的任務會依序自動排列；若超過上床時間會警示。</div>
-      </div>
-      <div class="panel">
-        <ul id="reorderList" class="draglist"></ul>
-        <div class="row">
-          <button id="back4">← 回 Step 3</button>
-          <button id="done4" class="btn">更新 Timetable & 回 Step 3</button>
-        </div>
-      </div>
-    </section>
-
-    <div class="panel" id="devpanel">
-      <div class="small">Dev Tests（自動在載入時執行）</div>
-      <div id="tests" class="mono">—</div>
-    </div>
-
-    <div class="sticky-footer small">今天日期：<span id="todayStr"></span></div>
-  </div>
-
-  <script>
-    // —————————— 工具：日期與時間 ——————————
-    function pad2(n){ return n.toString().padStart(2,'0'); }
-    function getTodayStrLocal(){
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = pad2(d.getMonth()+1);
-      const dd = pad2(d.getDate());
-      return `${y}-${m}-${dd}`;
-    }
-    function timeStrToMinutesToday(tStr){
-      if(!tStr || !/^\d{2}:\d{2}$/.test(tStr)) return null;
-      const [h,m] = tStr.split(':').map(Number);
-      return h*60 + m;
-    }
-    function minutesToTimeStr(m){
-      const hh = Math.floor(m/60)%24; const mm = m%60;
-      return `${pad2(hh)}:${pad2(mm)}`;
-    }
-
-    // —————————— 工具：字串解析 Tonight 任務 ——————————
-    const TAG_PATTERNS = /#tonighttodolist\b|#tongihttodolist\b/i;
-
-    function parseDurationMinutes(text){
-      const patterns = [
-        /dur\s*=\s*(\d+)\s*m\b/i,
-        /dur\s*=\s*(\d+)\s*min\b/i,
-        /dur\s*=\s*(\d+)\s*h\b/i,
-        /est\s*=\s*(\d+)\s*m\b/i,
-        /est\s*=\s*(\d+)\s*min\b/i,
-        /est\s*=\s*(\d+)\s*h\b/i,
-        /\b(\d+)\s*mins?\b/i,
-        /\b(\d+)\s*min\b/i,
-        /\b(\d+)\s*m\b/i,
-        /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i
-      ];
-      for(const re of patterns){
-        const m = text.match(re);
-        if(m){
-          const val = parseFloat(m[1]);
-          if(/h/.test(re.source)) return Math.round(val*60);
-          return Math.round(val);
-        }
-      }
-      return null;
-    }
-
-    function splitTasksInline(titleText){
-      const parts = titleText.split(/[,，、]+/).map(s=>s.trim()).filter(Boolean);
-      const out = [];
-      for(const p of parts){
-        const dm = parseDurationMinutes(p);
-        if(dm!=null){
-          const name = p.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim();
-          out.push({name, minutes:dm});
-        }else{
-          out.push({name:p, minutes:null});
-        }
-      }
-      return out;
-    }
-
-    function extractTonightItems(raw, todayStr){
-      const chunks = [];
-      const blockRe = /\[[\s\S]*?\]/g;
-      const blocks = raw.match(blockRe);
-      if(blocks){ chunks.push(...blocks); } else { raw.split(/\n{2,}/).forEach(s => chunks.push(s)); }
-
-      const results = [];
-      for(const chunk of chunks){
-        const dateMatch = chunk.match(/(\d{4}-\d{2}-\d{2})/);
-        if(!dateMatch) continue;
-        const dateStr = dateMatch[1];
-        if(dateStr !== todayStr) continue;
-        if(!/Tonight\s*:/i.test(chunk)) continue;
-        if(!TAG_PATTERNS.test(chunk)) continue;
-
-        const m = chunk.match(/Tonight\s*:\s*([^\|\#\n｜]+)/i);
-        if(!m) continue;
-        const title = m[1].trim();
-
-        const inlineItems = splitTasksInline(title);
-        const durInChunk = parseDurationMinutes(chunk);
-
-        let usedDur = false;
-        for(const it of inlineItems){
-          let minutes = it.minutes;
-          if(minutes==null){ minutes = parseDurationMinutes(it.name); }
-          if(minutes==null && !usedDur && durInChunk!=null){ minutes = durInChunk; usedDur = true; }
-          results.push({
-            raw: chunk.trim(),
-            name: it.name.replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hours?)\b/i,'').trim(),
-            minutes: minutes,
-            rank: ""
-          });
-        }
-      }
-      return results;
-    }
-
-    // —————————— App 狀態 ——————————
-    let tasks = [];
-    const todayStr = getTodayStrLocal();
-    document.getElementById('todayStr').textContent = todayStr;
-
-    // 預設時間
-    (function presetTimes(){
-      const now = new Date();
-      now.setMinutes(now.getMinutes()+30);
-      const hh = pad2(now.getHours());
-      const mm = pad2(now.getMinutes());
-      document.getElementById('homeTime').value = `${hh}:${mm}`;
-      document.getElementById('bedTime').value  = `23:30`;
-    })();
-
-    // —————————— multipage 導覽 ——————————
-    const pages = ['page1','page2','page3','page4'];
-    function showPage(id){ pages.forEach(pid=>{ document.getElementById(pid).classList.toggle('active', pid===id); }); }
-
-    // —————————— Step1 DOM ——————————
-    const rawEl = document.getElementById('raw');
-    const detectedWrap = document.getElementById('detectedWrap');
-    const detectedEl = document.getElementById('detected');
-    document.getElementById('clearBtn').addEventListener('click', ()=>{
-      rawEl.value = ""; tasks = []; renderDetected([]); renderTaskCards(); resetStatsAndSuggest();
-    });
-
-    document.getElementById('extractAndNext').addEventListener('click', ()=>{
-      tasks = extractTonightItems(rawEl.value || "", todayStr);
-      renderDetected(tasks);
-      renderTaskCards();
-      resetStatsAndSuggest();
-      if(!tasks.length){ alert('沒有找到今晚任務，請檢查是否包含「今天日期 + Tonight: + #tonighttodolist/#tongihttodolist」。'); return; }
-      showPage('page2');
-    });
-
-    function renderDetected(items){
-      if(!items || items.length===0){ detectedWrap.style.display = 'none'; detectedEl.innerHTML = ""; return; }
-      detectedWrap.style.display = '';
-      detectedEl.innerHTML = items.map((it,i)=>(`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null?`<span class="tag-ok">${it.minutes}m</span>`:''}`)).join("<br/>");
-    }
-
-    // —————————— Step2 友善輸入卡片 ——————————
-    const DUR_PRESETS = [5,15,30,60,90,120];
-    function renderTaskCards(){
-      const host = document.getElementById('taskList');
-      host.innerHTML = '';
-      if(!tasks.length){ host.innerHTML = '<div class="center small">（尚無任務，請先在 Step 1 貼上原文並點「一鍵自動抽取」）</div>'; return; }
-
-      tasks.forEach((t,idx)=>{
-        const card = document.createElement('div');
-        card.className = 'panel';
-        const dur = (t.minutes==null||t.minutes==='')? null : Number(t.minutes);
-        const rank = (t.rank==null||t.rank==='')? null : Number(t.rank);
-        card.innerHTML = `
-          <div class="row">
-            <div>
-              <label>任務名稱</label>
-              <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name ?? '')}" />
-            </div>
-            <div>
-              <label>自訂時長（分鐘，可留空）</label>
-              <input type="number" min="0" step="1" placeholder="(分鐘)" data-k="minutes" data-i="${idx}" value="${dur??''}" />
-              <div class="small">或點選下列快速按鈕：</div>
-              <div class="chips" data-kind="dur" data-i="${idx}">
-                ${DUR_PRESETS.map(m=>`<div class="chip ${dur===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
-              </div>
-            </div>
-            <div>
-              <label>Rank（1=最高，5=最低）</label>
-              <div class="rank-group" data-kind="rank" data-i="${idx}">
-                ${[1,2,3,4,5].map(r=>`<button type=\"button\" class=\"rank ${rank===r?'selected':''}\" data-v=\"${r}\">${r}</button>`).join('')}
-              </div>
+            <label>自訂時長（分鐘，可留空）</label>
+            <input type="number" min="0" step="1" placeholder="(分鐘)" data-k="minutes" data-i="${idx}" value="${dur??''}" />
+            <div class="small">或點選下列快速按鈕：</div>
+            <div class="chips" data-kind="dur" data-i="${idx}">
+              ${DUR_PRESETS.map(m=>`<div class="chip ${dur===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
             </div>
           </div>
-          <div class="small mono" style="margin-top:8px">原始標記：${escapeHtml((t.raw||'').slice(0,160))}${(t.raw||'').length>160?'…':''}</div>
-        `;
-        host.appendChild(card);
-      });
+          <div>
+            <label>Rank（1=最高，5=最低）</label>
+            <div class="rank-group" data-kind="rank" data-i="${idx}">
+              ${[1,2,3,4,5].map(r=>`<button type=\"button\" class=\"rank ${rank===r?'selected':''}\" data-v=\"${r}\">${r}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="small mono" style="margin-top:8px">原始標記：${escapeHtml((t.raw||'').slice(0,160))}${(t.raw||'').length>160?'…':''}</div>
+      `;
+      host.appendChild(card);
+    });
 
-      host.querySelectorAll('.chips .chip').forEach(el=>{
-        el.addEventListener('click', ()=>{
-          const i = Number(el.parentElement.dataset.i);
-          const v = Number(el.dataset.v);
-          tasks[i].minutes = v; renderTaskCards();
-        });
+    host.querySelectorAll('.chips .chip').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const i = Number(el.parentElement.dataset.i);
+        const v = Number(el.dataset.v);
+        tasks[i].minutes = v; renderTaskCards();
       });
-      host.querySelectorAll('.rank-group .rank').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const i = Number(btn.parentElement.dataset.i);
-          const v = Number(btn.dataset.v);
-          tasks[i].rank = v; renderTaskCards();
-        });
+    });
+    host.querySelectorAll('.rank-group .rank').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const i = Number(btn.parentElement.dataset.i);
+        const v = Number(btn.dataset.v);
+        tasks[i].rank = v; renderTaskCards();
       });
-      host.querySelectorAll('input').forEach(inp=>{
-        inp.addEventListener('change', ()=>{
-          const i = Number(inp.dataset.i);
-          const k = inp.dataset.k;
-          let v = inp.value;
-          if(k==='minutes' || k==='rank'){ v = v===''? '' : Number(v); }
-          tasks[i][k] = v;
-        });
+    });
+    host.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const i = Number(inp.dataset.i);
+        const k = inp.dataset.k;
+        let v = inp.value;
+        if(k==='minutes' || k==='rank'){ v = v===''? '' : Number(v); }
+        tasks[i][k] = v;
       });
+    });
+  }
+
+  document.getElementById('back2').onclick=()=>showPage('page1');
+  document.getElementById('toStep3').onclick=()=>{ 
+    // ★ 新增：從 Step 2 進入 Step 3 時，錨點跟隨 homeTime
+    anchorStartMin = null;
+    renderStats(); renderTimetable(); showPage('page3'); 
+  };
+
+  // Step3 Timetable 輸出 + 複製（小幅修改以使用錨點）
+  const availEl = document.getElementById('availMins');
+  const totalEl = document.getElementById('totalMins');
+  const deltaEl = document.getElementById('deltaMins');
+  const fitMsgEl = document.getElementById('fitMsg');
+  const timetableEl = document.getElementById('timetable');
+
+  document.getElementById('back3').onclick=()=>showPage('page2');
+  document.getElementById('goStep4').onclick=()=>{ 
+    // ★ 新增：首次進入 Step 4 時，把錨點固定為當下 timetable 的第一項開始時間
+    const rows = buildSequentialSchedule();
+    anchorStartMin = rows.length ? rows[0].start : getAnchorStart();
+    renderReorderList(); showPage('page4'); 
+  };
+
+  function renderStats(){
+    const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
+    const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+    let avail = null; let msg = '';
+    if(home==null || bed==null){ msg = '請在 Step 1 輸入「回家時間」與「上床時間」。'; }
+    else if(bed <= home){ msg = '上床時間需晚於回家時間。'; }
+    else { avail = bed - home; }
+    availEl.textContent = (avail==null? '—' : avail);
+
+    const mins = tasks.reduce((sum,t)=>{ const m = (t.minutes==='' || t.minutes==null) ? 0 : Number(t.minutes); return sum + (isFinite(m)? m : 0); },0);
+    totalEl.textContent = tasks.length ? mins : '—';
+
+    if(avail==null || !tasks.length){
+      deltaEl.textContent = '—';
+      fitMsgEl.textContent = msg || '—';
+      fitMsgEl.className = 'hint';
+      return;
+    }
+    const delta = avail - mins; deltaEl.textContent = delta;
+    if(delta >= 0){
+      fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`;
+      fitMsgEl.className = 'ok';
+    }else{
+      fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 可調整順序或時長。`;
+      fitMsgEl.className = 'danger';
+    }
+  }
+
+  // ★ 修改：buildSequentialSchedule 會使用錨點開始時間
+  function buildSequentialSchedule(){
+    const startAt = getAnchorStart();
+    let cur = startAt;
+    return tasks.map(t=>{
+      const m = Number(t.minutes)||0;
+      const item = {name:t.name, start:cur, end:cur+m, minutes:m};
+      cur += m; return item;
+    });
+  }
+
+  function renderTimetable(){
+    if(!tasks.length){ timetableEl.textContent = '—'; return; }
+    const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+    const rows = buildSequentialSchedule();
+    let lines = rows.map(r=>`${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
+    const endAll = rows.length? rows[rows.length-1].end : null;
+    if(endAll!=null && bed!=null && endAll>bed){ lines.push(`\n⚠️ 超過上床時間：${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
+    timetableEl.textContent = lines.join('\n');
+  }
+
+  document.getElementById('copyNotes').addEventListener('click', async ()=>{
+    const dateStr = new Date().toLocaleString();
+    const header = `Tonight Timetable — ${dateStr}`;
+    const body = timetableEl.textContent || '';
+    const text = `${header}\n\n${body}`;
+    try{ await navigator.clipboard.writeText(text); alert('已複製到剪貼簿，請到 iPhone「備忘錄」貼上。'); }
+    catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy'); document.body.removeChild(ta);
+      alert(ok? '已複製到剪貼簿（備援）。' : '複製失敗，請手動全選 Timetable 內容複製。');
+    }
+  });
+
+  // —————————— Step4 拖曳重排 + 直接改時間段（支援手機 Pointer Events） ——————————
+  const reorderList = document.getElementById('reorderList');
+
+  function renderReorderList(){
+    reorderList.innerHTML = '';
+    // ★ 修改：以錨點時間起排
+    let cur = getAnchorStart();
+    tasks.forEach((t, idx)=>{
+      const li = document.createElement('li');
+      li.dataset.index = idx;
+      const m = Number(t.minutes)||0; const start=cur; const end=cur+m; cur=end;
+      li.innerHTML = `
+        <div class="handle" aria-label="拖曳調整">☰</div>
+        <div>
+          <div class="mono">${escapeHtml(t.name)}</div>
+          <div class="small">Rank: ${t.rank===''||t.rank==null? '未填' : t.rank}</div>
+        </div>
+        <div>
+          <label class="small">開始時間</label>
+          <input type="time" data-k="start" data-i="${idx}" value="${minutesToTimeStr(start)}" />
+        </div>
+        <div class="timebox">
+          <div style="flex:1">
+            <label class="small">時長（分）</label>
+            <input type="number" min="0" step="5" data-k="minutes" data-i="${idx}" value="${m}" />
+          </div>
+          <div class="small mono">結束：<span data-role="end">${minutesToTimeStr(end)}</span></div>
+        </div>
+      `;
+      reorderList.appendChild(li);
+    });
+    enablePointerReorder();
+    validateOverflow();
+  }
+
+  function enablePointerReorder(){
+    const rows = Array.from(reorderList.children);
+    rows.forEach((row)=>{
+      const handle = row.querySelector('.handle');
+      let startY = 0; let startIndex = 0; let dragging = false;
+
+      // ★ 新增：拖曳開始時記住「目前第一個任務的開始時間」，作為錨點
+      function currentFirstStart(){
+        const seg = buildSequentialSchedule();
+        return seg.length ? seg[0].start : getAnchorStart();
+      }
+
+      function onDown(e){
+        e.preventDefault();
+        dragging = true;
+        startY = e.clientY ?? 0;
+        startIndex = Array.from(reorderList.children).indexOf(row);
+        row.classList.add('ghost');
+        // ★ 記錄拖曳前的第一任務開始時間
+        row._preDragFirstStart = currentFirstStart();
+        window.addEventListener('pointermove', onMove, {passive:false});
+        window.addEventListener('pointerup', onUp, {once:true});
+      }
+      function onMove(e){
+        if(!dragging) return;
+        e.preventDefault();
+        const y = e.clientY ?? 0;
+        const elem = document.elementFromPoint(e.clientX || 1, y);
+        const li = elem ? elem.closest('li') : null;
+        if(li && li.parentElement === reorderList && li !== row){
+          const liIndex = Array.from(reorderList.children).indexOf(li);
+          if(liIndex > startIndex){
+            reorderList.insertBefore(row, li.nextSibling);
+          }else{
+            reorderList.insertBefore(row, li);
+          }
+          startIndex = Array.from(reorderList.children).indexOf(row);
+        }
+      }
+      function onUp(){
+        if(!dragging) return; dragging = false; row.classList.remove('ghost');
+        window.removeEventListener('pointermove', onMove, {passive:false});
+        // 依新的 DOM 順序重排 tasks
+        const newOrder = Array.from(reorderList.children).map(li=> Number(li.dataset.index));
+        tasks = newOrder.map(i=> tasks[i]);
+        Array.from(reorderList.children).forEach((li, i)=> li.dataset.index = i);
+
+        // ★ 關鍵：拖曳後將「錨點開始時間」設定為拖曳前第一任務的開始時間
+        anchorStartMin = row._preDragFirstStart ?? getAnchorStart();
+
+        renderReorderList();
+      }
+      handle.addEventListener('pointerdown', onDown);
+    });
+  }
+
+  // ★ 修改：監聽 Step4 內的時間/時長修改
+  reorderList.addEventListener('change', (e)=>{
+    const i = Number(e.target.dataset.i);
+    const k = e.target.dataset.k;
+    if(Number.isNaN(i) || !k) return;
+
+    if(k==='minutes'){
+      const v = Math.max(0, Math.round(Number(e.target.value)||0));
+      tasks[i].minutes = v;
+      // ★ 行為：更新時長只會順延其後任務；錨點不變
+      renderReorderList();
+      return;
     }
 
-    document.getElementById('back2').onclick=()=>showPage('page1');
-    document.getElementById('toStep3').onclick=()=>{ renderStats(); renderTimetable(); showPage('page3'); };
+    if(k==='start'){
+      const startMin = timeStrToMinutesToday(e.target.value);
+      if(startMin==null) return;
 
-    // —————————— Step3 Timetable 輸出 + 複製 ——————————
-    const availEl = document.getElementById('availMins');
-    const totalEl = document.getElementById('totalMins');
-    const deltaEl = document.getElementById('deltaMins');
-    const fitMsgEl = document.getElementById('fitMsg');
-    const timetableEl = document.getElementById('timetable');
-
-    document.getElementById('back3').onclick=()=>showPage('page2');
-    document.getElementById('goStep4').onclick=()=>{ renderReorderList(); showPage('page4'); };
-
-    function renderStats(){
-      const home = timeStrToMinutesToday(document.getElementById('homeTime').value);
-      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
-      let avail = null; let msg = '';
-      if(home==null || bed==null){ msg = '請在 Step 1 輸入「回家時間」與「上床時間」。'; }
-      else if(bed <= home){ msg = '上床時間需晚於回家時間。'; }
-      else { avail = bed - home; }
-      availEl.textContent = (avail==null? '—' : avail);
-
-      const mins = tasks.reduce((sum,t)=>{ const m = (t.minutes==='' || t.minutes==null) ? 0 : Number(t.minutes); return sum + (isFinite(m)? m : 0); },0);
-      totalEl.textContent = tasks.length ? mins : '—';
-
-      if(avail==null || !tasks.length){
-        deltaEl.textContent = '—';
-        fitMsgEl.textContent = msg || '—';
-        fitMsgEl.className = 'hint';
+      if(i===0){
+        // ★ 若修改的是第一個任務的開始時間，就更新錨點
+        anchorStartMin = startMin;
+        renderReorderList();
         return;
       }
-      const delta = avail - mins; deltaEl.textContent = delta;
-      if(delta >= 0){
-        fitMsgEl.innerHTML = `<span class="ok">✅ 可以在上床前完成。</span>（還剩 ${delta} 分鐘）`;
-        fitMsgEl.className = 'ok';
-      }else{
-        fitMsgEl.innerHTML = `<span class="danger">⛔ 超時 ${Math.abs(delta)} 分鐘。</span> 可調整順序或時長。`;
-        fitMsgEl.className = 'danger';
+
+      // ★ 若修改的是中間某項的開始時間：依時間把它插到對應位置（維持錨點），其後自動順延
+      const segments = buildSequentialSchedule(); // 以目前錨點計
+      let insertPos = tasks.length;
+      for(let p=0;p<segments.length;p++){
+        if(startMin <= segments[p].start){ insertPos = p; break; }
       }
-    }
-
-    function buildSequentialSchedule(){
-      const startAt = timeStrToMinutesToday(document.getElementById('homeTime').value);
-      let cur = startAt;
-      return tasks.map(t=>{
-        const m = Number(t.minutes)||0;
-        const item = {name:t.name, start:cur, end:cur+m, minutes:m};
-        cur += m; return item;
-      });
-    }
-
-    function renderTimetable(){
-      if(!tasks.length){ timetableEl.textContent = '—'; return; }
-      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
-      const rows = buildSequentialSchedule();
-      let lines = rows.map(r=>`${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
-      const endAll = rows.length? rows[rows.length-1].end : null;
-      if(endAll!=null && bed!=null && endAll>bed){ lines.push(`\n⚠️ 超過上床時間：${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
-      timetableEl.textContent = lines.join('\n');
-    }
-
-    document.getElementById('copyNotes').addEventListener('click', async ()=>{
-      const dateStr = new Date().toLocaleString();
-      const header = `Tonight Timetable — ${dateStr}`;
-      const body = timetableEl.textContent || '';
-      const text = `${header}\n\n${body}`;
-      try{ await navigator.clipboard.writeText(text); alert('已複製到剪貼簿，請到 iPhone「備忘錄」貼上。'); }
-      catch(e){
-        const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
-        const ok = document.execCommand('copy'); document.body.removeChild(ta);
-        alert(ok? '已複製到剪貼簿（備援）。' : '複製失敗，請手動全選 Timetable 內容複製。');
-      }
-    });
-
-    // —————————— Step4 拖曳重排 + 直接改時間段（支援手機 Pointer Events） ——————————
-    const reorderList = document.getElementById('reorderList');
-
-    function renderReorderList(){
-      reorderList.innerHTML = '';
-      const startAt = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
-      let cur = startAt;
-      tasks.forEach((t, idx)=>{
-        const li = document.createElement('li');
-        li.dataset.index = idx;
-        const m = Number(t.minutes)||0; const start=cur; const end=cur+m; cur=end;
-        li.innerHTML = `
-          <div class="handle" aria-label="拖曳調整">☰</div>
-          <div>
-            <div class="mono">${escapeHtml(t.name)}</div>
-            <div class="small">Rank: ${t.rank===''||t.rank==null? '未填' : t.rank}</div>
-          </div>
-          <div>
-            <label class="small">開始時間</label>
-            <input type="time" data-k="start" data-i="${idx}" value="${minutesToTimeStr(start)}" />
-          </div>
-          <div class="timebox">
-            <div style="flex:1">
-              <label class="small">時長（分）</label>
-              <input type="number" min="0" step="5" data-k="minutes" data-i="${idx}" value="${m}" />
-            </div>
-            <div class="small mono">結束：<span data-role="end">${minutesToTimeStr(end)}</span></div>
-          </div>
-        `;
-        reorderList.appendChild(li);
-      });
-      enablePointerReorder();
-      validateOverflow();
-    }
-
-    function enablePointerReorder(){
-      const rows = Array.from(reorderList.children);
-      rows.forEach((row)=>{
-        const handle = row.querySelector('.handle');
-        let startY = 0; let startIndex = 0; let dragging = false;
-
-        function onDown(e){
-          e.preventDefault();
-          dragging = true;
-          startY = e.clientY ?? 0;
-          startIndex = Array.from(reorderList.children).indexOf(row);
-          row.classList.add('ghost');
-          window.addEventListener('pointermove', onMove, {passive:false});
-          window.addEventListener('pointerup', onUp, {once:true});
-        }
-        function onMove(e){
-          if(!dragging) return;
-          e.preventDefault();
-          const y = e.clientY ?? 0;
-          const elem = document.elementFromPoint(e.clientX || 1, y);
-          const li = elem ? elem.closest('li') : null;
-          if(li && li.parentElement === reorderList && li !== row){
-            const liIndex = Array.from(reorderList.children).indexOf(li);
-            if(liIndex > startIndex){
-              reorderList.insertBefore(row, li.nextSibling);
-            }else{
-              reorderList.insertBefore(row, li);
-            }
-            startIndex = Array.from(reorderList.children).indexOf(row);
-          }
-        }
-        function onUp(){
-          if(!dragging) return; dragging = false; row.classList.remove('ghost');
-          window.removeEventListener('pointermove', onMove, {passive:false});
-          const newOrder = Array.from(reorderList.children).map(li=> Number(li.dataset.index));
-          tasks = newOrder.map(i=> tasks[i]);
-          Array.from(reorderList.children).forEach((li, i)=> li.dataset.index = i);
-        }
-        handle.addEventListener('pointerdown', onDown);
-      });
-    }
-
-    // 監聽 Step4 中的時間/時長修改，並自動順延後續
-    reorderList.addEventListener('change', (e)=>{
-      const i = Number(e.target.dataset.i);
-      const k = e.target.dataset.k;
-      if(Number.isNaN(i) || !k) return;
-
-      if(k==='minutes'){
-        const v = Math.max(0, Math.round(Number(e.target.value)||0));
-        tasks[i].minutes = v;
-      }
-      if(k==='start'){
-        const startMin = timeStrToMinutesToday(e.target.value);
-        const segments = buildSequentialSchedule();
-        const targetAbs = startMin;
-        let insertPos = tasks.length;
-        for(let p=0;p<segments.length;p++){
-          if(targetAbs <= segments[p].start){ insertPos = p; break; }
-        }
-        const moving = tasks.splice(i,1)[0];
-        tasks.splice(insertPos>i? insertPos-1: insertPos, 0, moving);
-      }
+      const moving = tasks.splice(i,1)[0];
+      tasks.splice(insertPos>i? insertPos-1: insertPos, 0, moving);
       renderReorderList();
-    });
-
-    function validateOverflow(){
-      const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
-      const rows = buildSequentialSchedule();
-      const endAll = rows.length? rows[rows.length-1].end : null;
-      const old = reorderList.parentElement.querySelector('.danger');
-      if(old) old.remove();
-      if(endAll!=null && bed!=null && endAll>bed){
-        const over = endAll - bed;
-        const warn = document.createElement('div');
-        warn.className='danger';
-        warn.style.marginTop='8px';
-        warn.textContent = `⛔ 超時 ${over} 分鐘，請調整順序或縮短時長。`;
-        reorderList.parentElement.appendChild(warn);
-      }
+      return;
     }
+  });
 
-    document.getElementById('back4').onclick=()=>showPage('page3');
-    document.getElementById('done4').onclick=()=>{ renderStats(); renderTimetable(); showPage('page3'); };
-
-    // —————————— 安全轉義 ——————————
-    function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
-    function escapeAttr(s){ return escapeHtml(s).replace(/\"/g,"&quot;"); }
-
-    // 初始
-    function resetStatsAndSuggest(){
-      document.getElementById('availMins').textContent = '—';
-      document.getElementById('totalMins').textContent = '—';
-      document.getElementById('deltaMins').textContent = '—';
-      document.getElementById('fitMsg').textContent = '—';
-      document.getElementById('timetable').textContent = '—';
+  function validateOverflow(){
+    const bed  = timeStrToMinutesToday(document.getElementById('bedTime').value);
+    const rows = buildSequentialSchedule(); // ★ 使用錨點
+    const endAll = rows.length? rows[rows.length-1].end : null;
+    const old = reorderList.parentElement.querySelector('.danger');
+    if(old) old.remove();
+    if(endAll!=null && bed!=null && endAll>bed){
+      const over = endAll - bed;
+      const warn = document.createElement('div');
+      warn.className='danger';
+      warn.style.marginTop='8px';
+      warn.textContent = `⛔ 超時 ${over} 分鐘，請調整順序或縮短時長。`;
+      reorderList.parentElement.appendChild(warn);
     }
+  }
 
-    // —————————— Dev 自動化測試（不改動功能，只驗證解析與流程） ——————————
-    (function runDevTests(){
-      const out = [];
-      function ok(name, cond){ out.push(`${cond? '✅ PASS':'❌ FAIL'}  ${name}`); }
-      // parseDurationMinutes
-      ok('parseDurationMinutes("dur=30m") === 30', parseDurationMinutes('dur=30m')===30);
-      ok('parseDurationMinutes("est=2h") === 120', parseDurationMinutes('est=2h')===120);
-      ok('parseDurationMinutes("洗碗 45min") === 45', parseDurationMinutes('洗碗 45min')===45);
-      // splitTasksInline
-      const st = splitTasksInline('整雞水 30mins, 運動');
-      ok('splitTasksInline 長度=2', st.length===2);
-      ok('第一項 minutes=30', st[0].minutes===30);
-      ok('第二項 minutes=null', st[1].minutes==null);
-      // extractTonightItems（使用今天日期）
-      const today = todayStr;
-      const sample = `[${today}\n10:00am ｜ Tonight: 測試A 20m, 測試B | status=planned #tonighttodolist]`;
-      const items = extractTonightItems(sample, today);
-      ok('extractTonightItems 抽到2項', items.length===2);
-      ok('第一項=測試A minutes=20', items[0].name.includes('測試A') && items[0].minutes===20);
-      ok('第二項=測試B minutes=null', items[1].name.includes('測試B') && items[1].minutes==null);
-      document.getElementById('tests').textContent = out.join('\n');
-      console.log('[DevTests]', out.join('\n'));
-    })();
-  </script>
-</body>
-</html>
+  document.getElementById('back4').onclick=()=>showPage('page3');
+  document.getElementById('done4').onclick=()=>{ 
+    // ★ 回 Step 3 繼續沿用目前錨點（第一任務開始時間）
+    renderStats(); renderTimetable(); showPage('page3'); 
+  };
+
+  // —————————— 安全轉義 & 初始（保留原樣） ——————————
+  function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+  function escapeAttr(s){ return escapeHtml(s).replace(/\"/g,"&quot;"); }
+  function resetStatsAndSuggest(){
+    document.getElementById('availMins').textContent = '—';
+    document.getElementById('totalMins').textContent = '—';
+    document.getElementById('deltaMins').textContent = '—';
+    document.getElementById('fitMsg').textContent = '—';
+    document.getElementById('timetable').textContent = '—';
+  }
+
+  // Dev 測試（保留原樣）
+  (function runDevTests(){
+    const out = [];
+    function ok(name, cond){ out.push(`${cond? '✅ PASS':'❌ FAIL'}  ${name}`); }
+    ok('parseDurationMinutes("dur=30m") === 30', parseDurationMinutes('dur=30m')===30);
+    ok('parseDurationMinutes("est=2h") === 120', parseDurationMinutes('est=2h')===120);
+    const st = splitTasksInline('整雞水 30mins, 運動');
+    ok('splitTasksInline 長度=2', st.length===2);
+    ok('第一項 minutes=30', st[0].minutes===30);
+    ok('第二項 minutes=null', st[1].minutes==null);
+    const today = todayStr;
+    const sample = `[${today}\n10:00am ｜ Tonight: 測試A 20m, 測試B | status=planned #tonighttodolist]`;
+    const items = extractTonightItems(sample, today);
+    ok('extractTonightItems 抽到2項', items.length===2);
+    ok('第一項=測試A minutes=20', items[0].name.includes('測試A') && items[0].minutes===20);
+    ok('第二項=測試B minutes=null', items[1].name.includes('測試B') && items[1].minutes==null);
+    document.getElementById('tests').textContent = out.join('\n');
+    console.log('[DevTests]', out.join('\n'));
+  })();
+</script>
