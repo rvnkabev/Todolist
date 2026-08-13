@@ -87,6 +87,15 @@
     .sep{height:1px;background:#223061;margin:10px 0}
     .right{text-align:right}
     .center{text-align:center}
+
+    /* [NEW] Permanent task editor only. Existing styling preserved. */
+    .permanent-row{
+      display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:end;
+      padding:10px;border:1px solid var(--line);border-radius:12px;background:#0e142b;margin:8px 0;
+    }
+    @media (max-width:680px){
+      .draglist li,.permanent-row{grid-template-columns:1fr}
+    }
   </style>
 </head>
 <body>
@@ -128,10 +137,39 @@
       <div class="panel">
         <div class="btn-row">
           <button onclick="goHome()">← Home</button>
-          <button class="btn" onclick="gotoPlanBuilder()">重新載入預設任務</button>
+          <button class="btn" onclick="gotoPlanBuilder()">重新載入任務</button>
         </div>
         <h2>Plan</h2>
         <div class="small">沿用 Success Daily TonightToDoList 思路：建立今晚任務，按一下就送去 Today ToDoList。</div>
+      </div>
+
+      <!-- [NEW] Permanent tasks -->
+      <div class="panel">
+        <h3>Permanent Tasks</h3>
+        <div class="small">永久任務會保存在瀏覽器，可新增、修改、刪除；每次進入 Plan 都會顯示。</div>
+        <div class="row">
+          <div>
+            <label for="permanentNewText">永久任務名稱</label>
+            <input id="permanentNewText" type="text" placeholder="如：運動、食藥、Success Daily" />
+          </div>
+          <div>
+            <label for="permanentNewMinutes">預設時長</label>
+            <select id="permanentNewMinutes">
+              <option value="">未設定</option>
+              <option value="5">5mins</option>
+              <option value="15">15mins</option>
+              <option value="30">30mins</option>
+              <option value="60">1hr</option>
+              <option value="90">1.5hr</option>
+              <option value="120">2hr</option>
+            </select>
+          </div>
+          <div style="flex:0 0 120px">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="addPermanentTask()">＋ 新增</button>
+          </div>
+        </div>
+        <div id="permanentTaskEditor"></div>
       </div>
 
       <div class="panel">
@@ -204,7 +242,7 @@
           <button onclick="showArrangementStep('arrStep4')">Step 4</button>
         </div>
         <h2>Arrangement</h2>
-        <div class="small">Step 1 直接使用 Today ToDoList 資料，不需要手動貼原始日誌。</div>
+        <div class="small">Step 1 直接使用 Today ToDoList 資料；已加入 Arrangement Memory，會記住任務時長、Rank、順序和時間偏好。</div>
       </div>
 
       <!-- Step 1 -->
@@ -214,13 +252,14 @@
           <div class="row">
             <div>
               <label for="homeTime">預計回到家時間（今天）</label>
-              <input id="homeTime" type="time" />
+              <select id="homeTime"></select>
             </div>
             <div>
               <label for="bedTime">上床時間（今天）</label>
-              <input id="bedTime" type="time" />
+              <select id="bedTime"></select>
             </div>
           </div>
+          <div class="small">時間選擇簡化為每 30 分鐘：00 / 30。</div>
           <div class="btn-row">
             <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Today ToDoList 載入</button>
             <button class="btn" onclick="prepareArrangementAndGoStep2()">載入任務 & 前往 Step 2</button>
@@ -236,7 +275,7 @@
       <section id="arrStep2" class="arr-step" style="display:none">
         <div class="panel">
           <h3>Step 2｜友善填「預估時長」與「Rank」</h3>
-          <div class="hint">如果任務名稱已包含 30mins / 1hr / 1.5hr / 30分鐘 / 半小時，會自動填入。</div>
+          <div class="hint">任務名稱包含時長會自動填入；若曾經安排過同名任務，Arrangement Memory 會優先帶回上次設定。</div>
         </div>
         <div id="taskList" class="panel"></div>
         <div class="btn-row">
@@ -275,7 +314,7 @@
         <div class="panel">
           <h3>Step 4｜拖曳調整順序 & 直接改時間段</h3>
           <div class="hint">
-            先確定任務次序，再修改開始時間或時長。某個任務改動後，之後任務會依序順延。
+            先確定任務次序，再修改開始時間或時長。開始時間選擇只保留 00 / 30；儲存後會記入 Arrangement Memory。
           </div>
         </div>
         <div class="panel">
@@ -293,7 +332,10 @@
       <div id="tests" class="mono small">—</div>
     </div>
 
-    <div class="sticky-footer small">今天日期：<span id="todayStr"></span></div>
+    <div class="sticky-footer small">
+      今天日期：<span id="todayStr"></span>
+      · SuccessDaily Auto Save：<span id="successDailySaveStatus">等待 18:00</span>
+    </div>
   </div>
 
   <script>
@@ -302,7 +344,14 @@
     // =========================
     const STORAGE_KEYS = {
       todayTodos: 'mainPlanner_todayTodos_v1',
-      history24: 'mainPlanner_history24_v1'
+      history24: 'mainPlanner_history24_v1',
+
+      // [NEW]
+      permanentTasks: 'mainPlanner_permanentTasks_v1',
+      arrangementMemory: 'mainPlanner_arrangementMemory_v1',
+      arrangementSettings: 'mainPlanner_arrangementSettings_v1',
+      successDailyDaily: 'successDaily_daily_v1',
+      successDailyAutoSaveLog: 'mainPlanner_successDailyAutoSaveLog_v1'
     };
 
     const DEFAULT_PLAN_TODOS = [
@@ -406,13 +455,103 @@
     document.getElementById('todayStr').textContent = todayStr();
 
     // =========================
+    // [NEW] Permanent Tasks
+    // =========================
+    function getPermanentTasks(){
+      const saved = loadLS(STORAGE_KEYS.permanentTasks, null);
+      if(Array.isArray(saved)) return saved;
+
+      // First run only: clone original defaults into editable permanent tasks.
+      const initial = DEFAULT_PLAN_TODOS.map(x => ({
+        id: uid(),
+        text: x.text,
+        minutes: x.tag ? parseDurationMinutes(x.tag) : null
+      }));
+      saveLS(STORAGE_KEYS.permanentTasks, initial);
+      return initial;
+    }
+
+    function setPermanentTasks(arr){ saveLS(STORAGE_KEYS.permanentTasks, arr); }
+
+    function addPermanentTask(){
+      const text = (document.getElementById('permanentNewText').value || '').trim();
+      const mRaw = document.getElementById('permanentNewMinutes').value;
+      if(!text) return;
+      const arr = getPermanentTasks();
+      arr.push({ id: uid(), text, minutes: mRaw === '' ? null : Number(mRaw) });
+      setPermanentTasks(arr);
+      document.getElementById('permanentNewText').value = '';
+      document.getElementById('permanentNewMinutes').value = '';
+      gotoPlanBuilder();
+    }
+
+    function editPermanentTask(id){
+      const arr = getPermanentTasks();
+      const item = arr.find(x => x.id === id);
+      if(!item) return;
+      const textEl = document.querySelector(`[data-perm-text="${id}"]`);
+      const minEl = document.querySelector(`[data-perm-min="${id}"]`);
+      const text = (textEl?.value || '').trim();
+      if(!text) return alert('任務名稱不可為空');
+      item.text = text;
+      item.minutes = minEl?.value === '' ? null : Number(minEl.value);
+      setPermanentTasks(arr);
+      gotoPlanBuilder();
+    }
+
+    function deletePermanentTask(id){
+      if(!confirm('刪除這個 Permanent Task？')) return;
+      setPermanentTasks(getPermanentTasks().filter(x => x.id !== id));
+      gotoPlanBuilder();
+    }
+
+    function renderPermanentTaskEditor(){
+      const host = document.getElementById('permanentTaskEditor');
+      const arr = getPermanentTasks();
+      host.innerHTML = '';
+      if(!arr.length){
+        host.innerHTML = '<div class="empty">沒有 Permanent Task</div>';
+        return;
+      }
+      arr.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'permanent-row';
+        row.innerHTML = `
+          <div>
+            <label class="small">任務名稱</label>
+            <input data-perm-text="${item.id}" value="${escapeAttr(item.text)}" />
+          </div>
+          <div>
+            <label class="small">時長</label>
+            <select data-perm-min="${item.id}">
+              <option value="" ${item.minutes==null?'selected':''}>未設定</option>
+              ${DUR_PRESETS.map(m => `<option value="${m}" ${Number(item.minutes)===m?'selected':''}>${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</option>`).join('')}
+            </select>
+          </div>
+          <div class="toolbar">
+            <button onclick="editPermanentTask('${item.id}')">Save</button>
+            <button class="btn-danger" onclick="deletePermanentTask('${item.id}')">Delete</button>
+          </div>
+        `;
+        host.appendChild(row);
+      });
+    }
+
+    // =========================
     // Plan page
     // =========================
     function gotoPlanBuilder(){
       document.getElementById('planDateTime').textContent = fmtDateTime();
       const box = document.getElementById('planTodoCards');
       box.innerHTML = '';
-      DEFAULT_PLAN_TODOS.forEach(addPlanTodoCard);
+
+      // [CHANGED MINIMALLY] Permanent tasks replace fixed defaults after first run.
+      getPermanentTasks().forEach(item => addPlanTodoCard({
+        text: item.text,
+        tag: item.minutes != null ? `${item.minutes}mins` : ''
+      }));
+
+      renderPermanentTaskEditor();
       document.getElementById('planNewTodo').value = '';
     }
 
@@ -609,13 +748,72 @@
     }
 
     // =========================
+    // [NEW] Arrangement Memory
+    // =========================
+    function arrangementMemoryKey(name){
+      return normalizeTaskName(name || '').trim().toLowerCase();
+    }
+    function getArrangementMemory(){
+      const v = loadLS(STORAGE_KEYS.arrangementMemory, {});
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    }
+    function saveArrangementMemory(){
+      const mem = getArrangementMemory();
+      arrangementTasks.forEach((t, index) => {
+        const key = arrangementMemoryKey(t.name);
+        if(!key) return;
+        mem[key] = {
+          name: t.name,
+          minutes: t.minutes === '' ? null : Number(t.minutes),
+          rank: t.rank === '' ? '' : Number(t.rank),
+          order: index,
+          startOffset: t.startOverride != null
+            ? t.startOverride - (timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0)
+            : null,
+          savedAt: now()
+        };
+      });
+      saveLS(STORAGE_KEYS.arrangementMemory, mem);
+      saveLS(STORAGE_KEYS.arrangementSettings, {
+        homeTime: document.getElementById('homeTime').value,
+        bedTime: document.getElementById('bedTime').value
+      });
+    }
+
+    // =========================
     // Arrangement page
     // =========================
+    function fillHalfHourTimeSelect(selectId, selectedValue){
+      const el = document.getElementById(selectId);
+      el.innerHTML = '';
+      for(let h=0; h<24; h++){
+        [0,30].forEach(m => {
+          const v = `${pad2(h)}:${pad2(m)}`;
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = v;
+          if(v === selectedValue) opt.selected = true;
+          el.appendChild(opt);
+        });
+      }
+    }
+
+    function roundToNextHalfHour(date){
+      const d = new Date(date);
+      d.setSeconds(0,0);
+      const mins = d.getMinutes();
+      if(mins === 0 || mins === 30) return `${pad2(d.getHours())}:${pad2(mins)}`;
+      if(mins < 30) d.setMinutes(30);
+      else { d.setHours(d.getHours()+1); d.setMinutes(0); }
+      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    }
+
     function presetTimes(){
+      const settings = loadLS(STORAGE_KEYS.arrangementSettings, {});
       const n = new Date();
       n.setMinutes(n.getMinutes()+30);
-      document.getElementById('homeTime').value = `${pad2(n.getHours())}:${pad2(n.getMinutes())}`;
-      document.getElementById('bedTime').value = '23:30';
+      fillHalfHourTimeSelect('homeTime', settings.homeTime || roundToNextHalfHour(n));
+      fillHalfHourTimeSelect('bedTime', settings.bedTime || '23:30');
     }
 
     function showArrangementStep(id){
@@ -632,15 +830,30 @@
 
     function loadArrangementTasksFromToday(){
       const todos = getTodayTodos().filter(x => x.date === todayStr());
-      arrangementTasks = todos.map(item => ({
-        id: item.id,
-        raw: `[${item.date}\n${fmtTime(item.createdAt)} ｜ Tonight: ${item.displayText || item.text} | status=${item.status} #tonighttodolist]`,
-        name: normalizeTaskName(item.displayText || item.text),
-        minutes: item.minutes ?? parseDurationMinutes(item.displayText || item.text),
-        rank: '',
-        startOverride: null,
-        status: item.status
-      }));
+      const mem = getArrangementMemory();
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
+
+      arrangementTasks = todos.map((item, originalIndex) => {
+        const name = normalizeTaskName(item.displayText || item.text);
+        const remembered = mem[arrangementMemoryKey(name)] || {};
+        return {
+          id: item.id,
+          raw: `[${item.date}\n${fmtTime(item.createdAt)} ｜ Tonight: ${item.displayText || item.text} | status=${item.status} #tonighttodolist]`,
+          name,
+          minutes: remembered.minutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
+          rank: remembered.rank ?? '',
+          startOverride: remembered.startOffset != null ? home + Number(remembered.startOffset) : null,
+          status: item.status,
+          rememberedOrder: remembered.order ?? 9999,
+          originalIndex
+        };
+      });
+
+      // [NEW] Restore last remembered task order; unseen tasks remain after remembered tasks.
+      arrangementTasks.sort((a,b) =>
+        (a.rememberedOrder - b.rememberedOrder) || (a.originalIndex - b.originalIndex)
+      );
+
       renderDetected(arrangementTasks);
       renderTaskCards();
       resetArrangementStats();
@@ -724,6 +937,7 @@
     }
 
     function saveArrangementStep2(){
+      saveArrangementMemory(); // [NEW]
       renderArrangementStats();
       renderArrangementTimetable();
       showArrangementStep('arrStep3');
@@ -820,6 +1034,17 @@
       for(let j=indexInclusive; j<arrangementTasks.length; j++) arrangementTasks[j].startOverride = null;
     }
 
+    function halfHourOptions(selectedValue){
+      let html = '';
+      for(let h=0; h<24; h++){
+        [0,30].forEach(m => {
+          const v = `${pad2(h)}:${pad2(m)}`;
+          html += `<option value="${v}" ${v===selectedValue?'selected':''}>${v}</option>`;
+        });
+      }
+      return html;
+    }
+
     function renderReorderList(){
       const list = document.getElementById('reorderList');
       list.innerHTML = '';
@@ -836,7 +1061,9 @@
           </div>
           <div>
             <label class="small">開始時間</label>
-            <input type="time" data-k="start" data-i="${visIdx}" value="${minutesToTimeStr(r.start)}" />
+            <select data-k="start" data-i="${visIdx}">
+              ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
+            </select>
           </div>
           <div>
             <label class="small">時長（分）</label>
@@ -886,6 +1113,7 @@
           arrangementTasks = newOrder.map(i => arrangementTasks[i]);
           clearOverridesFrom(0);
           Array.from(list.children).forEach((li,i) => li.dataset.index = String(i));
+          saveArrangementMemory(); // [NEW] remember reorder immediately
           renderReorderList();
         }
         handle.addEventListener('pointerdown', onDown);
@@ -906,6 +1134,7 @@
         arrangementTasks[i].startOverride = newStart;
         clearOverridesFrom(i+1);
       }
+      saveArrangementMemory(); // [NEW]
       renderReorderList();
     });
 
@@ -926,9 +1155,77 @@
     }
 
     function finishArrangementStep4(){
+      saveArrangementMemory(); // [NEW]
       renderArrangementStats();
       renderArrangementTimetable();
       showArrangementStep('arrStep3');
+    }
+
+    // =========================
+    // [NEW] SuccessDaily 18:00 auto-save bridge
+    // =========================
+    /*
+      IMPORTANT:
+      This writes to localStorage key "successDaily_daily_v1".
+      It can be read directly by SuccessDaily only if SuccessDaily runs under
+      the SAME browser origin and is programmed to read the same key.
+      A standalone HTML file cannot write into a different website/origin.
+      Also, browsers cannot run this JavaScript while the page/browser is fully closed.
+    */
+    function buildSuccessDailySnapshot(){
+      const todos = getTodayTodos().filter(x => x.date === todayStr());
+      return {
+        date: todayStr(),
+        savedAt: now(),
+        source: 'Main Planner',
+        autoSaveTime: '18:00',
+        todos: todos.map(x => ({
+          id: x.id,
+          text: x.text,
+          displayText: x.displayText || x.text,
+          minutes: x.minutes ?? null,
+          status: x.status,
+          createdAt: x.createdAt,
+          updatedAt: x.updatedAt
+        })),
+        arrangement: arrangementTasks.map((t, order) => ({
+          name: t.name,
+          minutes: t.minutes ?? null,
+          rank: t.rank ?? '',
+          order,
+          startOverride: t.startOverride ?? null
+        }))
+      };
+    }
+
+    function saveToSuccessDaily(){
+      const daily = loadLS(STORAGE_KEYS.successDailyDaily, {});
+      const obj = (daily && typeof daily === 'object' && !Array.isArray(daily)) ? daily : {};
+      obj[todayStr()] = buildSuccessDailySnapshot();
+      saveLS(STORAGE_KEYS.successDailyDaily, obj);
+
+      const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
+      log[todayStr()] = now();
+      saveLS(STORAGE_KEYS.successDailyAutoSaveLog, log);
+      updateSuccessDailySaveStatus();
+    }
+
+    function updateSuccessDailySaveStatus(){
+      const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
+      const ts = log[todayStr()];
+      document.getElementById('successDailySaveStatus').textContent =
+        ts ? `已儲存 ${fmtTime(ts)}` : '等待 18:00';
+    }
+
+    function checkSuccessDailyAutoSave(){
+      const d = new Date();
+      const after1800 = d.getHours() >= 18;
+      const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
+      if(after1800 && !log[todayStr()]){
+        saveToSuccessDaily();
+      } else {
+        updateSuccessDailySaveStatus();
+      }
     }
 
     // =========================
@@ -941,6 +1238,12 @@
       ok('parseDurationMinutes("1.5hr") === 90', parseDurationMinutes('1.5hr') === 90);
       ok('parseDurationMinutes("半小時") === 30', parseDurationMinutes('半小時') === 30);
       ok('normalizeTaskName("整雞水 30mins") === 整雞水', normalizeTaskName('整雞水 30mins') === '整雞水');
+
+      // preserve user's data while testing arrangement scheduling
+      const backupTasks = arrangementTasks.slice();
+      const backupHome = document.getElementById('homeTime').value;
+      const backupBed = document.getElementById('bedTime').value;
+
       arrangementTasks = [
         {name:'T1', minutes:30, rank:1, raw:'', startOverride:null},
         {name:'T2', minutes:20, rank:2, raw:'', startOverride:null},
@@ -955,6 +1258,11 @@
       rows = buildSchedule();
       ok('T2 start 20:00', minutesToTimeStr(rows[1].start) === '20:00');
       ok('T3 start 20:20', minutesToTimeStr(rows[2].start) === '20:20');
+
+      arrangementTasks = backupTasks;
+      document.getElementById('homeTime').value = backupHome;
+      document.getElementById('bedTime').value = backupBed;
+
       document.getElementById('tests').textContent = out.join('\n');
       loadArrangementTasksFromToday();
     }
@@ -968,6 +1276,10 @@
       updateHomeStats();
       gotoPlanBuilder();
       runDevTests();
+
+      // [NEW] Check once now + once per minute.
+      checkSuccessDailyAutoSave();
+      setInterval(checkSuccessDailyAutoSave, 60*1000);
     })();
   </script>
 </body>
