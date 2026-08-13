@@ -121,6 +121,11 @@
     .today-flight-duration{font-size:.8rem;text-align:center}
     .today-flight-actions{display:flex;gap:4px;justify-content:flex-end}
     .today-flight-actions button{padding:5px 7px;font-size:.78rem;border-radius:7px}
+    .today-flight-time select{
+      width:100%;padding:4px 5px;border-radius:6px;font-size:.78rem;
+    }
+    .today-flight-move{display:flex;gap:2px;justify-content:center}
+    .today-flight-move button{padding:3px 5px;font-size:.72rem;border-radius:6px}
     @media (max-width:760px){
       .today-flight-row{
         grid-template-columns:34px minmax(0,1fr) 92px;
@@ -737,6 +742,66 @@
       updateHomeStats();
     }
 
+    // [NEW MINIMAL] Ensure Today edits use the same Arrangement task model.
+    function ensureTodayArrangementTasks(){
+      const todos = getTodayTodos().filter(x => x.date === todayStr());
+      if(arrangementTasks.length && arrangementTasks.some(t => todos.some(x => x.id === t.id))) return true;
+
+      const session = loadLS(STORAGE_KEYS.arrangementDailySession, null);
+      if(session && session.date === todayStr() && Array.isArray(session.tasks) && session.tasks.length){
+        arrangementTasks = session.tasks.map((t,i) => ({...t, rememberedOrder:i, originalIndex:i}));
+        return true;
+      }
+
+      arrangementTasks = todos
+        .slice()
+        .sort((a,b) => {
+          const ao = Number.isFinite(Number(a.arrangementOrder)) ? Number(a.arrangementOrder) : 9999;
+          const bo = Number.isFinite(Number(b.arrangementOrder)) ? Number(b.arrangementOrder) : 9999;
+          return (ao-bo) || ((a.createdAt||0)-(b.createdAt||0));
+        })
+        .map((item,i) => ({
+          id:item.id,
+          raw:'',
+          name:normalizeTaskName(item.displayText || item.text),
+          minutes:item.arrangementMinutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
+          rank:item.arrangementRank ?? '',
+          startOverride:item.arrangementStart ? timeStrToMinutesToday(item.arrangementStart) : null,
+          status:item.status,
+          rememberedOrder:i,
+          originalIndex:i
+        }));
+      return arrangementTasks.length > 0;
+    }
+
+    function moveTodayArrangementTask(id, direction){
+      if(!ensureTodayArrangementTasks()) return;
+      const i = arrangementTasks.findIndex(t => t.id === id);
+      if(i < 0) return;
+      const j = i + direction;
+      if(j < 0 || j >= arrangementTasks.length) return;
+
+      [arrangementTasks[i], arrangementTasks[j]] = [arrangementTasks[j], arrangementTasks[i]];
+      clearOverridesFrom(0); // same behavior as Step 4 reorder
+      saveArrangementMemory();
+      saveDailyArrangementSession();
+      refreshTodayPage();
+    }
+
+    function changeTodayArrangementStart(id, value){
+      if(!ensureTodayArrangementTasks()) return;
+      const i = arrangementTasks.findIndex(t => t.id === id);
+      if(i < 0) return;
+      const start = timeStrToMinutesToday(value);
+      if(start == null) return;
+
+      arrangementTasks[i].startOverride = start;
+      clearOverridesFrom(i+1); // following tasks continue sequentially
+      saveArrangementMemory();
+      saveDailyArrangementSession();
+      refreshTodayPage();
+    }
+
     function renderTodayCards(list, elId, allowActions){
       const host = document.getElementById(elId);
       host.innerHTML = '';
@@ -780,10 +845,20 @@
               <div class="today-flight-title">${escapeHtml(item.displayText || item.text)}</div>
               <div class="today-flight-sub">${escapeHtml(subBits.join(' · '))}</div>
             </div>
-            <div class="today-flight-time mono">${escapeHtml(timeText)}</div>
+            <div class="today-flight-time mono">
+              ${allowActions ? `
+                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="更改開始時間">
+                  ${halfHourOptions(item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
+                </select>
+              ` : escapeHtml(timeText)}
+            </div>
             <div class="today-flight-duration mono">${duration != null ? `${duration}m` : '—'}</div>
             <div class="today-flight-actions">
               ${allowActions ? `
+                <span class="today-flight-move">
+                  <button onclick="moveTodayArrangementTask('${item.id}',-1)" title="上移">↑</button>
+                  <button onclick="moveTodayArrangementTask('${item.id}',1)" title="下移">↓</button>
+                </span>
                 <button onclick="markTodoStatus('${item.id}','planned')">Plan</button>
                 <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
                 <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">×</button>
@@ -1181,6 +1256,9 @@
 
     function halfHourOptions(selectedValue){
       let html = '';
+      if(!selectedValue){
+        selectedValue = document.getElementById('homeTime')?.value || '18:00';
+      }
       for(let h=0; h<24; h++){
         [0,30].forEach(m => {
           const v = `${pad2(h)}:${pad2(m)}`;
