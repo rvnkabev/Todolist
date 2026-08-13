@@ -115,7 +115,7 @@
 <body>
   <div class="wrap">
     <h1>Main Planner</h1>
-    <div class="sub">整合三個主頁：Plan、Today ToDoList、Arrangement。全部資料以瀏覽器 localStorage 保存，不需要手動貼 Step 1 原文。</div>
+    <div class="sub">整合三個主頁：1. Plan → 2. Arrangement → 3. Today ToDoList。全部資料以瀏覽器 localStorage 保存，不需要手動貼 Step 1 原文。</div>
 
     <!-- Home -->
     <section id="pageHome" class="page active">
@@ -123,16 +123,16 @@
         <h2>首頁</h2>
         <div class="grid grid-3">
           <button class="hero-btn" onclick="showPage('pagePlan')">
-            <strong>Plan</strong>
-            使用 Success Daily TonightToDoList 風格去建立今晚任務，儲存後自動送到 Today ToDoList。
-          </button>
-          <button class="hero-btn" onclick="showPage('pageToday')">
-            <strong>Today ToDoList</strong>
-            顯示今天任務，支援 Planned / Done，並保留最近 24 小時紀錄。
+            <strong>1. Plan</strong>
+            建立今天任務，儲存後交給 Arrangement 排程。
           </button>
           <button class="hero-btn" onclick="openArrangementFromStoredData()">
-            <strong>Arrangement</strong>
-            直接讀取 Today ToDoList 作為 Step 1 資料，自動排程，不需要手動輸入原始日誌。
+            <strong>2. Arrangement</strong>
+            讀取今天任務，安排 Step 4 的次序、開始時間與時長。
+          </button>
+          <button class="hero-btn" onclick="showPage('pageToday')">
+            <strong>3. Today ToDoList</strong>
+            顯示任務資料，並採用 Arrangement Step 4 的最終次序與時間。
           </button>
         </div>
       </div>
@@ -224,7 +224,7 @@
           <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
         </div>
         <h2>Today ToDoList</h2>
-        <div class="small">顯示今天任務，並保留最近 24 小時紀錄。</div>
+        <div class="small">顯示今天任務；如已完成 Arrangement Step 4，會按最終排程次序及時間顯示，並保留最近 24 小時紀錄。</div>
       </div>
 
       <div class="panel">
@@ -711,7 +711,14 @@
       if(!list.length){ host.innerHTML = '<div class="empty">沒有資料</div>'; return; }
       list
         .slice()
-        .sort((a,b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+        .sort((a,b) => {
+          const aArranged = Number.isFinite(Number(a.arrangementOrder));
+          const bArranged = Number.isFinite(Number(b.arrangementOrder));
+          if(aArranged && bArranged) return Number(a.arrangementOrder) - Number(b.arrangementOrder);
+          if(aArranged) return -1;
+          if(bArranged) return 1;
+          return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+        })
         .forEach(item => {
           const div = document.createElement('div');
           div.className = `todo-card ${item.status==='done'?'done':''}`;
@@ -721,7 +728,9 @@
               <div class="todo-title">${escapeHtml(item.displayText || item.text)}</div>
               <div class="todo-meta">
                 ${item.status==='done' ? '<span class="tag-ok">Done</span>' : '<span class="tag-warn">Planned</span>'}
-                ${item.minutes != null ? `<span class="pill">${item.minutes}m</span>` : ''}
+                ${item.arrangementStart && item.arrangementEnd ? `<span class="pill">#${Number(item.arrangementOrder)+1} · ${escapeHtml(item.arrangementStart)}–${escapeHtml(item.arrangementEnd)}</span>` : ''}
+                ${item.arrangementMinutes != null ? `<span class="pill">${item.arrangementMinutes}m</span>` : (item.minutes != null ? `<span class="pill">${item.minutes}m</span>` : '')}
+                ${item.arrangementRank !== '' && item.arrangementRank != null ? `<span class="pill">Rank ${escapeHtml(String(item.arrangementRank))}</span>` : ''}
                 <span class="pill">${escapeHtml(item.source || 'manual')}</span>
                 <span class="pill">${escapeHtml(fmtDateTime(item.updatedAt || item.createdAt))}</span>
               </div>
@@ -795,9 +804,32 @@
       });
     }
 
+    // [NEW MINIMAL] Sync Step 4 result back into Today ToDoList.
+    function syncArrangementToTodayTodos(){
+      if(!arrangementTasks.length) return;
+      const rows = buildSchedule();
+      const byId = new Map(rows.map((r, order) => {
+        const t = arrangementTasks[order];
+        return [t.id, {
+          arrangementOrder: order,
+          arrangementStart: minutesToTimeStr(r.start),
+          arrangementEnd: minutesToTimeStr(r.end),
+          arrangementMinutes: r.minutes,
+          arrangementRank: t.rank ?? ''
+        }];
+      }));
+
+      const todos = getTodayTodos().map(item => {
+        const arranged = byId.get(item.id);
+        return arranged ? {...item, ...arranged} : item;
+      });
+      setTodayTodos(todos);
+    }
+
     // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
     function saveDailyArrangementSession(){
       if(!arrangementTasks.length) return;
+      syncArrangementToTodayTodos();
       saveLS(STORAGE_KEYS.arrangementDailySession, {
         date: todayStr(),
         savedAt: now(),
