@@ -82,7 +82,7 @@
     /* [NEW MINIMAL] Step 4 compact flight-board row */
     .draglist li{
       display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 64px;gap:6px;align-items:center;
-      padding:4px px;border:1px solid #2a3767;border-radius:8px;margin:4px 0;background:#0e142b;
+      padding:6px 8px;border:1px solid #2a3767;border-radius:8px;margin:4px 0;background:#0e142b;
       min-height:46px;
     }
     .handle{cursor:grab;user-select:none;touch-action:none;text-align:center;font-size:1.05rem;padding:8px 4px;border-radius:6px}
@@ -364,6 +364,7 @@
       permanentTasks: 'mainPlanner_permanentTasks_v1',
       arrangementMemory: 'mainPlanner_arrangementMemory_v1',
       arrangementSettings: 'mainPlanner_arrangementSettings_v1',
+      arrangementDailySession: 'mainPlanner_arrangementDailySession_v1',
       successDailyDaily: 'successDaily_daily_v1',
       successDailyAutoSaveLog: 'mainPlanner_successDailyAutoSaveLog_v1'
     };
@@ -794,6 +795,56 @@
       });
     }
 
+    // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
+    function saveDailyArrangementSession(){
+      if(!arrangementTasks.length) return;
+      saveLS(STORAGE_KEYS.arrangementDailySession, {
+        date: todayStr(),
+        savedAt: now(),
+        homeTime: document.getElementById('homeTime').value,
+        bedTime: document.getElementById('bedTime').value,
+        tasks: arrangementTasks.map(t => ({
+          id: t.id || '',
+          raw: t.raw || '',
+          name: t.name || '',
+          minutes: t.minutes ?? null,
+          rank: t.rank ?? '',
+          startOverride: t.startOverride ?? null,
+          status: t.status || 'planned'
+        }))
+      });
+    }
+
+    function restoreDailyArrangementSession(){
+      const session = loadLS(STORAGE_KEYS.arrangementDailySession, null);
+      if(!session || session.date !== todayStr() || !Array.isArray(session.tasks) || !session.tasks.length) return false;
+
+      const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
+      if(log[todayStr()]) return false; // already exported today
+
+      if(session.homeTime){
+        fillHalfHourTimeSelect('homeTime', session.homeTime);
+      }
+      if(session.bedTime){
+        fillHalfHourTimeSelect('bedTime', session.bedTime);
+      }
+
+      arrangementTasks = session.tasks.map((t, i) => ({
+        ...t,
+        rememberedOrder: i,
+        originalIndex: i
+      }));
+
+      renderDetected(arrangementTasks);
+      renderTaskCards();
+      resetArrangementStats();
+      return true;
+    }
+
+    function clearDailyArrangementSession(){
+      localStorage.removeItem(STORAGE_KEYS.arrangementDailySession);
+    }
+
     // =========================
     // Arrangement page
     // =========================
@@ -839,7 +890,9 @@
       moveOldTodayTodosToHistory();
       showPage('pageArrangement');
       showArrangementStep('arrStep1');
-      loadArrangementTasksFromToday();
+      if(!restoreDailyArrangementSession()){
+        loadArrangementTasksFromToday();
+      }
     }
 
     function loadArrangementTasksFromToday(){
@@ -952,6 +1005,7 @@
 
     function saveArrangementStep2(){
       saveArrangementMemory(); // [NEW]
+      saveDailyArrangementSession();
       renderArrangementStats();
       renderArrangementTimetable();
       showArrangementStep('arrStep3');
@@ -1095,6 +1149,7 @@
       [arrangementTasks[index], arrangementTasks[target]] = [arrangementTasks[target], arrangementTasks[index]];
       clearOverridesFrom(0);
       saveArrangementMemory();
+      saveDailyArrangementSession();
       renderReorderList();
     }
 
@@ -1135,6 +1190,7 @@
           clearOverridesFrom(0);
           Array.from(list.children).forEach((li,i) => li.dataset.index = String(i));
           saveArrangementMemory(); // [NEW] remember reorder immediately
+          saveDailyArrangementSession();
           renderReorderList();
         }
         dragTargets.forEach(target => target.addEventListener('pointerdown', onDown));
@@ -1156,6 +1212,7 @@
         clearOverridesFrom(i+1);
       }
       saveArrangementMemory(); // [NEW]
+      saveDailyArrangementSession();
       renderReorderList();
     });
 
@@ -1177,6 +1234,7 @@
 
     function finishArrangementStep4(){
       saveArrangementMemory(); // [NEW]
+      saveDailyArrangementSession();
       renderArrangementStats();
       renderArrangementTimetable();
       showArrangementStep('arrStep3');
@@ -1200,6 +1258,11 @@
         savedAt: now(),
         source: 'Main Planner',
         autoSaveTime: '18:00',
+        homeTime: document.getElementById('homeTime').value,
+        bedTime: document.getElementById('bedTime').value,
+        timetable: buildSchedule().map(r =>
+          `${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`
+        ).join('\n'),
         todos: todos.map(x => ({
           id: x.id,
           text: x.text,
@@ -1228,6 +1291,7 @@
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       log[todayStr()] = now();
       saveLS(STORAGE_KEYS.successDailyAutoSaveLog, log);
+      clearDailyArrangementSession();
       updateSuccessDailySaveStatus();
     }
 
@@ -1297,6 +1361,9 @@
       updateHomeStats();
       gotoPlanBuilder();
       runDevTests();
+
+      // [NEW MINIMAL] Restore today's exact Step 4 session before the 18:00 export check.
+      restoreDailyArrangementSession();
 
       // [NEW] Check once now + once per minute.
       checkSuccessDailyAutoSave();
