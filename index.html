@@ -79,8 +79,20 @@
     .rank{width:42px;height:42px;border-radius:10px;border:1px solid #2a3767;background:#0e142b;cursor:pointer;font-weight:700}
     .rank.selected{outline:2px solid var(--accent)}
     .draglist{list-style:none;padding:0;margin:0}
-    .draglist li{display:grid;grid-template-columns:28px 1fr 120px 140px;gap:8px;align-items:center;padding:10px;border:1px dashed #2a3767;border-radius:12px;margin:8px 0;background:#0e142b}
-    .handle{cursor:grab;user-select:none;touch-action:none}
+    /* [NEW MINIMAL] Step 4 compact flight-board row */
+    .draglist li{
+      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 64px;gap:6px;align-items:center;
+      padding:6px 8px;border:1px solid #2a3767;border-radius:8px;margin:4px 0;background:#0e142b;
+      min-height:46px;
+    }
+    .handle{cursor:grab;user-select:none;touch-action:none;text-align:center;font-size:1.05rem;padding:8px 4px;border-radius:6px}
+    .draglist li:hover .handle{background:#172143}
+    .flight-task{min-width:0;cursor:grab;user-select:none}
+    .flight-task-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+    .flight-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+    .flight-control{width:100%;padding:6px 7px;border-radius:7px;font-size:.86rem}
+    .flight-move{display:flex;gap:3px;justify-content:flex-end}
+    .flight-move button{padding:5px 7px;min-width:28px;border-radius:7px;font-size:.84rem;line-height:1}
     .ghost{opacity:.45}
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
     .empty{padding:18px;text-align:center;color:var(--muted)}
@@ -94,7 +106,9 @@
       padding:10px;border:1px solid var(--line);border-radius:12px;background:#0e142b;margin:8px 0;
     }
     @media (max-width:680px){
-      .draglist li,.permanent-row{grid-template-columns:1fr}
+      .permanent-row{grid-template-columns:1fr}
+      .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 58px;gap:4px;padding:5px}
+      .flight-control{padding:5px 4px;font-size:.8rem}
     }
   </style>
 </head>
@@ -1054,21 +1068,18 @@
         const li = document.createElement('li');
         li.dataset.index = String(visIdx);
         li.innerHTML = `
-          <div class="handle">☰</div>
-          <div>
-            <div class="mono">${escapeHtml(t.name)}</div>
-            <div class="small">Rank: ${t.rank === '' || t.rank == null ? '未填' : t.rank}</div>
+          <div class="handle" title="拖曳改位置">☰</div>
+          <div class="flight-task" title="按住任務名稱也可拖曳">
+            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)}</div>
+            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}</div>
           </div>
-          <div>
-            <label class="small">開始時間</label>
-            <select data-k="start" data-i="${visIdx}">
-              ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
-            </select>
-          </div>
-          <div>
-            <label class="small">時長（分）</label>
-            <input type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
-            <div class="small mono">結束：<span>${minutesToTimeStr(r.end)}</span></div>
+          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}">
+            ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
+          </select>
+          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
+          <div class="flight-move">
+            <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
+            <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
           </div>
         `;
         list.appendChild(li);
@@ -1077,11 +1088,21 @@
       validateOverflow();
     }
 
+    // [NEW MINIMAL] One-tap move; uses the same arrangementTasks + memory model.
+    function moveArrangementTask(index, direction){
+      const target = index + direction;
+      if(target < 0 || target >= arrangementTasks.length) return;
+      [arrangementTasks[index], arrangementTasks[target]] = [arrangementTasks[target], arrangementTasks[index]];
+      clearOverridesFrom(0);
+      saveArrangementMemory();
+      renderReorderList();
+    }
+
     function enablePointerReorder(){
       const list = document.getElementById('reorderList');
       const rows = Array.from(list.children);
       rows.forEach(row => {
-        const handle = row.querySelector('.handle');
+        const dragTargets = [row.querySelector('.handle'), row.querySelector('.flight-task')].filter(Boolean);
         let dragging = false;
         let startIndex = 0;
         function onDown(e){
@@ -1116,7 +1137,7 @@
           saveArrangementMemory(); // [NEW] remember reorder immediately
           renderReorderList();
         }
-        handle.addEventListener('pointerdown', onDown);
+        dragTargets.forEach(target => target.addEventListener('pointerdown', onDown));
       });
     }
 
