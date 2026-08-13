@@ -68,6 +68,56 @@
     .todo-card.done{opacity:.72;border-color:#215b49}
     .todo-card.selected{outline:2px solid var(--accent)}
     .todo-title{font-size:1rem;line-height:1.35}
+
+    /* [NEW MINIMAL] Today ToDoList: compact flight-board layout like Arrangement Step 4 */
+    #todayList .todo-card{
+      display:grid;
+      grid-template-columns:34px minmax(150px,1fr) 150px auto;
+      gap:8px;
+      align-items:center;
+      padding:6px 8px;
+      margin:4px 0;
+      border-style:solid;
+      border-radius:8px;
+    }
+    #todayList .todo-card > input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      margin:0 auto;
+    }
+    #todayList .todo-title{
+      font-size:.92rem;
+      font-weight:700;
+      line-height:1.2;
+    }
+    #todayList .todo-meta{
+      margin-top:2px;
+      font-size:.76rem;
+      line-height:1.25;
+    }
+    #todayList .toolbar{
+      gap:4px;
+      flex-wrap:nowrap;
+    }
+    #todayList .toolbar button{
+      padding:5px 7px;
+      border-radius:6px;
+      font-size:.76rem;
+      white-space:nowrap;
+    }
+    #todayList .pill{
+      padding:2px 6px;
+      margin:1px 3px 1px 0;
+      font-size:.72rem;
+    }
+    @media (max-width:760px){
+      #todayList .todo-card{
+        grid-template-columns:28px 1fr;
+      }
+      #todayList .toolbar{
+        grid-column:2;
+      }
+    }
     .todo-meta{font-size:.8rem;color:var(--muted);margin-top:4px}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .stat{display:flex;gap:12px;flex-wrap:wrap}
@@ -237,6 +287,7 @@
 
       <div class="panel">
         <h3>今天任務</h3>
+        <div class="small">航班表式顯示：按 Arrangement Step 4 的次序、時間與時長排列。</div>
         <div id="todayList" class="cards"></div>
       </div>
 
@@ -294,7 +345,7 @@
         <div id="taskList" class="panel"></div>
         <div class="btn-row">
           <button onclick="showArrangementStep('arrStep1')">← 回 Step 1</button>
-          <button class="btn" onclick="saveArrangementStep2()">儲存 & 前往 Step 3</button>
+          <button class="btn" onclick="saveArrangementStep2()">儲存 Arrangement & 前往 Step 3</button>
         </div>
       </section>
 
