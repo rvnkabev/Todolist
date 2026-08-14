@@ -94,7 +94,6 @@
     .flight-move{display:flex;gap:3px;justify-content:flex-end}
     .flight-move button{padding:5px 7px;min-width:28px;border-radius:7px;font-size:.84rem;line-height:1}
     .ghost{opacity:.45}
-    .schedule-warning{grid-column:2 / -1;color:#ff9aad;font-size:.76rem;line-height:1.3}
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
     .empty{padding:18px;text-align:center;color:var(--muted)}
     .sep{height:1px;background:#223061;margin:10px 0}
@@ -135,48 +134,13 @@
       .today-flight-actions{grid-column:2 / 4;justify-content:flex-start}
     }
 
-    /* [NEW] Permanent task editor only. Existing functionality preserved. */
-    .permanent-item{
-      border:1px solid var(--line);border-radius:10px;background:#0e142b;margin:6px 0;overflow:hidden;
+    /* [NEW] Permanent task editor only. Existing styling preserved. */
+    .permanent-row{
+      display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:end;
+      padding:10px;border:1px solid var(--line);border-radius:12px;background:#0e142b;margin:8px 0;
     }
-    .permanent-item summary{
-      list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;
-      gap:8px;align-items:center;padding:8px 10px;cursor:pointer;user-select:none;
-    }
-    .permanent-item summary::-webkit-details-marker{display:none}
-    .permanent-summary-name{font-size:.92rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .permanent-summary-meta{font-size:.76rem;color:var(--muted);white-space:nowrap}
-    .permanent-summary-edit{font-size:.75rem;color:var(--accent)}
-    .permanent-item[open] .permanent-summary-edit::after{content:" ▲"}
-    .permanent-item:not([open]) .permanent-summary-edit::after{content:" ▼"}
-    .permanent-edit{
-      display:grid;grid-template-columns:minmax(180px,1fr) 120px;gap:8px;
-      padding:10px;border-top:1px solid #223061;
-    }
-    .recurring-config{
-      grid-column:1 / -1;
-      display:grid;grid-template-columns:minmax(160px,220px) 140px 1fr;gap:8px;align-items:end;
-      padding-top:6px;border-top:1px solid #223061;
-    }
-    .permanent-actions{
-      grid-column:1 / -1;display:flex;gap:6px;justify-content:flex-end;padding-top:4px;
-    }
-    .permanent-actions button{padding:7px 10px;font-size:.82rem}
-    .fixed-lock{font-size:.72rem;color:#ffd37a}
-    .custom-days{display:none;gap:4px;flex-wrap:wrap;margin-top:6px}
-    .custom-days.active{display:flex}
-    .day-chip{
-      width:34px;height:30px;padding:0;border-radius:7px;font-size:.72rem;
-      display:inline-flex;align-items:center;justify-content:center;
-    }
-    .day-chip.selected{background:var(--accent);border-color:var(--accent);color:#071329;font-weight:700}
     @media (max-width:680px){
-      .permanent-item summary{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}
-      .permanent-summary-meta{font-size:.7rem}
-      .permanent-summary-edit{grid-column:2;grid-row:1 / span 2}
-      .permanent-edit,.recurring-config{grid-template-columns:1fr}
-      .recurring-config{grid-column:auto}
-      .permanent-actions{grid-column:auto}
+      .permanent-row{grid-template-columns:1fr}
       .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 58px;gap:4px;padding:5px}
       .flight-control{padding:5px 4px;font-size:.8rem}
     }
@@ -185,7 +149,7 @@
 <body>
   <div class="wrap">
     <h1>Main Planner</h1>
-    <div class="sub">流程：1. Plan 輸入任務 → 2. Arrangement 取得 Plan 任務並獨立排程 → 3. Today ToDoList。全部資料以瀏覽器 localStorage 保存。</div>
+    <div class="sub">整合三個主頁：1. Plan → 2. Arrangement → 3. Today ToDoList。全部資料以瀏覽器 localStorage 保存，不需要手動貼 Step 1 原文。</div>
 
     <!-- Home -->
     <section id="pageHome" class="page active">
@@ -198,7 +162,7 @@
           </button>
           <button class="hero-btn" onclick="openArrangementFromStoredData()">
             <strong>2. Arrangement</strong>
-            取得 Plan 已送出的任務；Step 4 可獨立更改次序、時間與時長。
+            讀取今天任務，安排 Step 4 的次序、開始時間與時長。
           </button>
           <button class="hero-btn" onclick="showPage('pageToday')">
             <strong>3. Today ToDoList</strong>
@@ -230,7 +194,7 @@
       <!-- [NEW] Permanent tasks -->
       <div class="panel">
         <h3>Permanent Tasks</h3>
-        <div class="small">永久任務會保存在瀏覽器，可新增、修改、刪除。亦可設定固定時間 + 重複日（Weekday / Weekend / Monday–Sunday），符合日期時會自動加入 Today。</div>
+        <div class="small">永久任務會保存在瀏覽器，可新增、修改、刪除；每次進入 Plan 都會顯示。</div>
         <div class="row">
           <div>
             <label for="permanentNewText">永久任務名稱</label>
@@ -326,16 +290,16 @@
           <button onclick="showArrangementStep('arrStep4')">Step 4</button>
         </div>
         <h2>Arrangement</h2>
-        <div class="small">Step 1 取得 Plan 已送出的任務；Arrangement 的時長、Rank、次序與時間均為獨立排程，不會改動 Plan 任務設定。</div>
+        <div class="small">Step 1 直接使用 Today ToDoList 資料；已加入 Arrangement Memory，會記住任務時長、Rank、順序和時間偏好。</div>
       </div>
 
       <!-- Step 1 -->
       <section id="arrStep1" class="arr-step">
         <div class="panel">
-          <h3>Step 1｜自動取得 Plan 任務 + 排程時段</h3>
+          <h3>Step 1｜自動載入 Today ToDoList + 今晚時段</h3>
           <div class="row">
             <div>
-              <label for="homeTime">Start time（第一項未釘選任務的開始時間）</label>
+              <label for="homeTime">預計回到家時間（今天）</label>
               <select id="homeTime"></select>
             </div>
             <div>
@@ -345,7 +309,7 @@
           </div>
           <div class="small">時間選擇簡化為每 30 分鐘：00 / 30。</div>
           <div class="btn-row">
-            <button class="btn" onclick="loadArrangementTasksFromToday()">重新取得 Plan 任務</button>
+            <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Today ToDoList 載入</button>
             <button class="btn" onclick="prepareArrangementAndGoStep2()">載入任務 & 前往 Step 2</button>
           </div>
           <div id="detectedWrap" style="margin-top:10px;display:none">
@@ -399,9 +363,9 @@
       <!-- Step 4 -->
       <section id="arrStep4" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 4｜獨立調整次序、時間與時長</h3>
+          <h3>Step 4｜拖曳調整順序 & 直接改時間段</h3>
           <div class="hint">
-            Start time 會令任務依次自動排列。你亦可更改個別任務的開始時間；其後任務會自動接續排列。Step 4 的修改不會改動 Plan 任務設定。
+            先確定任務次序，再修改開始時間或時長。開始時間選擇只保留 00 / 30；儲存後會記入 Arrangement Memory。
           </div>
         </div>
         <div class="panel">
@@ -422,7 +386,6 @@
     <div class="sticky-footer small">
       今天日期：<span id="todayStr"></span>
       · SuccessDaily Auto Save：<span id="successDailySaveStatus">等待 18:00</span>
-      · <button style="padding:5px 8px;font-size:.78rem" onclick="runSaveToSuccessDailyShortcut()">SaveToSuccessDaily</button>
     </div>
   </div>
 
@@ -453,8 +416,6 @@
 
     const DUR_PRESETS = [5,15,30,60,90,120];
     let arrangementTasks = [];
-    let activeArrangementStep = 'arrStep1';
-    let restoringArrangementSession = false;
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function now(){ return Date.now(); }
@@ -527,7 +488,6 @@
 
     function updateHomeStats(){
       moveOldTodayTodosToHistory();
-      ensureRecurringTasksForToday();
       const todos = getTodayTodos();
       const hist = pruneHistory24();
       document.getElementById('homeTodayCount').textContent = todos.length;
@@ -557,10 +517,7 @@
       const initial = DEFAULT_PLAN_TODOS.map(x => ({
         id: uid(),
         text: x.text,
-        minutes: x.tag ? parseDurationMinutes(x.tag) : null,
-        recurringRule: '',
-        recurringDays: [],
-        fixedStart: ''
+        minutes: x.tag ? parseDurationMinutes(x.tag) : null
       }));
       saveLS(STORAGE_KEYS.permanentTasks, initial);
       return initial;
@@ -573,7 +530,7 @@
       const mRaw = document.getElementById('permanentNewMinutes').value;
       if(!text) return;
       const arr = getPermanentTasks();
-      arr.push({ id: uid(), text, minutes: mRaw === '' ? null : Number(mRaw), recurringRule: '', recurringDays: [], fixedStart: '' });
+      arr.push({ id: uid(), text, minutes: mRaw === '' ? null : Number(mRaw) });
       setPermanentTasks(arr);
       document.getElementById('permanentNewText').value = '';
       document.getElementById('permanentNewMinutes').value = '';
@@ -586,24 +543,11 @@
       if(!item) return;
       const textEl = document.querySelector(`[data-perm-text="${id}"]`);
       const minEl = document.querySelector(`[data-perm-min="${id}"]`);
-      const repeatEl = document.querySelector(`[data-perm-repeat="${id}"]`);
-      const fixedEl = document.querySelector(`[data-perm-fixed="${id}"]`);
       const text = (textEl?.value || '').trim();
       if(!text) return alert('任務名稱不可為空');
-      const recurringRule = repeatEl?.value || '';
-      const fixedStart = fixedEl?.value || '';
-      const recurringDays = recurringRule === 'custom'
-        ? Array.from(document.querySelectorAll(`[data-custom-days="${id}"] .day-chip.selected`)).map(btn => Number(btn.dataset.day))
-        : [];
-      if(recurringRule && !fixedStart) return alert('重複任務請先選擇固定時間');
-      if(recurringRule === 'custom' && !recurringDays.length) return alert('Custom days 請至少選擇一日');
       item.text = text;
       item.minutes = minEl?.value === '' ? null : Number(minEl.value);
-      item.recurringRule = recurringRule;
-      item.recurringDays = recurringDays;
-      item.fixedStart = recurringRule ? fixedStart : '';
       setPermanentTasks(arr);
-      ensureRecurringTasksForToday();
       gotoPlanBuilder();
     }
 
@@ -621,181 +565,34 @@
         host.innerHTML = '<div class="empty">沒有 Permanent Task</div>';
         return;
       }
-
-      const repeatLabel = (item) => {
-        if(!item.recurringRule) return 'No repeat';
-        if(item.recurringRule === 'weekday') return 'Weekday';
-        if(item.recurringRule === 'weekend') return 'Weekend';
-        if(item.recurringRule === 'custom'){
-          return (item.recurringDays || [])
-            .map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d])
-            .join(' · ') || 'Custom';
-        }
-        return item.recurringRule.charAt(0).toUpperCase() + item.recurringRule.slice(1);
-      };
-
       arr.forEach(item => {
-        const details = document.createElement('details');
-        details.className = 'permanent-item';
-
-        const durationText = item.minutes == null
-          ? '—'
-          : item.minutes === 60 ? '1hr'
-          : item.minutes === 90 ? '1.5hr'
-          : item.minutes === 120 ? '2hr'
-          : `${item.minutes}m`;
-
-        details.innerHTML = `
-          <summary>
-            <div class="permanent-summary-name">${escapeHtml(item.text)}</div>
-            <div class="permanent-summary-meta">${escapeHtml(durationText)}</div>
-            <div class="permanent-summary-meta">
-              ${escapeHtml(repeatLabel(item))}
-              ${item.fixedStart ? ` · <span class="fixed-lock">🔒 ${escapeHtml(item.fixedStart)}</span>` : ''}
-            </div>
-            <div class="permanent-summary-edit">Edit</div>
-          </summary>
-
-          <div class="permanent-edit">
-            <div>
-              <label class="small">任務名稱</label>
-              <input data-perm-text="${item.id}" value="${escapeAttr(item.text)}" />
-            </div>
-
-            <div>
-              <label class="small">時長</label>
-              <select data-perm-min="${item.id}">
-                <option value="" ${item.minutes==null?'selected':''}>未設定</option>
-                ${DUR_PRESETS.map(m => `<option value="${m}" ${Number(item.minutes)===m?'selected':''}>${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</option>`).join('')}
-              </select>
-            </div>
-
-            <div class="recurring-config">
-              <div>
-                <label class="small">Repeat</label>
-                <select data-perm-repeat="${item.id}" onchange="toggleCustomDays('${item.id}')">
-                  <option value="" ${!item.recurringRule?'selected':''}>None</option>
-                  <option value="weekday" ${item.recurringRule==='weekday'?'selected':''}>Weekday (Mon–Fri)</option>
-                  <option value="weekend" ${item.recurringRule==='weekend'?'selected':''}>Weekend (Sat–Sun)</option>
-                  <option value="custom" ${item.recurringRule==='custom'?'selected':''}>Custom days…</option>
-                  <option value="monday" ${item.recurringRule==='monday'?'selected':''}>Monday</option>
-                  <option value="tuesday" ${item.recurringRule==='tuesday'?'selected':''}>Tuesday</option>
-                  <option value="wednesday" ${item.recurringRule==='wednesday'?'selected':''}>Wednesday</option>
-                  <option value="thursday" ${item.recurringRule==='thursday'?'selected':''}>Thursday</option>
-                  <option value="friday" ${item.recurringRule==='friday'?'selected':''}>Friday</option>
-                  <option value="saturday" ${item.recurringRule==='saturday'?'selected':''}>Saturday</option>
-                  <option value="sunday" ${item.recurringRule==='sunday'?'selected':''}>Sunday</option>
-                </select>
-                <div class="custom-days ${item.recurringRule==='custom'?'active':''}" data-custom-days="${item.id}">
-                  ${[
-                    ['M',1],['T',2],['W',3],['T',4],['F',5],['S',6],['S',0]
-                  ].map(([label,day]) => `<button type="button" class="day-chip ${(item.recurringDays||[]).includes(day)?'selected':''}" data-day="${day}" onclick="toggleCustomDay(this)">${label}</button>`).join('')}
-                </div>
-              </div>
-
-              <div>
-                <label class="small">Fixed Time</label>
-                <select data-perm-fixed="${item.id}">
-                  <option value="" ${!item.fixedStart?'selected':''}>—</option>
-                  ${fixedTimeOptions(item.fixedStart || '')}
-                </select>
-              </div>
-
-              <div class="small">
-                ${item.recurringRule && item.fixedStart
-                  ? `<span class="tag-ok">Auto</span> <span class="fixed-lock">🔒 ${escapeHtml(item.fixedStart)}</span>${item.recurringRule==='custom' ? ` · ${(item.recurringDays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}` : ''}`
-                  : '不重複：只作 Permanent Task 選項'}
-              </div>
-            </div>
-
-            <div class="permanent-actions">
-              <button class="btn" onclick="editPermanentTask('${item.id}')">Save</button>
-              <button class="btn-danger" onclick="deletePermanentTask('${item.id}')">Delete</button>
-            </div>
+        const row = document.createElement('div');
+        row.className = 'permanent-row';
+        row.innerHTML = `
+          <div>
+            <label class="small">任務名稱</label>
+            <input data-perm-text="${item.id}" value="${escapeAttr(item.text)}" />
+          </div>
+          <div>
+            <label class="small">時長</label>
+            <select data-perm-min="${item.id}">
+              <option value="" ${item.minutes==null?'selected':''}>未設定</option>
+              ${DUR_PRESETS.map(m => `<option value="${m}" ${Number(item.minutes)===m?'selected':''}>${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</option>`).join('')}
+            </select>
+          </div>
+          <div class="toolbar">
+            <button onclick="editPermanentTask('${item.id}')">Save</button>
+            <button class="btn-danger" onclick="deletePermanentTask('${item.id}')">Delete</button>
           </div>
         `;
-        host.appendChild(details);
+        host.appendChild(row);
       });
-    }
-
-    // =========================
-    // [NEW MINIMAL] Recurring fixed tasks
-    // =========================
-    function toggleCustomDays(id){
-      const select = document.querySelector(`[data-perm-repeat="${id}"]`);
-      const box = document.querySelector(`[data-custom-days="${id}"]`);
-      if(box) box.classList.toggle('active', select?.value === 'custom');
-    }
-
-    function toggleCustomDay(btn){
-      btn.classList.toggle('selected');
-    }
-
-    function recurringRuleMatchesDate(rule, d = new Date(), recurringDays = []){
-      const day = d.getDay();
-      if(rule === 'weekday') return day >= 1 && day <= 5;
-      if(rule === 'weekend') return day === 0 || day === 6;
-      if(rule === 'custom') return Array.isArray(recurringDays) && recurringDays.includes(day);
-      const map = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
-      return map[rule] === day;
-    }
-
-    function ensureRecurringTasksForToday(){
-      const today = todayStr();
-      const permanent = getPermanentTasks();
-      let todos = getTodayTodos();
-      const permById = new Map(permanent.map(p => [p.id, p]));
-
-      todos = todos.filter(item => {
-        if(item.date !== today || item.source !== 'recurring' || !item.recurringTaskId) return true;
-        const p = permById.get(item.recurringTaskId);
-        return !!(p && p.recurringRule && p.fixedStart && recurringRuleMatchesDate(p.recurringRule, new Date(), p.recurringDays || []));
-      });
-
-      const createdAt = now();
-      permanent.forEach(p => {
-        if(!p.recurringRule || !p.fixedStart || !recurringRuleMatchesDate(p.recurringRule, new Date(), p.recurringDays || [])) return;
-
-        const existing = todos.find(x => x.date === today && x.source === 'recurring' && x.recurringTaskId === p.id);
-        if(existing){
-          existing.text = p.text;
-          existing.displayText = p.text;
-          existing.minutes = p.minutes ?? null;
-          existing.fixedStart = p.fixedStart;
-          existing.isFixedTime = true;
-          existing.recurringRule = p.recurringRule;
-          existing.recurringDays = p.recurringDays || [];
-          existing.arrangementStart = p.fixedStart;
-        } else {
-          todos.push({
-            id: uid(),
-            text: p.text,
-            displayText: p.text,
-            minutes: p.minutes ?? null,
-            date: today,
-            status: 'planned',
-            createdAt,
-            updatedAt: createdAt,
-            source: 'recurring',
-            recurringTaskId: p.id,
-            recurringRule: p.recurringRule,
-            recurringDays: p.recurringDays || [],
-            isFixedTime: true,
-            fixedStart: p.fixedStart,
-            arrangementStart: p.fixedStart
-          });
-        }
-      });
-
-      setTodayTodos(todos);
-      return todos;
     }
 
     // =========================
     // Plan page
     // =========================
     function gotoPlanBuilder(){
-      ensureRecurringTasksForToday();
       document.getElementById('planDateTime').textContent = fmtDateTime();
       const box = document.getElementById('planTodoCards');
       box.innerHTML = '';
@@ -927,8 +724,6 @@
     function markTodoStatus(id, status){
       const todos = getTodayTodos().map(item => item.id === id ? {...item, status, updatedAt: now()} : item);
       setTodayTodos(todos);
-      const task = arrangementTasks.find(t => t.id === id);
-      if(task){ task.status = status; saveDailyArrangementSession(); }
       refreshTodayPage();
       updateHomeStats();
     }
@@ -938,8 +733,6 @@
       const found = todos.find(x => x.id === id);
       const remain = todos.filter(x => x.id !== id);
       setTodayTodos(remain);
-      arrangementTasks = arrangementTasks.filter(t => t.id !== id);
-      saveDailyArrangementSession();
       if(found){
         const hist = pruneHistory24();
         hist.unshift({...found, archivedAt: now(), archivedReason: 'manual-delete'});
@@ -975,11 +768,6 @@
           rank:item.arrangementRank ?? '',
           startOverride:item.arrangementStart ? timeStrToMinutesToday(item.arrangementStart) : null,
           status:item.status,
-          isFixedTime:!!item.isFixedTime,
-          fixedStart:item.fixedStart || '',
-          recurringTaskId:item.recurringTaskId || '',
-          recurringRule:item.recurringRule || '',
-          recurringDays:item.recurringDays || [],
           rememberedOrder:i,
           originalIndex:i
         }));
@@ -1004,7 +792,6 @@
       if(!ensureTodayArrangementTasks()) return;
       const i = arrangementTasks.findIndex(t => t.id === id);
       if(i < 0) return;
-      if(arrangementTasks[i].isFixedTime) return;
       const start = timeStrToMinutesToday(value);
       if(start == null) return;
 
@@ -1051,7 +838,6 @@
           if(item.arrangementRank !== '' && item.arrangementRank != null) subBits.push(`Rank ${item.arrangementRank}`);
           subBits.push(item.status === 'done' ? 'Done' : 'Planned');
           if(item.source) subBits.push(item.source);
-          if(item.isFixedTime && item.fixedStart) subBits.push(`🔒 ${item.fixedStart}`);
 
           div.innerHTML = `
             <div class="today-flight-no">#${orderNo}</div>
@@ -1061,8 +847,8 @@
             </div>
             <div class="today-flight-time mono">
               ${allowActions ? `
-                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="${item.isFixedTime ? '固定時間' : '更改開始時間'}" ${item.isFixedTime ? 'disabled' : ''}>
-                  ${halfHourOptions(item.fixedStart || item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
+                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="更改開始時間">
+                  ${halfHourOptions(item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
                 </select>
               ` : escapeHtml(timeText)}
             </div>
@@ -1087,9 +873,7 @@
 
     function refreshTodayPage(){
       moveOldTodayTodosToHistory();
-      ensureRecurringTasksForToday();
-      // Today and Arrangement share the same task pool throughout Step 1–4.
-      const todos = getTodayTodos().filter(x => x.date === todayStr());
+      const todos = getTodayTodos();
       const hist = pruneHistory24();
       const planned = todos.filter(x => x.status === 'planned').length;
       const done = todos.filter(x => x.status === 'done').length;
@@ -1162,13 +946,13 @@
       setTodayTodos(todos);
     }
 
-    // [NEW MINIMAL] Persist today's exact Step 1–4 state across HTML/browser close.
+    // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
     function saveDailyArrangementSession(){
-      if(arrangementTasks.length) syncArrangementToTodayTodos();
+      if(!arrangementTasks.length) return;
+      syncArrangementToTodayTodos();
       saveLS(STORAGE_KEYS.arrangementDailySession, {
         date: todayStr(),
         savedAt: now(),
-        activeStep: activeArrangementStep,
         homeTime: document.getElementById('homeTime').value,
         bedTime: document.getElementById('bedTime').value,
         tasks: arrangementTasks.map(t => ({
@@ -1178,19 +962,17 @@
           minutes: t.minutes ?? null,
           rank: t.rank ?? '',
           startOverride: t.startOverride ?? null,
-          status: t.status || 'planned',
-          isFixedTime: !!t.isFixedTime,
-          fixedStart: t.fixedStart || '',
-          recurringTaskId: t.recurringTaskId || '',
-          recurringRule: t.recurringRule || '',
-          recurringDays: t.recurringDays || []
+          status: t.status || 'planned'
         }))
       });
     }
 
     function restoreDailyArrangementSession(){
       const session = loadLS(STORAGE_KEYS.arrangementDailySession, null);
-      if(!session || session.date !== todayStr() || !Array.isArray(session.tasks)) return false;
+      if(!session || session.date !== todayStr() || !Array.isArray(session.tasks) || !session.tasks.length) return false;
+
+      const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
+      if(log[todayStr()]) return false; // already exported today
 
       if(session.homeTime){
         fillHalfHourTimeSelect('homeTime', session.homeTime);
@@ -1199,47 +981,15 @@
         fillHalfHourTimeSelect('bedTime', session.bedTime);
       }
 
-      const todos = getTodayTodos().filter(x => x.date === todayStr());
-      const byId = new Map(todos.map(x => [x.id, x]));
-      arrangementTasks = session.tasks.filter(t => byId.has(t.id)).map((t, i) => ({
+      arrangementTasks = session.tasks.map((t, i) => ({
         ...t,
-        status: byId.get(t.id)?.status || t.status,
         rememberedOrder: i,
         originalIndex: i
       }));
 
-      // Keep saved work and append any task newly added from Plan/Today.
-      const restoredIds = new Set(arrangementTasks.map(t => t.id));
-      const mem = getArrangementMemory();
-      const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
-      todos.filter(item => !restoredIds.has(item.id)).forEach((item, originalIndex) => {
-        const name = normalizeTaskName(item.displayText || item.text);
-        const remembered = mem[arrangementMemoryKey(name)] || {};
-        arrangementTasks.push({
-          id:item.id, raw:'', name,
-          minutes:item.arrangementMinutes ?? remembered.minutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
-          rank:item.arrangementRank ?? remembered.rank ?? '',
-          startOverride:item.arrangementStart ? timeStrToMinutesToday(item.arrangementStart)
-            : (item.isFixedTime && item.fixedStart ? timeStrToMinutesToday(item.fixedStart)
-            : (remembered.startOffset != null ? home + Number(remembered.startOffset) : null)),
-          status:item.status, isFixedTime:!!item.isFixedTime, fixedStart:item.fixedStart || '',
-          recurringTaskId:item.recurringTaskId || '', recurringRule:item.recurringRule || '',
-          recurringDays:item.recurringDays || [], rememberedOrder:9999, originalIndex
-        });
-      });
-
       renderDetected(arrangementTasks);
       renderTaskCards();
-      restoringArrangementSession = true;
-      showArrangementStep(session.activeStep || 'arrStep1');
-      restoringArrangementSession = false;
-      if(activeArrangementStep === 'arrStep3'){
-        renderArrangementStats();
-        renderArrangementTimetable();
-      }
-      if(activeArrangementStep === 'arrStep4') renderReorderList();
-      if(activeArrangementStep === 'arrStep1' || activeArrangementStep === 'arrStep2') resetArrangementStats();
-      saveDailyArrangementSession();
+      resetArrangementStats();
       return true;
     }
 
@@ -1286,18 +1036,14 @@
     function showArrangementStep(id){
       document.querySelectorAll('.arr-step').forEach(s => s.style.display = 'none');
       document.getElementById(id).style.display = '';
-      activeArrangementStep = id;
-      if(!restoringArrangementSession) saveDailyArrangementSession();
     }
 
     function openArrangementFromStoredData(){
       moveOldTodayTodosToHistory();
-      ensureRecurringTasksForToday();
       showPage('pageArrangement');
+      showArrangementStep('arrStep1');
       if(!restoreDailyArrangementSession()){
-        showArrangementStep('arrStep1');
         loadArrangementTasksFromToday();
-        saveDailyArrangementSession();
       }
     }
 
@@ -1315,15 +1061,8 @@
           name,
           minutes: remembered.minutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
           rank: remembered.rank ?? '',
-          startOverride: item.isFixedTime && item.fixedStart
-            ? timeStrToMinutesToday(item.fixedStart)
-            : (remembered.startOffset != null ? home + Number(remembered.startOffset) : null),
+          startOverride: remembered.startOffset != null ? home + Number(remembered.startOffset) : null,
           status: item.status,
-          isFixedTime: !!item.isFixedTime,
-          fixedStart: item.fixedStart || '',
-          recurringTaskId: item.recurringTaskId || '',
-          recurringRule: item.recurringRule || '',
-          recurringDays: item.recurringDays || [],
           rememberedOrder: remembered.order ?? 9999,
           originalIndex
         };
@@ -1395,8 +1134,6 @@
           arrangementTasks[i].minutes = v;
           if(arrangementTasks[i].startOverride != null) clearOverridesFrom(i+1);
           renderTaskCards();
-          saveArrangementMemory();
-          saveDailyArrangementSession();
         });
       });
       host.querySelectorAll('.rank-group .rank').forEach(btn => {
@@ -1405,8 +1142,6 @@
           const v = Number(btn.dataset.v);
           arrangementTasks[i].rank = v;
           renderTaskCards();
-          saveArrangementMemory();
-          saveDailyArrangementSession();
         });
       });
       host.querySelectorAll('input').forEach(inp => {
@@ -1416,8 +1151,6 @@
           let v = inp.value;
           if(k === 'minutes' || k === 'rank') v = v === '' ? '' : Number(v);
           arrangementTasks[i][k] = v;
-          saveArrangementMemory();
-          saveDailyArrangementSession();
         });
       });
     }
@@ -1472,16 +1205,19 @@
 
     function buildSchedule(){
       const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
-      let cur = home;
+      let cur = null;
       const rows = [];
       arrangementTasks.forEach((t, idx) => {
         const m = Math.max(0, Number(t.minutes) || 0);
-        const requestedStart = t.startOverride != null ? t.startOverride : null;
-        const conflict = requestedStart != null && requestedStart < cur;
-        const start = requestedStart != null ? requestedStart : cur;
-        const end = start + m;
-        rows.push({ name:t.name, start, end, minutes:m, idx, conflict, previousEnd:cur });
-        cur = Math.max(cur, end);
+        let start;
+        if(idx === 0){
+          start = (t.startOverride != null) ? t.startOverride : home;
+          cur = start + m;
+        } else {
+          start = (t.startOverride != null) ? t.startOverride : (cur ?? home);
+          cur = start + m;
+        }
+        rows.push({ name:t.name, start, end:start+m, minutes:m, idx });
       });
       return rows;
     }
@@ -1515,10 +1251,7 @@
     }
 
     function clearOverridesFrom(indexInclusive){
-      for(let j=indexInclusive; j<arrangementTasks.length; j++){
-        const t = arrangementTasks[j];
-        t.startOverride = null;
-      }
+      for(let j=indexInclusive; j<arrangementTasks.length; j++) arrangementTasks[j].startOverride = null;
     }
 
     function halfHourOptions(selectedValue){
@@ -1526,17 +1259,6 @@
       if(!selectedValue){
         selectedValue = document.getElementById('homeTime')?.value || '18:00';
       }
-      for(let h=0; h<24; h++){
-        [0,30].forEach(m => {
-          const v = `${pad2(h)}:${pad2(m)}`;
-          html += `<option value="${v}" ${v===selectedValue?'selected':''}>${v}</option>`;
-        });
-      }
-      return html;
-    }
-
-    function fixedTimeOptions(selectedValue){
-      let html = '';
       for(let h=0; h<24; h++){
         [0,30].forEach(m => {
           const v = `${pad2(h)}:${pad2(m)}`;
@@ -1568,7 +1290,6 @@
             <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
             <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
           </div>
-          ${r.conflict ? `<div class="schedule-warning">⚠️ Warning：指定時間 ${minutesToTimeStr(r.start)} 早於前面任務完成時間 ${minutesToTimeStr(r.previousEnd)}，時間重疊 ${r.previousEnd-r.start} 分鐘。</div>` : ''}
         `;
         list.appendChild(li);
       });
@@ -1655,18 +1376,11 @@
       const rows = buildSchedule();
       const endAll = rows.length ? rows[rows.length-1].end : null;
       const parent = document.getElementById('reorderList').parentElement;
-      parent.querySelectorAll('.overflow-msg').forEach(el => el.remove());
-      const conflicts = rows.filter(r => r.conflict);
-      if(conflicts.length){
-        const warn = document.createElement('div');
-        warn.className = 'small overflow-msg';
-        warn.style.marginTop = '8px';
-        warn.innerHTML = `<span class="tag-danger">⚠️ 指定時間衝突：${conflicts.length} 項</span> 請移動任務、縮短時長或更改開始時間。`;
-        parent.appendChild(warn);
-      }
+      const old = parent.querySelector('.overflow-msg');
+      if(old) old.remove();
       if(endAll != null && bed != null && endAll > bed){
         const warn = document.createElement('div');
-        warn.className = 'small overflow-msg overflow-bed-msg';
+        warn.className = 'small overflow-msg';
         warn.style.marginTop = '8px';
         warn.innerHTML = `<span class="tag-danger">⛔ 超時 ${endAll-bed} 分鐘</span> 請調整順序或縮短時長。`;
         parent.appendChild(warn);
@@ -1692,52 +1406,6 @@
       A standalone HTML file cannot write into a different website/origin.
       Also, browsers cannot run this JavaScript while the page/browser is fully closed.
     */
-    function buildSuccessDailyText(){
-      const todos = getTodayTodos().filter(x => x.date === todayStr());
-
-      const sorted = todos.slice().sort((a,b) => {
-        const aStart = a.arrangementStart || a.fixedStart || '';
-        const bStart = b.arrangementStart || b.fixedStart || '';
-        if(aStart && bStart) return aStart.localeCompare(bStart);
-        if(aStart) return -1;
-        if(bStart) return 1;
-
-        const ao = Number.isFinite(Number(a.arrangementOrder)) ? Number(a.arrangementOrder) : 9999;
-        const bo = Number.isFinite(Number(b.arrangementOrder)) ? Number(b.arrangementOrder) : 9999;
-        return (ao-bo) || ((a.createdAt||0)-(b.createdAt||0));
-      });
-
-      const lines = [
-        'ToDoList',
-        todayStr()
-      ];
-
-      sorted.forEach(item => {
-        const time = item.arrangementStart || item.fixedStart || '--:--';
-        const name = normalizeTaskName(item.displayText || item.text);
-        const status = item.status === 'done' ? ' done' : '';
-        lines.push(`${time} ${name}${status}`);
-      });
-
-      return lines.join('\n');
-    }
-
-    function runSaveToSuccessDailyShortcut(){
-      const output = buildSuccessDailyText();
-
-      // Keep an exact copy locally as a fallback/debug record.
-      localStorage.setItem('mainPlanner_lastSuccessDailyText_v1', output);
-
-      // iOS Shortcuts URL scheme. The Shortcut receives the planner text as input.
-      const url =
-        'shortcuts://run-shortcut?name=' +
-        encodeURIComponent('SaveToSuccessDaily') +
-        '&input=text&text=' +
-        encodeURIComponent(output);
-
-      window.location.href = url;
-    }
-
     function buildSuccessDailySnapshot(){
       const todos = getTodayTodos().filter(x => x.date === todayStr());
       return {
@@ -1745,7 +1413,6 @@
         savedAt: now(),
         source: 'Main Planner',
         autoSaveTime: '18:00',
-        outputText: buildSuccessDailyText(),
         homeTime: document.getElementById('homeTime').value,
         bedTime: document.getElementById('bedTime').value,
         timetable: buildSchedule().map(r =>
@@ -1758,22 +1425,14 @@
           minutes: x.minutes ?? null,
           status: x.status,
           createdAt: x.createdAt,
-          updatedAt: x.updatedAt,
-          isFixedTime: !!x.isFixedTime,
-          fixedStart: x.fixedStart || '',
-          recurringRule: x.recurringRule || '',
-          recurringDays: x.recurringDays || []
+          updatedAt: x.updatedAt
         })),
         arrangement: arrangementTasks.map((t, order) => ({
           name: t.name,
           minutes: t.minutes ?? null,
           rank: t.rank ?? '',
           order,
-          startOverride: t.startOverride ?? null,
-          isFixedTime: !!t.isFixedTime,
-          fixedStart: t.fixedStart || '',
-          recurringRule: t.recurringRule || '',
-          recurringDays: t.recurringDays || []
+          startOverride: t.startOverride ?? null
         }))
       };
     }
@@ -1781,14 +1440,13 @@
     function saveToSuccessDaily(){
       const daily = loadLS(STORAGE_KEYS.successDailyDaily, {});
       const obj = (daily && typeof daily === 'object' && !Array.isArray(daily)) ? daily : {};
-      const snapshot = buildSuccessDailySnapshot();
-      obj[todayStr()] = snapshot;
+      obj[todayStr()] = buildSuccessDailySnapshot();
       saveLS(STORAGE_KEYS.successDailyDaily, obj);
-      localStorage.setItem('mainPlanner_lastSuccessDailyText_v1', snapshot.outputText || '');
 
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       log[todayStr()] = now();
       saveLS(STORAGE_KEYS.successDailyAutoSaveLog, log);
+      clearDailyArrangementSession();
       updateSuccessDailySaveStatus();
     }
 
@@ -1800,8 +1458,6 @@
     }
 
     function checkSuccessDailyAutoSave(){
-      moveOldTodayTodosToHistory();
-      ensureRecurringTasksForToday();
       const d = new Date();
       const after1800 = d.getHours() >= 18;
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
@@ -1822,11 +1478,6 @@
       ok('parseDurationMinutes("1.5hr") === 90', parseDurationMinutes('1.5hr') === 90);
       ok('parseDurationMinutes("半小時") === 30', parseDurationMinutes('半小時') === 30);
       ok('normalizeTaskName("整雞水 30mins") === 整雞水', normalizeTaskName('整雞水 30mins') === '整雞水');
-      ok('weekday matches Monday', recurringRuleMatchesDate('weekday', new Date('2026-08-10T12:00:00')) === true);
-      ok('weekend matches Sunday', recurringRuleMatchesDate('weekend', new Date('2026-08-09T12:00:00')) === true);
-      ok('thursday matches Thursday', recurringRuleMatchesDate('thursday', new Date('2026-08-13T12:00:00')) === true);
-      ok('custom Tue+Thu matches Thursday', recurringRuleMatchesDate('custom', new Date('2026-08-13T12:00:00'), [2,4]) === true);
-      ok('SuccessDaily text starts with ToDoList + date', buildSuccessDailyText().startsWith(`ToDoList\n${todayStr()}`));
 
       // preserve user's data while testing arrangement scheduling
       const backupTasks = arrangementTasks.slice();
@@ -1862,26 +1513,12 @@
     (function init(){
       moveOldTodayTodosToHistory();
       presetTimes();
-      ensureRecurringTasksForToday();
       updateHomeStats();
       gotoPlanBuilder();
       runDevTests();
 
       // [NEW MINIMAL] Restore today's exact Step 4 session before the 18:00 export check.
       restoreDailyArrangementSession();
-
-      // Step 1 time settings are part of today's shared Arrangement memory.
-      ['homeTime','bedTime'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
-          saveArrangementMemory();
-          saveDailyArrangementSession();
-          if(activeArrangementStep === 'arrStep3'){
-            renderArrangementStats();
-            renderArrangementTimetable();
-          }
-          if(activeArrangementStep === 'arrStep4') renderReorderList();
-        });
-      });
 
       // [NEW] Check once now + once per minute.
       checkSuccessDailyAutoSave();
