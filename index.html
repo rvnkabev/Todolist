@@ -81,7 +81,7 @@
     .draglist{list-style:none;padding:0;margin:0}
     /* [NEW MINIMAL] Step 4 compact flight-board row */
     .draglist li{
-      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 64px;gap:6px;align-items:center;
+      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 64px 68px;gap:6px;align-items:center;
       padding:6px 8px;border:1px solid #2a3767;border-radius:8px;margin:4px 0;background:#0e142b;
       min-height:46px;
     }
@@ -93,6 +93,10 @@
     .flight-control{width:100%;padding:6px 7px;border-radius:7px;font-size:.86rem}
     .flight-move{display:flex;gap:3px;justify-content:flex-end}
     .flight-move button{padding:5px 7px;min-width:28px;border-radius:7px;font-size:.84rem;line-height:1}
+    .flight-pin{padding:6px 7px;border-radius:7px;font-size:.78rem;line-height:1}
+    .flight-pin.active{background:var(--warn);border-color:var(--warn);color:#2b1e0e;font-weight:700}
+    .draglist li.pinned{border-color:var(--warn)}
+    .flight-control:disabled{opacity:.62;cursor:not-allowed}
     .ghost{opacity:.45}
     .schedule-warning{grid-column:2 / -1;color:#ff9aad;font-size:.76rem;line-height:1.3}
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
@@ -177,7 +181,7 @@
       .permanent-edit,.recurring-config{grid-template-columns:1fr}
       .recurring-config{grid-column:auto}
       .permanent-actions{grid-column:auto}
-      .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 58px;gap:4px;padding:5px}
+      .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 58px 56px;gap:4px;padding:5px}
       .flight-control{padding:5px 4px;font-size:.8rem}
     }
   </style>
@@ -401,7 +405,7 @@
         <div class="panel">
           <h3>Step 4｜獨立調整次序、時間與時長</h3>
           <div class="hint">
-            Start time 會令任務依次自動排列。你亦可更改個別任務的開始時間；其後任務會自動接續排列。Step 4 的修改不會改動 Plan 任務設定。
+            Start time 會令任務依次自動排列。Pin 後會鎖定該任務的時間及時長；重新排序時會保留 pinned task 的時間，並即時檢查及顯示時間衝突。Step 4 的修改不會改動 Plan 任務設定。
           </div>
         </div>
         <div class="panel">
@@ -974,6 +978,7 @@
           recurringTaskId:item.recurringTaskId || '',
           recurringRule:item.recurringRule || '',
           recurringDays:item.recurringDays || [],
+          pinned:!!item.arrangementPinned,
           rememberedOrder:i,
           originalIndex:i
         }));
@@ -998,7 +1003,7 @@
       if(!ensureTodayArrangementTasks()) return;
       const i = arrangementTasks.findIndex(t => t.id === id);
       if(i < 0) return;
-      if(arrangementTasks[i].isFixedTime) return;
+      if(arrangementTasks[i].isFixedTime || arrangementTasks[i].pinned) return;
       const start = timeStrToMinutesToday(value);
       if(start == null) return;
 
@@ -1046,6 +1051,7 @@
           subBits.push(item.status === 'done' ? 'Done' : 'Planned');
           if(item.source) subBits.push(item.source);
           if(item.isFixedTime && item.fixedStart) subBits.push(`🔒 ${item.fixedStart}`);
+          if(item.arrangementPinned) subBits.push('📌 Pinned');
 
           div.innerHTML = `
             <div class="today-flight-no">#${orderNo}</div>
@@ -1055,7 +1061,7 @@
             </div>
             <div class="today-flight-time mono">
               ${allowActions ? `
-                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="${item.isFixedTime ? '固定時間' : '更改開始時間'}" ${item.isFixedTime ? 'disabled' : ''}>
+                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="${item.isFixedTime || item.arrangementPinned ? '時間已鎖定' : '更改開始時間'}" ${item.isFixedTime || item.arrangementPinned ? 'disabled' : ''}>
                   ${halfHourOptions(item.fixedStart || item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
                 </select>
               ` : escapeHtml(timeText)}
@@ -1124,6 +1130,7 @@
           startOffset: t.startOverride != null
             ? t.startOverride - (timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0)
             : null,
+          pinned: !!t.pinned,
           savedAt: now()
         };
       });
@@ -1145,7 +1152,8 @@
           arrangementStart: minutesToTimeStr(r.start),
           arrangementEnd: minutesToTimeStr(r.end),
           arrangementMinutes: r.minutes,
-          arrangementRank: t.rank ?? ''
+          arrangementRank: t.rank ?? '',
+          arrangementPinned: !!t.pinned
         }];
       }));
 
@@ -1177,7 +1185,8 @@
           fixedStart: t.fixedStart || '',
           recurringTaskId: t.recurringTaskId || '',
           recurringRule: t.recurringRule || '',
-          recurringDays: t.recurringDays || []
+          recurringDays: t.recurringDays || [],
+          pinned: !!t.pinned
         }))
       });
     }
@@ -1290,6 +1299,7 @@
           recurringTaskId: item.recurringTaskId || '',
           recurringRule: item.recurringRule || '',
           recurringDays: item.recurringDays || [],
+          pinned: !!(item.arrangementPinned ?? remembered.pinned),
           rememberedOrder: remembered.order ?? 9999,
           originalIndex
         };
@@ -1477,8 +1487,26 @@
     function clearOverridesFrom(indexInclusive){
       for(let j=indexInclusive; j<arrangementTasks.length; j++){
         const t = arrangementTasks[j];
+        if(t.pinned) continue;
         t.startOverride = null;
       }
+    }
+
+    // [NEW MINIMAL] Pin keeps the current Step 4 time and locks task details.
+    function toggleArrangementPin(index){
+      const task = arrangementTasks[index];
+      if(!task) return;
+      if(task.pinned){
+        task.pinned = false;
+        clearOverridesFrom(index);
+      } else {
+        const row = buildSchedule()[index];
+        task.startOverride = row ? row.start : task.startOverride;
+        task.pinned = true;
+      }
+      saveArrangementMemory();
+      saveDailyArrangementSession();
+      renderReorderList();
     }
 
     function halfHourOptions(selectedValue){
@@ -1514,20 +1542,22 @@
         const t = arrangementTasks[visIdx];
         const li = document.createElement('li');
         li.dataset.index = String(visIdx);
+        if(t.pinned) li.classList.add('pinned');
         li.innerHTML = `
           <div class="handle" title="拖曳改位置">☰</div>
           <div class="flight-task" title="按住任務名稱也可拖曳">
             <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)}</div>
             <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}</div>
           </div>
-          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}">
+          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}" ${t.pinned?'disabled':''}>
             ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
-          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
+          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" ${t.pinned?'disabled':''} />
           <div class="flight-move">
             <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
             <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
           </div>
+          <button type="button" class="flight-pin ${t.pinned?'active':''}" onclick="toggleArrangementPin(${visIdx})" title="${t.pinned?'解除鎖定':'鎖定時間及時長'}">${t.pinned?'📌 Unpin':'Pin'}</button>
           ${r.conflict ? `<div class="schedule-warning">⚠️ Warning：指定時間 ${minutesToTimeStr(r.start)} 早於前面任務完成時間 ${minutesToTimeStr(r.previousEnd)}，時間重疊 ${r.previousEnd-r.start} 分鐘。</div>` : ''}
         `;
         list.appendChild(li);
