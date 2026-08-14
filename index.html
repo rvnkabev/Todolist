@@ -206,7 +206,7 @@
           </button>
           <button class="hero-btn" onclick="showPage('pageToday')">
             <strong>3. Today ToDoList</strong>
-            顯示任務資料，並採用 Arrangement Step 4 的最終次序與時間。
+            顯示 Arrangement Step 3 Timetable 預覽的任務次序與時間。
           </button>
         </div>
       </div>
@@ -298,7 +298,7 @@
           <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
         </div>
         <h2>Today ToDoList</h2>
-        <div class="small">顯示今天任務；如已完成 Arrangement Step 4，會按最終排程次序及時間顯示，並保留最近 24 小時紀錄。</div>
+        <div class="small">顯示 Arrangement Step 3 Timetable 預覽的任務次序及時間，並保留最近 24 小時紀錄。</div>
       </div>
 
       <div class="panel">
@@ -1088,7 +1088,7 @@
     function refreshTodayPage(){
       moveOldTodayTodosToHistory();
       ensureRecurringTasksForToday();
-      // Today ToDoList receives its visible task data from Arrangement Step 4.
+      // Today ToDoList receives its visible task data from Arrangement Step 3 timetable preview.
       const todos = getTodayTodos().filter(x => Number.isFinite(Number(x.arrangementOrder)));
       const hist = pruneHistory24();
       const planned = todos.filter(x => x.status === 'planned').length;
@@ -1141,7 +1141,7 @@
       });
     }
 
-    // [NEW MINIMAL] Sync Step 4 result back into Today ToDoList.
+    // [NEW MINIMAL] Sync Arrangement Step 3 timetable preview into Today ToDoList.
     function syncArrangementToTodayTodos(){
       if(!arrangementTasks.length) return;
       const rows = buildSchedule();
@@ -1167,7 +1167,6 @@
     // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
     function saveDailyArrangementSession(){
       if(!arrangementTasks.length) return;
-      syncArrangementToTodayTodos();
       saveLS(STORAGE_KEYS.arrangementDailySession, {
         date: todayStr(),
         savedAt: now(),
@@ -1465,6 +1464,7 @@
       const endAll = rows.length ? rows[rows.length-1].end : null;
       if(endAll != null && bed != null && endAll > bed){ lines.push(`\n⚠️ 超過上床時間：${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
       el.textContent = lines.join('\n');
+      syncArrangementToTodayTodos();
     }
 
     async function copyArrangementTimetable(){
