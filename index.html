@@ -453,6 +453,8 @@
 
     const DUR_PRESETS = [5,15,30,60,90,120];
     let arrangementTasks = [];
+    let activeArrangementStep = 'arrStep1';
+    let restoringArrangementSession = false;
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function now(){ return Date.now(); }
@@ -925,6 +927,8 @@
     function markTodoStatus(id, status){
       const todos = getTodayTodos().map(item => item.id === id ? {...item, status, updatedAt: now()} : item);
       setTodayTodos(todos);
+      const task = arrangementTasks.find(t => t.id === id);
+      if(task){ task.status = status; saveDailyArrangementSession(); }
       refreshTodayPage();
       updateHomeStats();
     }
@@ -934,6 +938,8 @@
       const found = todos.find(x => x.id === id);
       const remain = todos.filter(x => x.id !== id);
       setTodayTodos(remain);
+      arrangementTasks = arrangementTasks.filter(t => t.id !== id);
+      saveDailyArrangementSession();
       if(found){
         const hist = pruneHistory24();
         hist.unshift({...found, archivedAt: now(), archivedReason: 'manual-delete'});
@@ -1082,8 +1088,8 @@
     function refreshTodayPage(){
       moveOldTodayTodosToHistory();
       ensureRecurringTasksForToday();
-      // Today ToDoList receives its visible task data from Arrangement Step 4.
-      const todos = getTodayTodos().filter(x => Number.isFinite(Number(x.arrangementOrder)));
+      // Today and Arrangement share the same task pool throughout Step 1–4.
+      const todos = getTodayTodos().filter(x => x.date === todayStr());
       const hist = pruneHistory24();
       const planned = todos.filter(x => x.status === 'planned').length;
       const done = todos.filter(x => x.status === 'done').length;
@@ -1156,13 +1162,13 @@
       setTodayTodos(todos);
     }
 
-    // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
+    // [NEW MINIMAL] Persist today's exact Step 1–4 state across HTML/browser close.
     function saveDailyArrangementSession(){
-      if(!arrangementTasks.length) return;
-      syncArrangementToTodayTodos();
+      if(arrangementTasks.length) syncArrangementToTodayTodos();
       saveLS(STORAGE_KEYS.arrangementDailySession, {
         date: todayStr(),
         savedAt: now(),
+        activeStep: activeArrangementStep,
         homeTime: document.getElementById('homeTime').value,
         bedTime: document.getElementById('bedTime').value,
         tasks: arrangementTasks.map(t => ({
@@ -1184,14 +1190,7 @@
 
     function restoreDailyArrangementSession(){
       const session = loadLS(STORAGE_KEYS.arrangementDailySession, null);
-      if(!session || session.date !== todayStr() || !Array.isArray(session.tasks) || !session.tasks.length) return false;
-
-      const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
-      if(log[todayStr()]) return false; // already exported today
-
-      const todayIds = getTodayTodos().filter(x => x.date === todayStr()).map(x => x.id).sort();
-      const sessionIds = session.tasks.map(x => x.id).sort();
-      if(todayIds.join('|') !== sessionIds.join('|')) return false;
+      if(!session || session.date !== todayStr() || !Array.isArray(session.tasks)) return false;
 
       if(session.homeTime){
         fillHalfHourTimeSelect('homeTime', session.homeTime);
@@ -1200,15 +1199,47 @@
         fillHalfHourTimeSelect('bedTime', session.bedTime);
       }
 
-      arrangementTasks = session.tasks.map((t, i) => ({
+      const todos = getTodayTodos().filter(x => x.date === todayStr());
+      const byId = new Map(todos.map(x => [x.id, x]));
+      arrangementTasks = session.tasks.filter(t => byId.has(t.id)).map((t, i) => ({
         ...t,
+        status: byId.get(t.id)?.status || t.status,
         rememberedOrder: i,
         originalIndex: i
       }));
 
+      // Keep saved work and append any task newly added from Plan/Today.
+      const restoredIds = new Set(arrangementTasks.map(t => t.id));
+      const mem = getArrangementMemory();
+      const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
+      todos.filter(item => !restoredIds.has(item.id)).forEach((item, originalIndex) => {
+        const name = normalizeTaskName(item.displayText || item.text);
+        const remembered = mem[arrangementMemoryKey(name)] || {};
+        arrangementTasks.push({
+          id:item.id, raw:'', name,
+          minutes:item.arrangementMinutes ?? remembered.minutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
+          rank:item.arrangementRank ?? remembered.rank ?? '',
+          startOverride:item.arrangementStart ? timeStrToMinutesToday(item.arrangementStart)
+            : (item.isFixedTime && item.fixedStart ? timeStrToMinutesToday(item.fixedStart)
+            : (remembered.startOffset != null ? home + Number(remembered.startOffset) : null)),
+          status:item.status, isFixedTime:!!item.isFixedTime, fixedStart:item.fixedStart || '',
+          recurringTaskId:item.recurringTaskId || '', recurringRule:item.recurringRule || '',
+          recurringDays:item.recurringDays || [], rememberedOrder:9999, originalIndex
+        });
+      });
+
       renderDetected(arrangementTasks);
       renderTaskCards();
-      resetArrangementStats();
+      restoringArrangementSession = true;
+      showArrangementStep(session.activeStep || 'arrStep1');
+      restoringArrangementSession = false;
+      if(activeArrangementStep === 'arrStep3'){
+        renderArrangementStats();
+        renderArrangementTimetable();
+      }
+      if(activeArrangementStep === 'arrStep4') renderReorderList();
+      if(activeArrangementStep === 'arrStep1' || activeArrangementStep === 'arrStep2') resetArrangementStats();
+      saveDailyArrangementSession();
       return true;
     }
 
@@ -1255,15 +1286,18 @@
     function showArrangementStep(id){
       document.querySelectorAll('.arr-step').forEach(s => s.style.display = 'none');
       document.getElementById(id).style.display = '';
+      activeArrangementStep = id;
+      if(!restoringArrangementSession) saveDailyArrangementSession();
     }
 
     function openArrangementFromStoredData(){
       moveOldTodayTodosToHistory();
       ensureRecurringTasksForToday();
       showPage('pageArrangement');
-      showArrangementStep('arrStep1');
       if(!restoreDailyArrangementSession()){
+        showArrangementStep('arrStep1');
         loadArrangementTasksFromToday();
+        saveDailyArrangementSession();
       }
     }
 
@@ -1361,6 +1395,8 @@
           arrangementTasks[i].minutes = v;
           if(arrangementTasks[i].startOverride != null) clearOverridesFrom(i+1);
           renderTaskCards();
+          saveArrangementMemory();
+          saveDailyArrangementSession();
         });
       });
       host.querySelectorAll('.rank-group .rank').forEach(btn => {
@@ -1369,6 +1405,8 @@
           const v = Number(btn.dataset.v);
           arrangementTasks[i].rank = v;
           renderTaskCards();
+          saveArrangementMemory();
+          saveDailyArrangementSession();
         });
       });
       host.querySelectorAll('input').forEach(inp => {
@@ -1378,6 +1416,8 @@
           let v = inp.value;
           if(k === 'minutes' || k === 'rank') v = v === '' ? '' : Number(v);
           arrangementTasks[i][k] = v;
+          saveArrangementMemory();
+          saveDailyArrangementSession();
         });
       });
     }
@@ -1749,7 +1789,6 @@
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       log[todayStr()] = now();
       saveLS(STORAGE_KEYS.successDailyAutoSaveLog, log);
-      clearDailyArrangementSession();
       updateSuccessDailySaveStatus();
     }
 
@@ -1830,6 +1869,19 @@
 
       // [NEW MINIMAL] Restore today's exact Step 4 session before the 18:00 export check.
       restoreDailyArrangementSession();
+
+      // Step 1 time settings are part of today's shared Arrangement memory.
+      ['homeTime','bedTime'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+          saveArrangementMemory();
+          saveDailyArrangementSession();
+          if(activeArrangementStep === 'arrStep3'){
+            renderArrangementStats();
+            renderArrangementTimetable();
+          }
+          if(activeArrangementStep === 'arrStep4') renderReorderList();
+        });
+      });
 
       // [NEW] Check once now + once per minute.
       checkSuccessDailyAutoSave();
