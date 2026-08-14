@@ -1188,6 +1188,8 @@
           pinned: !!t.pinned
         }))
       });
+      // Keep Today ToDoList in sync after every Step 4 / Today arrangement edit.
+      syncArrangementToTodayTodos();
     }
 
     function restoreDailyArrangementSession(){
@@ -1216,7 +1218,9 @@
 
       renderDetected(arrangementTasks);
       renderTaskCards();
-      resetArrangementStats();
+      // Restore the Step 3 preview and refresh Today ToDoList from this session.
+      renderArrangementStats();
+      renderArrangementTimetable();
       return true;
     }
 
