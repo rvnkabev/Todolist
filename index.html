@@ -277,9 +277,10 @@
 
         <div class="sep"></div>
         <div class="btn-row">
-          <button class="btn" onclick="savePlanToArrangement()">儲存所選任務 → Arrangement</button>
+          <button class="btn" onclick="savePlanToToday('planned')">儲存為 Planned → Today ToDoList</button>
+          <button class="btn-ok" onclick="savePlanToToday('done')">儲存為 Done → Today ToDoList</button>
         </div>
-        <div class="small" style="margin-top:8px">Plan 保持獨立；只把所選任務複製到 Arrangement，不會直接改動 Today ToDoList。</div>
+        <div class="small" style="margin-top:8px">會寫入今天任務池，Arrangement 會自動讀取這些任務。</div>
       </div>
     </section>
 
@@ -324,13 +325,13 @@
           <button onclick="showArrangementStep('arrStep4')">Step 4</button>
         </div>
         <h2>Arrangement</h2>
-        <div class="small">Step 1 讀取 Plan 所選任務的獨立副本；Step 4 修改不會改動 Plan。完成 Step 4 後才輸出到 Today ToDoList。</div>
+        <div class="small">Step 1 直接使用 Today ToDoList 資料；已加入 Arrangement Memory，會記住任務時長、Rank、順序和時間偏好。</div>
       </div>
 
       <!-- Step 1 -->
       <section id="arrStep1" class="arr-step">
         <div class="panel">
-          <h3>Step 1｜載入 Plan 所選任務 + 今晚時段</h3>
+          <h3>Step 1｜自動載入 Today ToDoList + 今晚時段</h3>
           <div class="row">
             <div>
               <label for="homeTime">預計回到家時間（今天）</label>
@@ -343,7 +344,7 @@
           </div>
           <div class="small">時間選擇簡化為每 30 分鐘：00 / 30。</div>
           <div class="btn-row">
-            <button class="btn" onclick="loadArrangementTasksFromPlan()">重新從 Plan 載入</button>
+            <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Today ToDoList 載入</button>
             <button class="btn" onclick="prepareArrangementAndGoStep2()">載入任務 & 前往 Step 2</button>
           </div>
           <div id="detectedWrap" style="margin-top:10px;display:none">
@@ -406,7 +407,7 @@
           <ul id="reorderList" class="draglist"></ul>
           <div class="btn-row">
             <button onclick="showArrangementStep('arrStep3')">← 回 Step 3</button>
-            <button class="btn" onclick="finishArrangementStep4()">完成排程 → Today ToDoList</button>
+            <button class="btn" onclick="finishArrangementStep4()">更新 Timetable & 回 Step 3</button>
           </div>
         </div>
       </section>
@@ -429,7 +430,6 @@
     // 基本工具
     // =========================
     const STORAGE_KEYS = {
-      planTasks: 'mainPlanner_planTasks_v1',
       todayTodos: 'mainPlanner_todayTodos_v1',
       history24: 'mainPlanner_history24_v1',
 
@@ -495,8 +495,6 @@
     }
 
     function todayStr(){ return getTodayStrLocal(); }
-    function getPlanTasks(){ return loadLS(STORAGE_KEYS.planTasks, []); }
-    function setPlanTasks(arr){ saveLS(STORAGE_KEYS.planTasks, arr); }
     function getTodayTodos(){ return loadLS(STORAGE_KEYS.todayTodos, []); }
     function setTodayTodos(arr){ saveLS(STORAGE_KEYS.todayTodos, arr); }
     function getHistory24(){ return loadLS(STORAGE_KEYS.history24, []); }
@@ -892,29 +890,32 @@
         .trim();
     }
 
-    function savePlanToArrangement(){
+    function savePlanToToday(state){
       const picked = Array.from(document.querySelectorAll('#planTodoCards .todo-card'))
         .filter(card => card.querySelector('input').checked)
         .map(card => card.querySelector('.todo-title').innerText.trim());
       if(!picked.length){ alert('請至少選擇一項'); return; }
 
+      moveOldTodayTodosToHistory();
+      const todos = getTodayTodos();
       const createdAt = now();
-      const planTasks = picked.map(text => ({
+      picked.forEach(text => {
+        todos.push({
           id: uid(),
           text: normalizeTaskName(text),
           displayText: text,
           minutes: parseDurationMinutes(text),
           date: todayStr(),
-          status: 'planned',
+          status: state,
           createdAt,
           updatedAt: createdAt,
           source: 'plan'
-        }));
-      setPlanTasks(planTasks);
-      clearDailyArrangementSession();
+        });
+      });
+      setTodayTodos(todos);
       updateHomeStats();
-      alert(`已儲存 Plan：${picked.length} 項；現在載入 Arrangement。`);
-      openArrangementFromStoredData();
+      alert(`已加入 Today ToDoList：${picked.length} 項`);
+      showPage('pageToday');
     }
 
     // =========================
@@ -1135,36 +1136,28 @@
     function syncArrangementToTodayTodos(){
       if(!arrangementTasks.length) return;
       const rows = buildSchedule();
-      const existingById = new Map(getTodayTodos().map(item => [item.id, item]));
-      const arrangedTodos = rows.map((r, order) => {
+      const byId = new Map(rows.map((r, order) => {
         const t = arrangementTasks[order];
-        const existing = existingById.get(t.id);
-        return {
-          id: t.id || uid(),
-          text: t.name,
-          displayText: t.name,
-          date: todayStr(),
-          status: existing?.status || t.status || 'planned',
-          createdAt: existing?.createdAt || now(),
-          updatedAt: now(),
-          source: 'arrangement',
+        return [t.id, {
           arrangementOrder: order,
           arrangementStart: minutesToTimeStr(r.start),
           arrangementEnd: minutesToTimeStr(r.end),
           arrangementMinutes: r.minutes,
-          arrangementRank: t.rank ?? '',
-          minutes: r.minutes,
-          isFixedTime: !!t.isFixedTime,
-          fixedStart: t.fixedStart || ''
-        };
+          arrangementRank: t.rank ?? ''
+        }];
+      }));
+
+      const todos = getTodayTodos().map(item => {
+        const arranged = byId.get(item.id);
+        return arranged ? {...item, ...arranged} : item;
       });
-      const otherDates = getTodayTodos().filter(item => item.date !== todayStr());
-      setTodayTodos(otherDates.concat(arrangedTodos));
+      setTodayTodos(todos);
     }
 
     // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
     function saveDailyArrangementSession(){
       if(!arrangementTasks.length) return;
+      syncArrangementToTodayTodos();
       saveLS(STORAGE_KEYS.arrangementDailySession, {
         date: todayStr(),
         savedAt: now(),
@@ -1194,7 +1187,7 @@
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       if(log[todayStr()]) return false; // already exported today
 
-      const todayIds = getPlanTasks().filter(x => x.date === todayStr()).map(x => x.id).sort();
+      const todayIds = getTodayTodos().filter(x => x.date === todayStr()).map(x => x.id).sort();
       const sessionIds = session.tasks.map(x => x.id).sort();
       if(todayIds.join('|') !== sessionIds.join('|')) return false;
 
@@ -1268,12 +1261,12 @@
       showPage('pageArrangement');
       showArrangementStep('arrStep1');
       if(!restoreDailyArrangementSession()){
-        loadArrangementTasksFromPlan();
+        loadArrangementTasksFromToday();
       }
     }
 
-    function loadArrangementTasksFromPlan(){
-      const todos = getPlanTasks().filter(x => x.date === todayStr());
+    function loadArrangementTasksFromToday(){
+      const todos = getTodayTodos().filter(x => x.date === todayStr());
       const mem = getArrangementMemory();
       const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
 
@@ -1310,12 +1303,9 @@
       resetArrangementStats();
     }
 
-    // Backward-compatible alias for older buttons/calls kept in the original code.
-    function loadArrangementTasksFromToday(){ return loadArrangementTasksFromPlan(); }
-
     function prepareArrangementAndGoStep2(){
-      loadArrangementTasksFromPlan();
-      if(!arrangementTasks.length){ alert('Plan 沒有所選任務，請先到 Plan 選擇並儲存。'); return; }
+      loadArrangementTasksFromToday();
+      if(!arrangementTasks.length){ alert('Today ToDoList 沒有任務，請先到 Plan 或 Today ToDoList 新增。'); return; }
       showArrangementStep('arrStep2');
     }
 
@@ -1641,12 +1631,10 @@
 
     function finishArrangementStep4(){
       saveArrangementMemory(); // [NEW]
-      syncArrangementToTodayTodos();
       saveDailyArrangementSession();
       renderArrangementStats();
       renderArrangementTimetable();
-      alert('排程已完成並輸出到 Today ToDoList。Plan 原資料沒有改動。');
-      showPage('pageToday');
+      showArrangementStep('arrStep3');
     }
 
     // =========================
