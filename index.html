@@ -1289,7 +1289,8 @@
           startOverride: item.isFixedTime && item.fixedStart
             ? timeStrToMinutesToday(item.fixedStart)
             : (remembered.startOffset != null ? home + Number(remembered.startOffset) : null),
-          pinned: !!(item.isFixedTime || remembered.pinned),
+          // [NEW MINIMAL] Plan fixed time does not force a Step 4 pin.
+          pinned: !!remembered.pinned,
           status: item.status,
           isFixedTime: !!item.isFixedTime,
           fixedStart: item.fixedStart || '',
@@ -1442,7 +1443,8 @@
       const rows = [];
       arrangementTasks.forEach((t, idx) => {
         const m = Math.max(0, Number(t.minutes) || 0);
-        const pinned = !!(t.pinned || t.isFixedTime);
+        // [NEW MINIMAL] Step 4 is independent: every task may be pinned or unpinned.
+        const pinned = !!t.pinned;
         const requestedStart = pinned && t.startOverride != null ? t.startOverride : null;
         const conflict = requestedStart != null && requestedStart < cur;
         const start = requestedStart != null ? requestedStart : cur;
@@ -1485,9 +1487,7 @@
       for(let j=indexInclusive; j<arrangementTasks.length; j++){
         const t = arrangementTasks[j];
         if(t.pinned && t.startOverride != null) continue;
-        t.startOverride = (t.isFixedTime && t.fixedStart)
-          ? timeStrToMinutesToday(t.fixedStart)
-          : null;
+        t.startOverride = null;
       }
     }
 
@@ -1527,14 +1527,14 @@
         li.innerHTML = `
           <div class="handle" title="拖曳改位置">☰</div>
           <div class="flight-task" title="按住任務名稱也可拖曳">
-            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)} ${t.isFixedTime ? '<span class="fixed-lock">🔒</span>' : ''}</div>
-            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}${t.isFixedTime && t.fixedStart ? ` · Fixed ${t.fixedStart}` : ''}</div>
+            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)}</div>
+            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}</div>
           </div>
           <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}">
-            ${halfHourOptions(t.fixedStart || minutesToTimeStr(Math.round(r.start/30)*30))}
+            ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
           <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
-          <button type="button" class="pin-btn ${r.pinned ? 'active' : ''}" onclick="toggleArrangementPin(${visIdx})" ${t.isFixedTime ? 'disabled' : ''} title="${t.isFixedTime ? 'Permanent Task 固定時間' : '鎖定／解除指定開始時間'}">${r.pinned ? '📌 Pinned' : 'Pin'}</button>
+          <button type="button" class="pin-btn ${r.pinned ? 'active' : ''}" onclick="toggleArrangementPin(${visIdx})" title="鎖定／解除指定開始時間">${r.pinned ? '📌 Pinned' : 'Pin'}</button>
           <div class="flight-move">
             <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
             <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
@@ -1560,7 +1560,7 @@
 
     function toggleArrangementPin(index){
       const t = arrangementTasks[index];
-      if(!t || t.isFixedTime) return;
+      if(!t) return;
       if(t.pinned){
         t.pinned = false;
         t.startOverride = null;
