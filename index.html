@@ -4,23 +4,56 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Main Planner — Plan / Today ToDoList / Arrangement</title>
+
   <style>
     :root{
-      --bg:#0b1020; --bg2:#111936; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
-      --accent:#7aa2ff; --ok:#2ad1a0; --warn:#ffb02e; --danger:#ff5a78; --line:#263565;
+      --bg:#0b1020;
+      --bg2:#111936;
+      --panel:#141a33;
+      --ink:#e9eefc;
+      --muted:#a8b6f5;
+      --accent:#7aa2ff;
+      --ok:#2ad1a0;
+      --warn:#ffb02e;
+      --danger:#ff5a78;
+      --line:#263565;
     }
+
     *{box-sizing:border-box}
+
     body{
       margin:0;
       background:linear-gradient(180deg,var(--bg),var(--bg2));
       color:var(--ink);
-      font-family:ui-sans-serif,system-ui,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,Helvetica,Arial;
+      font-family:
+        ui-sans-serif,
+        system-ui,
+        "PingFang TC",
+        "Noto Sans TC",
+        Segoe UI,
+        Roboto,
+        Helvetica,
+        Arial;
     }
-    .wrap{max-width:1100px;margin:0 auto;padding:20px}
-    h1,h2,h3{margin:0 0 12px}
-    .sub{color:var(--muted);font-size:.95rem}
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    h1,h2,h3{
+      margin:0 0 12px;
+    }
+
+    .sub{
+      color:var(--muted);
+      font-size:.95rem;
+    }
+
     .page{display:none}
     .page.active{display:block}
+
     .panel{
       background:var(--panel);
       border:1px solid #223061;
@@ -29,52 +62,169 @@
       margin:12px 0;
       box-shadow:0 8px 24px rgba(0,0,0,.15);
     }
-    .grid{display:grid;gap:12px}
-    .grid-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-    .grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
-    .hero-btn, button{
-      padding:12px 14px;border-radius:12px;border:1px solid #2a3767;background:#0e142b;color:var(--ink);
-      cursor:pointer;font-size:1rem
+
+    .grid{
+      display:grid;
+      gap:12px;
     }
-    .hero-btn{min-height:92px;text-align:left}
-    .hero-btn strong{display:block;font-size:1.05rem;margin-bottom:6px}
-    .btn{background:var(--accent);border:none;font-weight:700}
-    .btn-ok{background:var(--ok);border:none;color:#07271d;font-weight:700}
-    .btn-danger{background:var(--danger);border:none;font-weight:700}
-    .btn-row,.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-    .row > *{flex:1 1 220px}
-    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:.95rem}
-    input,textarea,select{
-      width:100%;padding:12px;border-radius:10px;border:1px solid #2a3767;
-      background:#0e142b;color:var(--ink);font-size:1rem
+
+    .grid-3{
+      grid-template-columns:
+        repeat(auto-fit,minmax(220px,1fr));
     }
-    textarea{min-height:110px;resize:vertical}
-    .small{font-size:.85rem;color:var(--muted)}
+
+    .grid-2{
+      grid-template-columns:
+        repeat(auto-fit,minmax(280px,1fr));
+    }
+
+    .hero-btn,
+    button{
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid #2a3767;
+      background:#0e142b;
+      color:var(--ink);
+      cursor:pointer;
+      font-size:1rem;
+    }
+
+    .hero-btn{
+      min-height:92px;
+      text-align:left;
+    }
+
+    .hero-btn strong{
+      display:block;
+      font-size:1.05rem;
+      margin-bottom:6px;
+    }
+
+    .btn{
+      background:var(--accent);
+      border:none;
+      font-weight:700;
+    }
+
+    .btn-ok{
+      background:var(--ok);
+      border:none;
+      color:#07271d;
+      font-weight:700;
+    }
+
+    .btn-danger{
+      background:var(--danger);
+      border:none;
+      font-weight:700;
+    }
+
+    .btn-row,
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .row > *{
+      flex:1 1 220px;
+    }
+
+    label{
+      display:block;
+      margin:8px 0 6px;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+
+    input,
+    textarea,
+    select{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #2a3767;
+      background:#0e142b;
+      color:var(--ink);
+      font-size:1rem;
+    }
+
+    textarea{
+      min-height:110px;
+      resize:vertical;
+    }
+
+    .small{
+      font-size:.85rem;
+      color:var(--muted);
+    }
+
     .mono{
-      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,
-      "Liberation Mono","Courier New",monospace
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        "Liberation Mono",
+        "Courier New",
+        monospace;
     }
-    .hint{color:var(--muted);font-size:.92rem}
+
+    .hint{
+      color:var(--muted);
+      font-size:.92rem;
+    }
+
     .pill{
-      display:inline-block;padding:4px 10px;border-radius:999px;
-      border:1px solid #2a3767;background:#0e142b;margin:2px 6px 2px 0;
-      font-size:.82rem
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid #2a3767;
+      background:#0e142b;
+      margin:2px 6px 2px 0;
+      font-size:.82rem;
     }
-    .tag-ok,.tag-warn,.tag-danger{
-      display:inline-block;padding:2px 8px;border-radius:999px;
-      font-size:.8rem;border:1px solid transparent
+
+    .tag-ok,
+    .tag-warn,
+    .tag-danger{
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:.8rem;
+      border:1px solid transparent;
     }
-    .tag-ok{border-color:#164932;background:#0f2b1e;color:#7dffca}
-    .tag-warn{border-color:#57401a;background:#2b1e0e;color:#ffd37a}
-    .tag-danger{border-color:#5c1c2c;background:#2d1018;color:#ff9aad}
+
+    .tag-ok{
+      border-color:#164932;
+      background:#0f2b1e;
+      color:#7dffca;
+    }
+
+    .tag-warn{
+      border-color:#57401a;
+      background:#2b1e0e;
+      color:#ffd37a;
+    }
+
+    .tag-danger{
+      border-color:#5c1c2c;
+      background:#2d1018;
+      color:#ff9aad;
+    }
 
     .cards{
       display:grid;
       grid-template-columns:1fr;
-      gap:12px
+      gap:12px;
     }
+
     @media (min-width:760px){
-      .cards.two{grid-template-columns:1fr 1fr}
+      .cards.two{
+        grid-template-columns:1fr 1fr;
+      }
     }
 
     .card{
@@ -94,35 +244,53 @@
       border-radius:14px;
       padding:14px;
     }
-    .todo-card.done{opacity:.72;border-color:#215b49}
-    .todo-card.selected{outline:2px solid var(--accent)}
-    .todo-title{font-size:1rem;line-height:1.35}
-    .todo-meta{font-size:.8rem;color:var(--muted);margin-top:4px}
+
+    .todo-card.done{
+      opacity:.72;
+      border-color:#215b49;
+    }
+
+    .todo-card.selected{
+      outline:2px solid var(--accent);
+      background:#121d3c;
+    }
+
+    .todo-title{
+      font-size:1rem;
+      line-height:1.35;
+    }
+
+    .todo-meta{
+      font-size:.8rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
 
     .toolbar{
       display:flex;
       gap:8px;
       flex-wrap:wrap;
-      align-items:center
+      align-items:center;
     }
 
     .stat{
       display:flex;
       gap:12px;
-      flex-wrap:wrap
+      flex-wrap:wrap;
     }
+
     .stat .box{
       flex:1 1 180px;
       background:#0e142b;
       border:1px solid var(--line);
       border-radius:12px;
-      padding:12px
+      padding:12px;
     }
 
     .chips{
       display:flex;
       flex-wrap:wrap;
-      gap:8px
+      gap:8px;
     }
 
     .chip{
@@ -131,15 +299,17 @@
       border-radius:999px;
       background:#0e142b;
       cursor:pointer;
-      user-select:none
+      user-select:none;
     }
 
-    .chip.selected{outline:2px solid var(--accent)}
+    .chip.selected{
+      outline:2px solid var(--accent);
+    }
 
     .rank-group{
       display:flex;
       gap:8px;
-      flex-wrap:wrap
+      flex-wrap:wrap;
     }
 
     .rank{
@@ -149,20 +319,23 @@
       border:1px solid #2a3767;
       background:#0e142b;
       cursor:pointer;
-      font-weight:700
+      font-weight:700;
     }
 
-    .rank.selected{outline:2px solid var(--accent)}
+    .rank.selected{
+      outline:2px solid var(--accent);
+    }
 
     .draglist{
       list-style:none;
       padding:0;
-      margin:0
+      margin:0;
     }
 
     .draglist li{
       display:grid;
-      grid-template-columns:34px minmax(140px,1fr) 92px 72px 58px 64px;
+      grid-template-columns:
+        34px minmax(140px,1fr) 92px 72px 58px 64px;
       gap:6px;
       align-items:center;
       padding:6px 8px;
@@ -180,41 +353,43 @@
       text-align:center;
       font-size:1.05rem;
       padding:8px 4px;
-      border-radius:6px
+      border-radius:6px;
     }
 
-    .draglist li:hover .handle{background:#172143}
+    .draglist li:hover .handle{
+      background:#172143;
+    }
 
     .flight-task{
       min-width:0;
       cursor:grab;
-      user-select:none
+      user-select:none;
     }
 
     .flight-task-name{
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      font-weight:700
+      font-weight:700;
     }
 
     .flight-meta{
       font-size:.72rem;
       color:var(--muted);
-      margin-top:2px
+      margin-top:2px;
     }
 
     .flight-control{
       width:100%;
       padding:6px 7px;
       border-radius:7px;
-      font-size:.86rem
+      font-size:.86rem;
     }
 
     .flight-move{
       display:flex;
       gap:3px;
-      justify-content:flex-end
+      justify-content:flex-end;
     }
 
     .flight-move button{
@@ -222,24 +397,29 @@
       min-width:28px;
       border-radius:7px;
       font-size:.84rem;
-      line-height:1
+      line-height:1;
     }
 
     .pin-btn{
       padding:6px;
       font-size:.78rem;
-      border-radius:7px
+      border-radius:7px;
     }
 
     .pin-btn.active{
       background:var(--warn);
       color:#241600;
       border-color:var(--warn);
-      font-weight:700
+      font-weight:700;
     }
 
-    .draglist li.pinned{border-color:var(--warn)}
-    .draglist li.pinned .flight-task{cursor:default}
+    .draglist li.pinned{
+      border-color:var(--warn);
+    }
+
+    .draglist li.pinned .flight-task{
+      cursor:default;
+    }
 
     .step4-warning{
       margin:8px 0;
@@ -247,7 +427,7 @@
       border:1px solid #5c1c2c;
       border-radius:8px;
       background:#2d1018;
-      color:#ffb0be
+      color:#ffb0be;
     }
 
     .ghost{opacity:.45}
@@ -258,34 +438,147 @@
       background:linear-gradient(180deg,#101736,#0b1020);
       padding:12px;
       border-top:1px solid #223061;
-      margin-top:18px
+      margin-top:18px;
     }
 
     .empty{
       padding:18px;
       text-align:center;
-      color:var(--muted)
+      color:var(--muted);
     }
 
     .sep{
       height:1px;
       background:#223061;
-      margin:10px 0
+      margin:10px 0;
     }
 
     .right{text-align:right}
     .center{text-align:center}
 
-    /* Today ToDoList compact flight board */
+
+    /* ========================================================
+       PLAN COMPACT UI
+       ======================================================== */
+
+    .plan-main-panel{
+      padding-top:14px;
+    }
+
+    .plan-task-header{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+
+    .plan-task-header h3{
+      margin:0;
+    }
+
+    .plan-task-header .toolbar button{
+      padding:7px 10px;
+      font-size:.82rem;
+    }
+
+    #planTodoCards{
+      gap:6px;
+    }
+
+    #planTodoCards .todo-card{
+      padding:9px 10px;
+      min-height:48px;
+      border-radius:9px;
+      gap:8px;
+    }
+
+    #planTodoCards .todo-card input[type="checkbox"]{
+      width:20px;
+      height:20px;
+      margin:0;
+      accent-color:var(--accent);
+    }
+
+    #planTodoCards .todo-title{
+      font-size:.94rem;
+      line-height:1.2;
+    }
+
+    #planTodoCards .todo-meta{
+      margin-top:2px;
+      font-size:.72rem;
+    }
+
+    #planTodoCards .pill{
+      padding:2px 7px;
+      margin-left:5px;
+      font-size:.7rem;
+    }
+
+    .plan-add-row{
+      margin-top:10px;
+    }
+
+    .plan-save-row{
+      margin-top:8px;
+    }
+
+    .permanent-manager{
+      border:1px solid #223061;
+      border-radius:16px;
+      background:var(--panel);
+      margin:12px 0;
+      overflow:hidden;
+    }
+
+    .permanent-manager > summary{
+      list-style:none;
+      cursor:pointer;
+      user-select:none;
+      padding:14px 16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+    }
+
+    .permanent-manager > summary::-webkit-details-marker{
+      display:none;
+    }
+
+    .permanent-manager > summary::after{
+      content:"▼";
+      color:var(--accent);
+      font-size:.8rem;
+    }
+
+    .permanent-manager[open] > summary::after{
+      content:"▲";
+    }
+
+    .permanent-manager-body{
+      border-top:1px solid #223061;
+      padding:14px 16px 16px;
+    }
+
+
+    /* ========================================================
+       Today ToDoList compact flight board
+       ======================================================== */
+
     .today-flight-list{
       display:flex;
       flex-direction:column;
-      gap:4px
+      gap:4px;
     }
 
     .today-flight-row{
       display:grid;
-      grid-template-columns:42px minmax(0,1fr) 118px 74px auto;
+      grid-template-columns:
+        42px minmax(0,1fr) 118px 74px auto;
       gap:6px;
       align-items:center;
       padding:5px 7px;
@@ -296,22 +589,24 @@
 
     .today-flight-row.done{
       opacity:.68;
-      border-color:#215b49
+      border-color:#215b49;
     }
 
     .today-flight-no{
       font-size:.78rem;
       color:var(--muted);
-      text-align:center
+      text-align:center;
     }
 
-    .today-flight-main{min-width:0}
+    .today-flight-main{
+      min-width:0;
+    }
 
     .today-flight-title{
       font-size:.92rem;
       white-space:nowrap;
       overflow:hidden;
-      text-overflow:ellipsis
+      text-overflow:ellipsis;
     }
 
     .today-flight-sub{
@@ -320,29 +615,29 @@
       margin-top:1px;
       white-space:nowrap;
       overflow:hidden;
-      text-overflow:ellipsis
+      text-overflow:ellipsis;
     }
 
     .today-flight-time{
       font-size:.82rem;
-      text-align:center
+      text-align:center;
     }
 
     .today-flight-duration{
       font-size:.8rem;
-      text-align:center
+      text-align:center;
     }
 
     .today-flight-actions{
       display:flex;
       gap:4px;
-      justify-content:flex-end
+      justify-content:flex-end;
     }
 
     .today-flight-actions button{
       padding:5px 7px;
       font-size:.78rem;
-      border-radius:7px
+      border-radius:7px;
     }
 
     .today-flight-time select{
@@ -355,27 +650,20 @@
     .today-flight-move{
       display:flex;
       gap:2px;
-      justify-content:center
+      justify-content:center;
     }
 
     .today-flight-move button{
       padding:3px 5px;
       font-size:.72rem;
-      border-radius:6px
+      border-radius:6px;
     }
 
-    @media (max-width:760px){
-      .today-flight-row{
-        grid-template-columns:34px minmax(0,1fr) 92px;
-      }
-      .today-flight-duration{display:none}
-      .today-flight-actions{
-        grid-column:2 / 4;
-        justify-content:flex-start
-      }
-    }
 
-    /* Permanent task editor */
+    /* ========================================================
+       Permanent task editor
+       ======================================================== */
+
     .permanent-item{
       border:1px solid var(--line);
       border-radius:10px;
@@ -387,7 +675,8 @@
     .permanent-item summary{
       list-style:none;
       display:grid;
-      grid-template-columns:minmax(0,1fr) auto auto auto;
+      grid-template-columns:
+        minmax(0,1fr) auto auto auto;
       gap:8px;
       align-items:center;
       padding:8px 10px;
@@ -395,33 +684,43 @@
       user-select:none;
     }
 
-    .permanent-item summary::-webkit-details-marker{display:none}
+    .permanent-item summary::-webkit-details-marker{
+      display:none;
+    }
 
     .permanent-summary-name{
       font-size:.92rem;
       font-weight:650;
       white-space:nowrap;
       overflow:hidden;
-      text-overflow:ellipsis
+      text-overflow:ellipsis;
     }
 
     .permanent-summary-meta{
       font-size:.76rem;
       color:var(--muted);
-      white-space:nowrap
+      white-space:nowrap;
     }
 
     .permanent-summary-edit{
       font-size:.75rem;
-      color:var(--accent)
+      color:var(--accent);
     }
 
-    .permanent-item[open] .permanent-summary-edit::after{content:" ▲"}
-    .permanent-item:not([open]) .permanent-summary-edit::after{content:" ▼"}
+    .permanent-item[open]
+    .permanent-summary-edit::after{
+      content:" ▲";
+    }
+
+    .permanent-item:not([open])
+    .permanent-summary-edit::after{
+      content:" ▼";
+    }
 
     .permanent-edit{
       display:grid;
-      grid-template-columns:minmax(180px,1fr) 120px;
+      grid-template-columns:
+        minmax(180px,1fr) 120px;
       gap:8px;
       padding:10px;
       border-top:1px solid #223061;
@@ -430,7 +729,8 @@
     .recurring-config{
       grid-column:1 / -1;
       display:grid;
-      grid-template-columns:minmax(160px,220px) 140px 1fr;
+      grid-template-columns:
+        minmax(160px,220px) 140px 1fr;
       gap:8px;
       align-items:end;
       padding-top:6px;
@@ -447,22 +747,24 @@
 
     .permanent-actions button{
       padding:7px 10px;
-      font-size:.82rem
+      font-size:.82rem;
     }
 
     .fixed-lock{
       font-size:.72rem;
-      color:#ffd37a
+      color:#ffd37a;
     }
 
     .custom-days{
       display:none;
       gap:4px;
       flex-wrap:wrap;
-      margin-top:6px
+      margin-top:6px;
     }
 
-    .custom-days.active{display:flex}
+    .custom-days.active{
+      display:flex;
+    }
 
     .day-chip{
       width:34px;
@@ -479,45 +781,686 @@
       background:var(--accent);
       border-color:var(--accent);
       color:#071329;
-      font-weight:700
+      font-weight:700;
     }
 
-    @media (max-width:680px){
-      .permanent-item summary{
-        grid-template-columns:minmax(0,1fr) auto;
-        gap:4px 8px
+
+
+
+
+    /* ========================================================
+       COMPACT ARRANGEMENT TASKS + TODAY EXECUTION
+       ======================================================== */
+
+    #taskList{
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+    }
+
+    #taskList .arr-task-row{
+      border:1px solid var(--line);
+      border-radius:9px;
+      background:#0e142b;
+      overflow:hidden;
+    }
+
+    #taskList .arr-task-main{
+      display:grid;
+      grid-template-columns:34px minmax(0,1fr) 82px 34px;
+      gap:6px;
+      align-items:center;
+      padding:6px 7px;
+      min-height:43px;
+    }
+
+    #taskList .arr-task-index{
+      font-size:.75rem;
+      color:var(--muted);
+      text-align:center;
+    }
+
+    #taskList .arr-task-name{
+      min-width:0;
+      font-size:.92rem;
+      font-weight:650;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    #taskList .arr-task-minutes{
+      width:100%;
+      padding:6px 7px;
+      text-align:center;
+      font-size:.84rem;
+      border-radius:7px;
+    }
+
+    #taskList .arr-task-more{
+      position:relative;
+    }
+
+    #taskList .arr-task-more > summary{
+      list-style:none;
+      width:32px;
+      height:32px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #2a3767;
+      border-radius:7px;
+      cursor:pointer;
+      user-select:none;
+      background:#0e142b;
+    }
+
+    #taskList .arr-task-more > summary::-webkit-details-marker{
+      display:none;
+    }
+
+    #taskList .arr-task-expanded{
+      padding:8px 9px 10px;
+      border-top:1px solid #223061;
+    }
+
+    #taskList .arr-task-expanded label{
+      margin-top:4px;
+      font-size:.78rem;
+    }
+
+    #taskList .arr-task-expanded input{
+      padding:8px 9px;
+      font-size:.86rem;
+    }
+
+    #taskList .arr-task-expanded .chips{
+      gap:4px;
+      margin-top:6px;
+    }
+
+    #taskList .arr-task-expanded .chip{
+      padding:5px 8px;
+      font-size:.74rem;
+    }
+
+    #taskList .arr-task-raw{
+      margin-top:7px;
+      font-size:.68rem;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .today-flight-row.execution{
+      grid-template-columns:42px minmax(0,1fr) 118px 62px auto;
+      padding:6px 7px;
+    }
+
+    .today-exec-menu{
+      position:relative;
+    }
+
+    .today-exec-menu > summary{
+      list-style:none;
+      width:32px;
+      height:30px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #2a3767;
+      border-radius:7px;
+      background:#0e142b;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .today-exec-menu > summary::-webkit-details-marker{
+      display:none;
+    }
+
+    .today-exec-pop{
+      position:absolute;
+      right:0;
+      top:35px;
+      z-index:30;
+      min-width:160px;
+      padding:6px;
+      border:1px solid var(--line);
+      border-radius:9px;
+      background:#101736;
+      box-shadow:0 10px 26px rgba(0,0,0,.35);
+    }
+
+    .today-exec-pop button{
+      width:100%;
+      text-align:left;
+      padding:7px 8px;
+      margin:2px 0;
+      font-size:.78rem;
+      border-radius:7px;
+    }
+
+    .today-actual{
+      color:var(--ok);
+    }
+
+    @media (max-width:760px){
+
+      #taskList .arr-task-main{
+        grid-template-columns:28px minmax(0,1fr) 72px 32px;
+        gap:4px;
+        padding:5px 6px;
       }
 
-      .permanent-summary-meta{font-size:.7rem}
+      #taskList .arr-task-minutes{
+        padding:5px;
+        font-size:.8rem;
+      }
+
+      .today-flight-row.execution{
+        grid-template-columns:34px minmax(0,1fr) 88px auto;
+      }
+
+      .today-flight-row.execution .today-flight-duration{
+        display:none;
+      }
+
+      .today-flight-row.execution .today-flight-actions{
+        grid-column:auto;
+      }
+
+      .today-exec-pop{
+        position:fixed;
+        right:12px;
+        left:12px;
+        top:auto;
+        bottom:18px;
+      }
+    }
+
+    /* ========================================================
+       ARRANGEMENT DASHBOARD ADDITIONS
+       ======================================================== */
+
+    .arr-dashboard-section-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .arr-dashboard-section-head h3{
+      margin:0 0 4px;
+    }
+
+    /*
+     * Priority keeps using t.rank / arrangementRank underneath,
+     * but is intentionally hidden during normal planning.
+     * It appears in #priorityAssistant only when overloaded.
+     */
+    #taskList .card > .row > div:nth-child(3){
+      display:none;
+    }
+
+    .priority-assistant{
+      border-color:#57401a;
+    }
+
+    .priority-assistant-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .priority-assistant-head h3{
+      margin:0 0 4px;
+    }
+
+    .priority-list{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-top:10px;
+    }
+
+    .priority-row{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;
+      gap:8px;
+      align-items:center;
+      padding:8px 9px;
+      border:1px solid var(--line);
+      border-radius:9px;
+      background:#0e142b;
+    }
+
+    .priority-name{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .priority-controls{
+      display:flex;
+      gap:3px;
+      align-items:center;
+    }
+
+    .priority-controls button{
+      padding:5px 7px;
+      min-width:32px;
+      font-size:.76rem;
+      border-radius:7px;
+    }
+
+    .priority-controls button.selected{
+      outline:2px solid var(--accent);
+    }
+
+    .priority-suggest{
+      margin-top:10px;
+      padding:10px;
+      border:1px solid #57401a;
+      border-radius:9px;
+      background:#2b1e0e;
+    }
+
+    .arr-one-click-note{
+      margin-top:8px;
+      text-align:right;
+    }
+
+    @media (max-width:760px){
+
+      .priority-row{
+        grid-template-columns:minmax(0,1fr) auto;
+      }
+
+      .priority-controls{
+        grid-column:1 / -1;
+        flex-wrap:wrap;
+      }
+
+      .arr-dashboard-section-head{
+        align-items:center;
+      }
+    }
+
+    /* ========================================================
+       ARRANGEMENT COMPACT FLOW
+       ======================================================== */
+
+    .arrangement-head{
+      padding-bottom:12px;
+    }
+
+    .arrangement-title-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+    }
+
+    .arrangement-title-row h2{
+      margin-bottom:4px;
+    }
+
+    .arr-progress{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:6px;
+      margin-top:14px;
+    }
+
+    .arr-progress button{
+      min-height:52px;
+      padding:7px 8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:7px;
+      font-size:.84rem;
+    }
+
+    .arr-progress strong{
+      display:inline-flex;
+      width:24px;
+      height:24px;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      background:#172143;
+      color:var(--accent);
+    }
+
+    .arr-step-heading{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+
+    .arr-step-heading h3{
+      margin:0 0 4px;
+    }
+
+    .arr-step-no{
+      flex:0 0 34px;
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--accent);
+      color:#071329;
+      font-weight:800;
+    }
+
+    .arr-detected{
+      margin-top:12px;
+      padding:10px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#0e142b;
+    }
+
+    .arr-primary-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+      margin-top:12px;
+    }
+
+    .arr-primary-row .btn,
+    .arr-primary-row .btn-ok{
+      min-width:210px;
+    }
+
+    .arr-secondary-btn{
+      padding:8px 10px;
+      font-size:.82rem;
+      opacity:.9;
+    }
+
+    .arr-task-panel{
+      padding-top:10px;
+    }
+
+    .arr-fit-stat .box{
+      min-width:120px;
+    }
+
+    .arr-timetable-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+
+    .arr-timetable-head h3{
+      margin:0;
+    }
+
+    .arr-timetable{
+      line-height:1.65;
+      padding:10px;
+      border-radius:10px;
+      background:#0e142b;
+      border:1px solid var(--line);
+    }
+
+    @media (max-width:760px){
+      .arrangement-title-row{
+        align-items:center;
+      }
+
+      .arr-progress{
+        gap:4px;
+      }
+
+      .arr-progress button{
+        min-height:46px;
+        padding:6px 3px;
+        gap:4px;
+        font-size:.72rem;
+      }
+
+      .arr-progress strong{
+        width:21px;
+        height:21px;
+        font-size:.72rem;
+      }
+
+      .arr-primary-row{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+      }
+
+      .arr-primary-row > button{
+        width:100%;
+        min-width:0 !important;
+        padding:10px 6px;
+        font-size:.82rem;
+      }
+
+      .arr-step-no{
+        flex-basis:30px;
+        width:30px;
+        height:30px;
+      }
+    }
+
+    /* ========================================================
+       MOBILE
+       ======================================================== */
+
+    @media (max-width:760px){
+
+      .wrap{
+        padding:10px;
+      }
+
+      h1{
+        font-size:1.45rem;
+        margin-bottom:8px;
+      }
+
+      .sub{
+        font-size:.82rem;
+      }
+
+      .panel{
+        padding:12px;
+        margin:8px 0;
+        border-radius:12px;
+      }
+
+      .today-flight-row{
+        grid-template-columns:
+          34px minmax(0,1fr) 92px;
+      }
+
+      .today-flight-duration{
+        display:none;
+      }
+
+      .today-flight-actions{
+        grid-column:2 / 4;
+        justify-content:flex-start;
+      }
+
+
+      /* Plan compact mobile */
+
+      .plan-main-panel{
+        padding:10px;
+      }
+
+      .plan-task-header{
+        margin-bottom:6px;
+      }
+
+      .plan-task-header .toolbar{
+        gap:4px;
+      }
+
+      .plan-task-header .toolbar button{
+        padding:6px 9px;
+        font-size:.78rem;
+      }
+
+      #planTodoCards{
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+      }
+
+      #planTodoCards .todo-card{
+        grid-template-columns:24px minmax(0,1fr);
+        padding:8px 9px;
+        min-height:44px;
+        border-radius:8px;
+      }
+
+      /*
+       * 手機不需要每天重複閱讀：
+       * 「點選後會加入本日任務池」
+       */
+      #planTodoCards .todo-meta{
+        display:none;
+      }
+
+      /*
+       * 手機隱藏右側：
+       * 「預設時長 / 自訂」
+       * 時長仍會以 task 名稱旁的 pill 顯示
+       */
+      #planTodoCards .todo-card > .small{
+        display:none;
+      }
+
+      #planTodoCards .todo-title{
+        font-size:.93rem;
+      }
+
+      #planTodoCards .pill{
+        font-size:.68rem;
+        padding:2px 6px;
+      }
+
+      .plan-add-row{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) 52px;
+        gap:6px;
+      }
+
+      .plan-add-row > div{
+        min-width:0;
+      }
+
+      .plan-add-row label{
+        display:none;
+      }
+
+      .plan-add-row input{
+        padding:10px;
+      }
+
+      .plan-add-button-wrap{
+        flex:0 0 auto !important;
+      }
+
+      .plan-add-button-wrap button{
+        width:100%;
+        height:42px;
+        padding:6px;
+        font-size:1.15rem;
+      }
+
+      .plan-save-row{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:6px;
+      }
+
+      .plan-save-row button{
+        width:100%;
+        padding:10px 6px;
+        font-size:.82rem;
+      }
+
+      .permanent-manager{
+        margin:8px 0;
+        border-radius:12px;
+      }
+
+      .permanent-manager > summary{
+        padding:12px;
+        font-size:.9rem;
+      }
+
+      .permanent-manager-body{
+        padding:10px;
+      }
+    }
+
+
+    @media (max-width:680px){
+
+      .permanent-item summary{
+        grid-template-columns:
+          minmax(0,1fr) auto;
+        gap:4px 8px;
+      }
+
+      .permanent-summary-meta{
+        font-size:.7rem;
+      }
 
       .permanent-summary-edit{
         grid-column:2;
-        grid-row:1 / span 2
+        grid-row:1 / span 2;
       }
 
       .permanent-edit,
       .recurring-config{
-        grid-template-columns:1fr
+        grid-template-columns:1fr;
       }
 
-      .recurring-config{grid-column:auto}
-      .permanent-actions{grid-column:auto}
+      .recurring-config{
+        grid-column:auto;
+      }
+
+      .permanent-actions{
+        grid-column:auto;
+      }
 
       .draglist li{
-        grid-template-columns:30px minmax(105px,1fr) 78px 58px 48px 54px;
+        grid-template-columns:
+          30px minmax(105px,1fr) 78px 58px 48px 54px;
         gap:4px;
-        padding:5px
+        padding:5px;
       }
 
       .flight-control{
         padding:5px 4px;
-        font-size:.8rem
+        font-size:.8rem;
       }
     }
   </style>
 </head>
 
 <body>
+
 <div class="wrap">
 
   <h1>Main Planner</h1>
@@ -527,31 +1470,55 @@
     全部資料以瀏覽器 localStorage 保存，不需要手動貼 Step 1 原文。
   </div>
 
-  <!-- Home -->
+
+  <!-- ======================================================
+       HOME
+       ====================================================== -->
+
   <section id="pageHome" class="page active">
 
     <div class="panel">
+
       <h2>首頁</h2>
 
       <div class="grid grid-3">
 
-        <button class="hero-btn" onclick="showPage('pagePlan')">
+        <button
+          class="hero-btn"
+          onclick="showPage('pagePlan')">
+
           <strong>1. Plan</strong>
+
           建立今天任務，儲存後交給 Arrangement 排程。
+
         </button>
 
-        <button class="hero-btn" onclick="openArrangementFromStoredData()">
+
+        <button
+          class="hero-btn"
+          onclick="openArrangementFromStoredData()">
+
           <strong>2. Arrangement</strong>
+
           讀取今天任務，安排 Step 4 的次序、開始時間與時長。
+
         </button>
 
-        <button class="hero-btn" onclick="showPage('pageToday')">
+
+        <button
+          class="hero-btn"
+          onclick="showPage('pageToday')">
+
           <strong>3. Today ToDoList</strong>
+
           顯示任務資料，並採用 Arrangement Step 4 的最終次序與時間。
+
         </button>
 
       </div>
+
     </div>
+
 
     <div class="panel">
 
@@ -578,341 +1545,538 @@
 
   </section>
 
-  <!-- Plan -->
+
+  <!-- ======================================================
+       PLAN
+       ====================================================== -->
+
   <section id="pagePlan" class="page">
 
     <div class="panel">
 
       <div class="btn-row">
-        <button onclick="goHome()">← Home</button>
-        <button class="btn" onclick="gotoPlanBuilder()">重新載入任務</button>
+
+        <button onclick="goHome()">
+          ← Home
+        </button>
+
+        <button
+          class="btn"
+          onclick="gotoPlanBuilder()">
+
+          重新載入任務
+
+        </button>
+
       </div>
 
       <h2>Plan</h2>
 
       <div class="small">
-        Plan 保持獨立；選取任務後會複製到 Arrangement，不會直接改動 Today ToDoList。
+        選擇今天要做的 Task → 儲存 → Arrangement。
       </div>
 
     </div>
 
-    <!-- Permanent Tasks -->
-    <div class="panel">
 
-      <h3>Permanent Tasks</h3>
+    <!-- ====================================================
+         HIGH FREQUENCY AREA FIRST
+         ==================================================== -->
 
-      <div class="small">
-        永久任務會保存在瀏覽器，可新增、修改、刪除。
-        亦可設定固定時間 + 重複日（Weekday / Weekend / Monday–Sunday），
-        符合日期時會自動加入 Today。
-      </div>
-
-      <div class="row">
-
-        <div>
-          <label for="permanentNewText">永久任務名稱</label>
-          <input
-            id="permanentNewText"
-            type="text"
-            placeholder="如：運動、食藥、Success Daily"
-          />
-        </div>
-
-        <div>
-          <label for="permanentNewMinutes">預設時長</label>
-
-          <select id="permanentNewMinutes">
-            <option value="">未設定</option>
-            <option value="5">5mins</option>
-            <option value="15">15mins</option>
-            <option value="30">30mins</option>
-            <option value="60">1hr</option>
-            <option value="90">1.5hr</option>
-            <option value="120">2hr</option>
-          </select>
-
-        </div>
-
-        <div style="flex:0 0 120px">
-          <label>&nbsp;</label>
-          <button class="btn" onclick="addPermanentTask()">＋ 新增</button>
-        </div>
-
-      </div>
-
-      <div id="permanentTaskEditor"></div>
-
-    </div>
-
-    <div class="panel">
+    <div class="panel plan-main-panel">
 
       <div class="small" id="planDateTime"></div>
 
-      <div class="toolbar">
-        <button onclick="selectAllPlanTodos()">全選</button>
-        <button onclick="clearAllPlanTodos()">清空</button>
-      </div>
+      <div class="plan-task-header">
 
-      <div class="row">
+        <h3>今日任務</h3>
 
-        <div>
-          <label for="planNewTodo">新增項目</label>
-          <input
-            id="planNewTodo"
-            type="text"
-            placeholder="如：買雞、洗衫、運動 30mins"
-          />
-        </div>
+        <div class="toolbar">
 
-        <div style="flex:0 0 120px">
-          <label>&nbsp;</label>
-          <button class="btn" onclick="addPlanTodoFromInput()">＋ 加入</button>
+          <button onclick="selectAllPlanTodos()">
+            全選
+          </button>
+
+          <button onclick="clearAllPlanTodos()">
+            清空
+          </button>
+
         </div>
 
       </div>
+
 
       <div
         id="planTodoCards"
-        class="cards two"
-        style="margin-top:12px">
+        class="cards two">
       </div>
+
 
       <div class="sep"></div>
 
-      <div class="btn-row">
-        <button class="btn" onclick="savePlanToToday('planned')">
-          儲存為 Planned → Arrangement
-        </button>
 
-        <button class="btn-ok" onclick="savePlanToToday('done')">
-          儲存為 Done → Arrangement
-        </button>
+      <!-- Quick new task -->
+
+      <div class="row plan-add-row">
+
+        <div>
+
+          <label for="planNewTodo">
+            新增項目
+          </label>
+
+          <input
+            id="planNewTodo"
+            type="text"
+            placeholder="新增臨時任務，例如：買雞"
+          />
+
+        </div>
+
+
+        <div
+          class="plan-add-button-wrap"
+          style="flex:0 0 120px">
+
+          <label>&nbsp;</label>
+
+          <button
+            class="btn"
+            onclick="addPlanTodoFromInput()">
+
+            ＋
+
+          </button>
+
+        </div>
+
       </div>
 
-      <div class="small" style="margin-top:8px">
-        只會複製所選任務；符合今天規則的 Repeat 任務也會自動加入 Arrangement。
+
+      <div class="sep"></div>
+
+
+      <!-- Save -->
+
+      <div class="btn-row plan-save-row">
+
+        <button
+          class="btn"
+          onclick="savePlanToToday('planned')">
+
+          Planned → Arrangement
+
+        </button>
+
+        <button
+          class="btn-ok"
+          onclick="savePlanToToday('done')">
+
+          Done → Arrangement
+
+        </button>
+
+      </div>
+
+
+      <div
+        class="small"
+        style="margin-top:8px">
+
+        只會複製所選任務；
+        符合今天規則的 Repeat 任務也會自動加入 Arrangement。
+
       </div>
 
     </div>
 
+
+    <!-- ====================================================
+         LOW FREQUENCY AREA:
+         PERMANENT TASK MANAGEMENT
+         Default collapsed
+         ==================================================== -->
+
+    <details class="permanent-manager">
+
+      <summary>
+
+        <span>
+          ⚙ Permanent Tasks 管理
+        </span>
+
+        <span
+          id="permanentTaskCount"
+          class="small">
+        </span>
+
+      </summary>
+
+
+      <div class="permanent-manager-body">
+
+        <div class="small" style="margin-bottom:10px">
+
+          永久任務會保存在瀏覽器。
+          可新增、修改、刪除，
+          或設定固定時間 + Repeat。
+
+        </div>
+
+
+        <div class="row">
+
+          <div>
+
+            <label for="permanentNewText">
+              永久任務名稱
+            </label>
+
+            <input
+              id="permanentNewText"
+              type="text"
+              placeholder="如：運動、食藥、Success Daily"
+            />
+
+          </div>
+
+
+          <div>
+
+            <label for="permanentNewMinutes">
+              預設時長
+            </label>
+
+            <select id="permanentNewMinutes">
+
+              <option value="">
+                未設定
+              </option>
+
+              <option value="5">
+                5mins
+              </option>
+
+              <option value="15">
+                15mins
+              </option>
+
+              <option value="30">
+                30mins
+              </option>
+
+              <option value="60">
+                1hr
+              </option>
+
+              <option value="90">
+                1.5hr
+              </option>
+
+              <option value="120">
+                2hr
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div style="flex:0 0 120px">
+
+            <label>&nbsp;</label>
+
+            <button
+              class="btn"
+              onclick="addPermanentTask()">
+
+              ＋ 新增
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <div id="permanentTaskEditor"></div>
+
+      </div>
+
+    </details>
+
   </section>
 
-  <!-- Today -->
+
+  <!-- ======================================================
+       TODAY
+       ====================================================== -->
+
   <section id="pageToday" class="page">
 
     <div class="panel">
 
       <div class="btn-row">
-        <button onclick="goHome()">← Home</button>
-        <button class="btn" onclick="refreshTodayPage()">重新整理</button>
-        <button class="btn-danger" onclick="clear24hHistory()">
-          清除最近 24 小時紀錄
+
+        <button onclick="goHome()">
+          ← Home
         </button>
+
+        <button
+          class="btn"
+          onclick="refreshTodayPage()">
+
+          重新整理
+
+        </button>
+
+        <button
+          onclick="openTodayArrangementEditor()">
+
+          Edit Arrangement
+
+        </button>
+
+        <button
+          class="btn-danger"
+          onclick="clear24hHistory()">
+
+          清除最近 24 小時紀錄
+
+        </button>
+
       </div>
+
 
       <h2>Today ToDoList</h2>
 
       <div class="small">
-        顯示今天任務；如已完成 Arrangement Step 4，
-        會按最終排程次序及時間顯示，並保留最近 24 小時紀錄。
+
+        顯示今天任務；完成 Arrangement 後，
+        會按最終排程次序及時間顯示，
+        並保留最近 24 小時紀錄。
+
       </div>
 
     </div>
+
 
     <div class="panel">
 
       <div class="stat">
 
         <div class="box">
-          <div class="small">今天 Planned/Done</div>
-          <div id="todayStats1" class="mono">0 / 0</div>
+
+          <div class="small">
+            今天 Planned/Done
+          </div>
+
+          <div
+            id="todayStats1"
+            class="mono">
+
+            0 / 0
+
+          </div>
+
         </div>
 
-        <div class="box">
-          <div class="small">今天總數</div>
-          <div id="todayStats2" class="mono">0</div>
-        </div>
 
         <div class="box">
-          <div class="small">最近 24 小時</div>
-          <div id="todayStats3" class="mono">0</div>
+
+          <div class="small">
+            今天總數
+          </div>
+
+          <div
+            id="todayStats2"
+            class="mono">
+
+            0
+
+          </div>
+
+        </div>
+
+
+        <div class="box">
+
+          <div class="small">
+            最近 24 小時
+          </div>
+
+          <div
+            id="todayStats3"
+            class="mono">
+
+            0
+
+          </div>
+
         </div>
 
       </div>
 
     </div>
+
 
     <div class="panel">
 
       <h3>今天任務</h3>
 
-      <div id="todayList" class="cards"></div>
+      <div
+        id="todayList"
+        class="cards">
+      </div>
 
     </div>
+
 
     <div class="panel">
 
       <h3>最近 24 小時紀錄</h3>
 
-      <div id="history24List" class="cards"></div>
+      <div
+        id="history24List"
+        class="cards">
+      </div>
 
     </div>
 
   </section>
 
-  <!-- Arrangement -->
+
+  <!-- ======================================================
+       ARRANGEMENT — DASHBOARD
+       UI merged; underlying arrangementTasks/buildSchedule/
+       syncArrangementToTodayTodos data flow remains unchanged.
+       ====================================================== -->
+
   <section id="pageArrangement" class="page">
 
-    <div class="panel">
+    <div class="panel arrangement-head">
 
-      <div class="btn-row">
-        <button onclick="goHome()">← Home</button>
-        <button onclick="showArrangementStep('arrStep2')">Step 2</button>
-        <button onclick="showArrangementStep('arrStep3')">Step 3</button>
-        <button onclick="showArrangementStep('arrStep4')">Step 4</button>
-      </div>
+      <div class="arrangement-title-row">
 
-      <h2>Arrangement</h2>
+        <div>
+          <h2>Arrangement</h2>
+          <div class="small">
+            Time Window + Tasks + Live Schedule。正常情況直接 Finish；
+            只有超時／衝突／想改次序時才使用 Priority 或 Fine Tune。
+          </div>
+        </div>
 
-      <div class="small">
-        Step 1 直接使用 Plan 複製的 Selected Task + Repeat Task；
-        Arrangement 修改的是獨立副本，不會修改 Plan。
+        <button onclick="goHome()">
+          ← Home
+        </button>
+
       </div>
 
     </div>
 
-    <!-- Step 1 -->
+
+    <!-- MAIN DASHBOARD: old Step 1 + 2 + 3 -->
+
     <section id="arrStep1" class="arr-step">
 
       <div class="panel">
 
-        <h3>Step 1｜自動載入 Plan Task + 今晚時段</h3>
+        <div class="arr-dashboard-section-head">
+
+          <div>
+            <h3>Tonight Window</h3>
+            <div class="hint">
+              改時間後會即時重算 Available / Timetable。
+            </div>
+          </div>
+
+          <button
+            class="arr-secondary-btn"
+            onclick="reloadArrangementDashboard()">
+            ↻ Reload Plan
+          </button>
+
+        </div>
 
         <div class="row">
 
           <div>
-            <label for="homeTime">預計回到家時間（今天）</label>
+            <label for="homeTime">開始安排時間</label>
             <select id="homeTime"></select>
           </div>
 
           <div>
-            <label for="bedTime">上床時間（今天）</label>
+            <label for="bedTime">上床時間</label>
             <select id="bedTime"></select>
           </div>
 
         </div>
 
-        <div class="small">
-          時間選擇簡化為每 30 分鐘：00 / 30。
-        </div>
-
-        <div class="btn-row">
-
-          <button class="btn" onclick="loadArrangementTasksFromToday()">
-            重新從 Plan 載入
-          </button>
-
-          <button class="btn" onclick="prepareArrangementAndGoStep2()">
-            載入任務 & 前往 Step 2
-          </button>
-
-        </div>
-
         <div
           id="detectedWrap"
-          style="margin-top:10px;display:none">
+          class="arr-detected"
+          style="display:none">
 
-          <div class="hint">
-            已偵測到以下今天任務：
+          <div class="small">已載入今天任務</div>
+
+          <div
+            id="detected"
+            class="mono">
           </div>
 
-          <div id="detected" class="mono"></div>
-
         </div>
 
       </div>
 
-    </section>
 
-    <!-- Step 2 -->
-    <section
-      id="arrStep2"
-      class="arr-step"
-      style="display:none">
+      <div class="panel arr-task-panel">
+
+        <div class="arr-dashboard-section-head">
+
+          <div>
+            <h3>Tasks</h3>
+            <div class="hint">
+              平時只調 Duration；Priority 使用原有 rank 資料，
+              但正常情況隱藏，超時時才顯示。
+            </div>
+          </div>
+
+          <div class="small">
+            Live Preview
+          </div>
+
+        </div>
+
+        <div id="taskList"></div>
+
+      </div>
+
 
       <div class="panel">
 
-        <div
-          class="btn-row"
-          style="margin-bottom:10px">
-
-          <button
-            class="btn"
-            onclick="saveArrangementStep2()">
-
-            儲存 & 前往 Step 3
-
-          </button>
-
+        <div class="arr-dashboard-section-head">
+          <div>
+            <h3>Capacity</h3>
+            <div class="hint">
+              Available 與 Required 即時更新。
+            </div>
+          </div>
         </div>
 
-        <h3>Step 2｜友善填「預估時長」與「Rank」</h3>
-
-        <div class="hint">
-          任務名稱包含時長會自動填入；
-          若曾經安排過同名任務，
-          Arrangement Memory 會優先帶回上次設定。
-        </div>
-
-      </div>
-
-      <div
-        id="taskList"
-        class="panel">
-      </div>
-
-      <div class="btn-row">
-
-        <button onclick="showArrangementStep('arrStep1')">
-          ← 回 Step 1
-        </button>
-
-        <button
-          class="btn"
-          onclick="saveArrangementStep2()">
-
-          儲存 & 前往 Step 3
-
-        </button>
-
-      </div>
-
-    </section>
-
-    <!-- Step 3 -->
-    <section
-      id="arrStep3"
-      class="arr-step"
-      style="display:none">
-
-      <div class="panel">
-
-        <h3>Step 3｜是否能在上床前做完？</h3>
-
-        <div class="stat">
+        <div class="stat arr-fit-stat">
 
           <div class="box">
-            <div class="small">可用時間（分鐘）</div>
+            <div class="small">Available</div>
             <div id="availMins" class="mono">—</div>
           </div>
 
           <div class="box">
-            <div class="small">任務總時長（分鐘）</div>
+            <div class="small">Required</div>
             <div id="totalMins" class="mono">—</div>
           </div>
 
           <div class="box">
-            <div class="small">差額（可用−需求）</div>
+            <div class="small">Free / Over</div>
             <div id="deltaMins" class="mono">—</div>
           </div>
 
@@ -922,63 +2086,69 @@
           id="fitMsg"
           class="hint"
           style="margin-top:10px">
-
           —
-
         </div>
 
       </div>
 
-      <div class="panel">
 
-        <div class="btn-row">
+      <!-- Priority only appears when overloaded -->
+
+      <div
+        id="priorityAssistant"
+        class="panel priority-assistant"
+        style="display:none">
+      </div>
+
+
+      <div class="panel arr-timetable-panel">
+
+        <div class="arr-timetable-head">
+
+          <div>
+            <h3>Live Schedule</h3>
+            <div class="small">
+              使用原有 buildSchedule()。
+            </div>
+          </div>
 
           <button
-            class="btn"
+            class="arr-secondary-btn"
             onclick="copyArrangementTimetable()">
-
-            複製 Timetable
-
+            Copy
           </button>
-
-          <button
-            class="btn"
-            onclick="prepareReorderStep()">
-
-            下一步 → 調整順序與時間
-
-          </button>
-
-        </div>
-
-        <div
-          class="small"
-          style="margin-top:8px">
-
-          Timetable 預覽
 
         </div>
 
         <div
           id="timetable"
-          class="mono"
+          class="mono arr-timetable"
           style="white-space:pre-wrap">
+          —
+        </div>
+
+        <div class="arr-primary-row">
+
+          <button
+            onclick="prepareReorderStep()">
+            Fine Tune
+          </button>
+
+          <button
+            class="btn-ok"
+            onclick="finishArrangementDirect()">
+            ✓ Finish → Today ToDoList
+          </button>
 
         </div>
 
       </div>
 
-      <div class="btn-row">
-
-        <button onclick="showArrangementStep('arrStep2')">
-          ← 回 Step 2
-        </button>
-
-      </div>
-
     </section>
 
-    <!-- Step 4 -->
+
+    <!-- Fine Tune: old Step 4, optional -->
+
     <section
       id="arrStep4"
       class="arr-step"
@@ -986,16 +2156,22 @@
 
       <div class="panel">
 
-        <h3>Step 4｜排序、時間、Pin</h3>
+        <div class="arr-step-heading">
 
-        <div class="hint">
-          未 Pin 任務會由 Start time 起自動接續。
-          Pin 後會鎖定該任務的開始時間及時長；
-          再次按 Pin 可解鎖。
-          重排造成時間衝突時會顯示警告。
+          <div class="arr-step-no">✦</div>
+
+          <div>
+            <h3>Fine Tune</h3>
+            <div class="hint">
+              只有需要時才使用：拖動／↑↓ 改次序、改 Start、改 Duration、Pin 固定時間。
+              未 Pin 任務仍由原有 scheduling engine 自動接續。
+            </div>
+          </div>
+
         </div>
 
       </div>
+
 
       <div class="panel">
 
@@ -1004,18 +2180,17 @@
           class="draglist">
         </ul>
 
-        <div class="btn-row">
+        <div class="arr-primary-row">
 
-          <button onclick="showArrangementStep('arrStep3')">
-            ← 回 Step 3
+          <button
+            onclick="returnToArrangementDashboard()">
+            ← Dashboard
           </button>
 
           <button
-            class="btn"
+            class="btn-ok"
             onclick="finishArrangementStep4()">
-
-            完成 Arrangement → Today ToDoList
-
+            ✓ Finish → Today ToDoList
           </button>
 
         </div>
@@ -1025,6 +2200,11 @@
     </section>
 
   </section>
+
+
+  <!-- ======================================================
+       DEV TESTS
+       ====================================================== -->
 
   <div class="panel">
 
@@ -1040,12 +2220,15 @@
 
   </div>
 
+
   <div class="sticky-footer small">
 
     今天日期：
+
     <span id="todayStr"></span>
 
     · SuccessDaily Auto Save：
+
     <span id="successDailySaveStatus">
       等待 18:00
     </span>
@@ -1064,7 +2247,9 @@
 
 </div>
 
+
 <script>
+
 /* ============================================================
    基本工具
 ============================================================ */
@@ -1199,7 +2384,6 @@ function fmtTime(ts){
     h % 12 || 12;
 
   return `${h}:${m}${ampm}`;
-
 }
 
 
@@ -1213,7 +2397,6 @@ function fmtDate(ts){
     `${pad2(d.getMonth()+1)}-` +
     `${pad2(d.getDate())}`
   );
-
 }
 
 
@@ -1223,7 +2406,6 @@ function fmtDateTime(ts){
     `${fmtDate(ts)} ` +
     `${fmtTime(ts)}`
   );
-
 }
 
 
@@ -1242,7 +2424,6 @@ function timeStrToMinutesToday(tStr){
       .map(Number);
 
   return h*60 + m;
-
 }
 
 
@@ -1258,7 +2439,6 @@ function minutesToTimeStr(m){
     `${pad2(hh)}:` +
     `${pad2(mm)}`
   );
-
 }
 
 
@@ -1270,7 +2450,6 @@ function uid(){
       .toString(36)
       .slice(2,10)
   );
-
 }
 
 
@@ -1280,7 +2459,6 @@ function saveLS(key,value){
     key,
     JSON.stringify(value)
   );
-
 }
 
 
@@ -1308,7 +2486,6 @@ function loadLS(key,fallback){
     return fallback;
 
   }
-
 }
 
 
@@ -1407,7 +2584,6 @@ function migrateLegacyTodayToArrangementInput(){
     STORAGE_KEYS.arrangementInputMigrated,
     '1'
   );
-
 }
 
 
@@ -1432,7 +2608,6 @@ function pruneHistory24(){
   setHistory24(pruned);
 
   return pruned;
-
 }
 
 
@@ -1472,7 +2647,6 @@ function moveOldTodayTodosToHistory(){
   }
 
   setTodayTodos(todayItems);
-
 }
 
 
@@ -1508,7 +2682,6 @@ function updateHomeStats(){
     .getElementById('home24Count')
     .textContent =
       hist.length;
-
 }
 
 
@@ -1526,7 +2699,6 @@ function showPage(id){
     .classList
     .add('active');
 
-
   if(id === 'pageToday'){
     refreshTodayPage();
   }
@@ -1538,7 +2710,6 @@ function showPage(id){
   if(id === 'pageHome'){
     updateHomeStats();
   }
-
 }
 
 
@@ -1596,7 +2767,6 @@ function getPermanentTasks(){
   );
 
   return initial;
-
 }
 
 
@@ -1606,7 +2776,6 @@ function setPermanentTasks(arr){
     STORAGE_KEYS.permanentTasks,
     arr
   );
-
 }
 
 
@@ -1669,7 +2838,6 @@ function addPermanentTask(){
     .value = '';
 
   gotoPlanBuilder();
-
 }
 
 
@@ -1738,7 +2906,6 @@ function editPermanentTask(id){
         )
       : [];
 
-
   if(
     recurringRule &&
     !fixedStart
@@ -1750,7 +2917,6 @@ function editPermanentTask(id){
 
   }
 
-
   if(
     recurringRule === 'custom' &&
     !recurringDays.length
@@ -1761,7 +2927,6 @@ function editPermanentTask(id){
     );
 
   }
-
 
   item.text =
     text;
@@ -1782,13 +2947,11 @@ function editPermanentTask(id){
       ? fixedStart
       : '';
 
-
   setPermanentTasks(arr);
 
   ensureRecurringTasksForToday();
 
   gotoPlanBuilder();
-
 }
 
 
@@ -1810,7 +2973,6 @@ function deletePermanentTask(id){
   );
 
   gotoPlanBuilder();
-
 }
 
 
@@ -1826,13 +2988,26 @@ function renderPermanentTaskEditor(){
 
   host.innerHTML = '';
 
+  /*
+   * NEW UI ONLY:
+   * Display task count in collapsed manager.
+   */
+  const countEl =
+    document.getElementById(
+      'permanentTaskCount'
+    );
+
+  if(countEl){
+    countEl.textContent =
+      `${arr.length} tasks`;
+  }
+
   if(!arr.length){
 
     host.innerHTML =
       '<div class="empty">沒有 Permanent Task</div>';
 
     return;
-
   }
 
 
@@ -1983,9 +3158,7 @@ function renderPermanentTaskEditor(){
                   ? 'selected'
                   : ''
               }>
-
               未設定
-
             </option>
 
             ${
@@ -2316,7 +3489,6 @@ function toggleCustomDays(id){
     );
 
   }
-
 }
 
 
@@ -2385,7 +3557,6 @@ function recurringRuleMatchesDate(
   return (
     map[rule] === day
   );
-
 }
 
 
@@ -2542,7 +3713,6 @@ function ensureRecurringTasksForToday(){
   setArrangementInputs(todos);
 
   return todos;
-
 }
 
 
@@ -2594,7 +3764,6 @@ function gotoPlanBuilder(){
       'planNewTodo'
     )
     .value = '';
-
 }
 
 
@@ -2698,7 +3867,6 @@ function addPlanTodoCard(item){
 
 
   box.appendChild(label);
-
 }
 
 
@@ -2729,7 +3897,6 @@ function addPlanTodoFromInput(){
       'planNewTodo'
     )
     .value = '';
-
 }
 
 
@@ -2751,7 +3918,6 @@ function selectAllPlanTodos(){
 
       }
     );
-
 }
 
 
@@ -2773,7 +3939,6 @@ function clearAllPlanTodos(){
 
       }
     );
-
 }
 
 
@@ -2858,7 +4023,6 @@ function parseDurationMinutes(text){
 
 
   return null;
-
 }
 
 
@@ -2889,7 +4053,6 @@ function normalizeTaskName(text){
 
       .trim()
   );
-
 }
 
 
@@ -2928,7 +4091,6 @@ function savePlanToToday(state){
     );
 
     return;
-
   }
 
 
@@ -2982,7 +4144,6 @@ function savePlanToToday(state){
 
 
   openArrangementFromStoredData();
-
 }
 
 
@@ -2995,28 +4156,101 @@ function markTodoStatus(
   status
 ){
 
+  const ts =
+    now();
+
+
   const todos =
     getTodayTodos()
       .map(
-        item =>
-          item.id === id
+        item => {
 
-            ? {
-                ...item,
-                status,
-                updatedAt:now()
-              }
+          if(
+            item.id !== id
+          ){
+            return item;
+          }
 
-            : item
+
+          const patch = {
+
+            ...item,
+
+            status,
+
+            updatedAt:ts
+
+          };
+
+
+          if(
+            status === 'done'
+          ){
+
+            patch.actualEnd =
+              ts;
+
+
+            if(
+              item.actualStart
+            ){
+
+              patch.actualMinutes =
+                Math.max(
+                  0,
+                  Math.round(
+                    (
+                      ts -
+                      item.actualStart
+                    )
+                    /
+                    60000
+                  )
+                );
+
+            }
+
+          }
+
+
+          return patch;
+
+        }
       );
 
 
-  setTodayTodos(todos);
+  setTodayTodos(
+    todos
+  );
+
+
+  /*
+   * Keep the working Arrangement status aligned.
+   * This prevents a later Arrangement sync from turning Done back to Planned.
+   */
+  const ai =
+    arrangementTasks
+      .findIndex(
+        t =>
+          t.id === id
+      );
+
+
+  if(ai >= 0){
+
+    arrangementTasks[ai]
+      .status =
+        status;
+
+
+    saveDailyArrangementSession();
+
+  }
+
 
   refreshTodayPage();
 
   updateHomeStats();
-
 }
 
 
@@ -3068,7 +4302,6 @@ function deleteTodayTodo(id){
   refreshTodayPage();
 
   updateHomeStats();
-
 }
 
 
@@ -3094,7 +4327,6 @@ function ensureTodayArrangementTasks(){
   ){
 
     return true;
-
   }
 
 
@@ -3127,7 +4359,6 @@ function ensureTodayArrangementTasks(){
 
 
     return true;
-
   }
 
 
@@ -3240,7 +4471,6 @@ function ensureTodayArrangementTasks(){
   return (
     arrangementTasks.length > 0
   );
-
 }
 
 
@@ -3297,7 +4527,6 @@ function moveTodayArrangementTask(
   saveDailyArrangementSession();
 
   refreshTodayPage();
-
 }
 
 
@@ -3359,7 +4588,268 @@ function changeTodayArrangementStart(
   saveDailyArrangementSession();
 
   refreshTodayPage();
+}
 
+
+
+function openTodayArrangementEditor(){
+
+  ensureTodayArrangementTasks();
+
+  showPage(
+    'pageArrangement'
+  );
+
+  showArrangementStep(
+    'arrStep1'
+  );
+
+  renderDetected(
+    arrangementTasks
+  );
+
+  renderTaskCards();
+
+  refreshArrangementLive();
+}
+
+
+function startTodayTaskNow(id){
+
+  if(
+    !ensureTodayArrangementTasks()
+  ){
+    return;
+  }
+
+
+  const i =
+    arrangementTasks
+      .findIndex(
+        t =>
+          t.id === id
+      );
+
+
+  if(i < 0){
+    return;
+  }
+
+
+  const d =
+    new Date();
+
+
+  const startMin =
+    d.getHours()*60 +
+    d.getMinutes();
+
+
+  if(
+    !arrangementTasks[i]
+      .isFixedTime
+  ){
+
+    arrangementTasks[i]
+      .startOverride =
+        startMin;
+
+
+    clearOverridesFrom(
+      i+1
+    );
+
+  }
+
+
+  const ts =
+    now();
+
+
+  setTodayTodos(
+    getTodayTodos()
+      .map(
+        item =>
+          item.id === id
+
+            ? {
+                ...item,
+                actualStart:
+                  item.actualStart
+                  ||
+                  ts,
+                updatedAt:ts
+              }
+
+            : item
+      )
+  );
+
+
+  saveArrangementMemory();
+
+  saveDailyArrangementSession();
+
+  syncArrangementToTodayTodos();
+
+  refreshTodayPage();
+}
+
+
+function delayTodayTask(
+  id,
+  minutes=30
+){
+
+  if(
+    !ensureTodayArrangementTasks()
+  ){
+    return;
+  }
+
+
+  const i =
+    arrangementTasks
+      .findIndex(
+        t =>
+          t.id === id
+      );
+
+
+  if(
+    i < 0 ||
+    arrangementTasks[i]
+      .isFixedTime
+  ){
+    return;
+  }
+
+
+  const current =
+    arrangementTasks[i]
+      .startOverride
+    ??
+    timeStrToMinutesToday(
+      getTodayTodos()
+        .find(
+          x =>
+            x.id === id
+        )
+        ?.arrangementStart
+      ||
+      ''
+    )
+    ??
+    timeStrToMinutesToday(
+      document
+        .getElementById(
+          'homeTime'
+        )
+        ?.value
+      ||
+      ''
+    );
+
+
+  if(current == null){
+    return;
+  }
+
+
+  arrangementTasks[i]
+    .startOverride =
+      current +
+      Number(minutes);
+
+
+  clearOverridesFrom(
+    i+1
+  );
+
+
+  saveArrangementMemory();
+
+  saveDailyArrangementSession();
+
+  syncArrangementToTodayTodos();
+
+  refreshTodayPage();
+}
+
+
+function postponeTodayTask(id){
+
+  if(
+    !ensureTodayArrangementTasks()
+  ){
+    return;
+  }
+
+
+  const found =
+    getTodayTodos()
+      .find(
+        x =>
+          x.id === id
+      );
+
+
+  arrangementTasks =
+    arrangementTasks.filter(
+      t =>
+        t.id !== id
+    );
+
+
+  clearOverridesFrom(
+    0
+  );
+
+
+  setTodayTodos(
+    getTodayTodos()
+      .filter(
+        x =>
+          x.id !== id
+      )
+  );
+
+
+  if(found){
+
+    const hist =
+      pruneHistory24();
+
+
+    hist.unshift({
+
+      ...found,
+
+      archivedAt:
+        now(),
+
+      archivedReason:
+        'postponed'
+
+    });
+
+
+    setHistory24(
+      hist
+    );
+
+  }
+
+
+  saveArrangementMemory();
+
+  saveDailyArrangementSession();
+
+  syncArrangementToTodayTodos();
+
+  refreshTodayPage();
+
+  updateHomeStats();
 }
 
 
@@ -3387,7 +4877,6 @@ function renderTodayCards(
       '<div class="empty">沒有資料</div>';
 
     return;
-
   }
 
 
@@ -3460,6 +4949,10 @@ function renderTodayCards(
 
         div.className =
           `today-flight-row ${
+            allowActions
+              ? 'execution'
+              : ''
+          } ${
             item.status === 'done'
               ? 'done'
               : ''
@@ -3472,33 +4965,27 @@ function renderTodayCards(
               item.arrangementOrder
             )
           )
-
             ? Number(
                 item.arrangementOrder
               ) + 1
-
             : visualIndex + 1;
 
 
         const timeText =
           item.arrangementStart &&
           item.arrangementEnd
-
             ? (
                 `${item.arrangementStart}` +
                 `–` +
                 `${item.arrangementEnd}`
               )
-
             : '—';
 
 
         const duration =
           item.arrangementMinutes
           != null
-
             ? item.arrangementMinutes
-
             : item.minutes;
 
 
@@ -3506,28 +4993,22 @@ function renderTodayCards(
 
 
         if(
-          item.arrangementRank !== '' &&
-          item.arrangementRank != null
+          item.actualStart
         ){
 
           subBits.push(
-            `Rank ${item.arrangementRank}`
+            `Actual ${fmtTime(item.actualStart)}`
           );
 
         }
 
 
-        subBits.push(
-          item.status === 'done'
-            ? 'Done'
-            : 'Planned'
-        );
-
-
-        if(item.source){
+        if(
+          item.actualMinutes != null
+        ){
 
           subBits.push(
-            item.source
+            `${item.actualMinutes}m actual`
           );
 
         }
@@ -3540,6 +5021,19 @@ function renderTodayCards(
 
           subBits.push(
             `🔒 ${item.fixedStart}`
+          );
+
+        }
+
+
+        if(
+          !subBits.length
+        ){
+
+          subBits.push(
+            item.status === 'done'
+              ? 'Done'
+              : 'Planned'
           );
 
         }
@@ -3561,7 +5055,11 @@ function renderTodayCards(
               )}
             </div>
 
-            <div class="today-flight-sub">
+            <div class="today-flight-sub ${
+              item.actualStart
+                ? 'today-actual'
+                : ''
+            }">
               ${escapeHtml(
                 subBits.join(' · ')
               )}
@@ -3571,20 +5069,16 @@ function renderTodayCards(
 
 
           <div class="today-flight-time mono">
-
             ${escapeHtml(timeText)}
-
           </div>
 
 
           <div class="today-flight-duration mono">
-
             ${
               duration != null
                 ? `${duration}m`
                 : '—'
             }
-
           </div>
 
 
@@ -3596,27 +5090,59 @@ function renderTodayCards(
                 ? `
 
                   <button
-                    onclick="markTodoStatus('${item.id}','planned')">
-
-                    Plan
-
-                  </button>
-
-                  <button
                     class="btn-ok"
                     onclick="markTodoStatus('${item.id}','done')">
 
-                    Done
+                    ${
+                      item.status === 'done'
+                        ? '✓'
+                        : 'Done'
+                    }
 
                   </button>
 
-                  <button
-                    class="btn-danger"
-                    onclick="deleteTodayTodo('${item.id}')">
 
-                    ×
+                  <details class="today-exec-menu">
 
-                  </button>
+                    <summary title="更多">
+                      ⋯
+                    </summary>
+
+                    <div class="today-exec-pop">
+
+                      <button
+                        onclick="startTodayTaskNow('${item.id}')">
+                        ▶ Start Now
+                      </button>
+
+                      <button
+                        onclick="delayTodayTask('${item.id}',30)"
+                        ${
+                          item.isFixedTime
+                            ? 'disabled'
+                            : ''
+                        }>
+                        +30m Delay
+                      </button>
+
+                      <button
+                        onclick="markTodoStatus('${item.id}','planned')">
+                        Mark Planned
+                      </button>
+
+                      <button
+                        onclick="postponeTodayTask('${item.id}')">
+                        Postpone
+                      </button>
+
+                      <button
+                        onclick="openTodayArrangementEditor()">
+                        Edit Arrangement
+                      </button>
+
+                    </div>
+
+                  </details>
 
                 `
 
@@ -3630,9 +5156,11 @@ function renderTodayCards(
                     }">
 
                     ${
-                      item.status === 'done'
-                        ? 'Done'
-                        : 'Planned'
+                      item.archivedReason === 'postponed'
+                        ? 'Postponed'
+                        : item.status === 'done'
+                          ? 'Done'
+                          : 'Planned'
                     }
 
                   </span>
@@ -3645,11 +5173,12 @@ function renderTodayCards(
         `;
 
 
-        host.appendChild(div);
+        host.appendChild(
+          div
+        );
 
       }
     );
-
 }
 
 
@@ -3718,7 +5247,6 @@ function refreshTodayPage(){
     'history24List',
     false
   );
-
 }
 
 
@@ -3738,7 +5266,6 @@ function clear24hHistory(){
   refreshTodayPage();
 
   updateHomeStats();
-
 }
 
 
@@ -3755,7 +5282,6 @@ function arrangementMemoryKey(name){
     .trim()
     .toLowerCase()
   );
-
 }
 
 
@@ -3775,7 +5301,6 @@ function getArrangementMemory(){
   )
     ? v
     : {};
-
 }
 
 
@@ -3874,7 +5399,6 @@ function saveArrangementMemory(){
 
     }
   );
-
 }
 
 
@@ -4049,7 +5573,6 @@ function syncArrangementToTodayTodos(){
       finished
     )
   );
-
 }
 
 
@@ -4138,7 +5661,6 @@ function saveDailyArrangementSession(){
 
     }
   );
-
 }
 
 
@@ -4159,7 +5681,6 @@ function restoreDailyArrangementSession(){
   ){
 
     return false;
-
   }
 
 
@@ -4175,7 +5696,6 @@ function restoreDailyArrangementSession(){
   ){
 
     return false;
-
   }
 
 
@@ -4211,7 +5731,6 @@ function restoreDailyArrangementSession(){
   ){
 
     return false;
-
   }
 
 
@@ -4263,7 +5782,6 @@ function restoreDailyArrangementSession(){
   resetArrangementStats();
 
   return true;
-
 }
 
 
@@ -4272,7 +5790,6 @@ function clearDailyArrangementSession(){
   localStorage.removeItem(
     STORAGE_KEYS.arrangementDailySession
   );
-
 }
 
 
@@ -4337,7 +5854,6 @@ function fillHalfHourTimeSelect(
       );
 
   }
-
 }
 
 
@@ -4391,7 +5907,6 @@ function roundToNextHalfHour(date){
     `${pad2(d.getHours())}:` +
     `${pad2(d.getMinutes())}`
   );
-
 }
 
 
@@ -4427,7 +5942,6 @@ function presetTimes(){
     ||
     '23:30'
   );
-
 }
 
 
@@ -4444,11 +5958,15 @@ function showArrangementStep(id){
     );
 
 
-  document
-    .getElementById(id)
-    .style.display =
-      '';
+  const target =
+    document.getElementById(id)
+    ||
+    document.getElementById('arrStep1');
 
+
+  if(target){
+    target.style.display = '';
+  }
 }
 
 
@@ -4474,7 +5992,6 @@ function openArrangementFromStoredData(){
     loadArrangementTasksFromToday();
 
   }
-
 }
 
 
@@ -4626,8 +6143,7 @@ function loadArrangementTasksFromToday(){
 
   renderTaskCards();
 
-  resetArrangementStats();
-
+  refreshArrangementLive();
 }
 
 
@@ -4645,14 +6161,15 @@ function prepareArrangementAndGoStep2(){
     );
 
     return;
-
   }
 
 
   showArrangementStep(
-    'arrStep2'
+    'arrStep1'
   );
 
+
+  refreshArrangementLive();
 }
 
 
@@ -4679,7 +6196,6 @@ function renderDetected(items){
       '';
 
     return;
-
   }
 
 
@@ -4735,7 +6251,6 @@ function renderDetected(items){
         `
       )
       .join('<br/>');
-
 }
 
 
@@ -4756,10 +6271,9 @@ function renderTaskCards(){
   ){
 
     host.innerHTML =
-      '<div class="empty">（尚無任務，請先在 Step 1 載入 Today ToDoList）</div>';
+      '<div class="empty">沒有 Arrangement task</div>';
 
     return;
-
   }
 
 
@@ -4767,14 +6281,14 @@ function renderTaskCards(){
     .forEach(
       (t,idx) => {
 
-        const card =
+        const row =
           document.createElement(
             'div'
           );
 
 
-        card.className =
-          'card';
+        row.className =
+          'arr-task-row';
 
 
         const dur =
@@ -4782,194 +6296,129 @@ function renderTaskCards(){
             t.minutes == null ||
             t.minutes === ''
           )
-
             ? ''
-
-            : Number(
-                t.minutes
-              );
+            : Number(t.minutes);
 
 
-        const rank =
-          (
-            t.rank == null ||
-            t.rank === ''
-          )
+        row.innerHTML = `
 
-            ? null
+          <div class="arr-task-main">
 
-            : Number(
-                t.rank
-              );
+            <div class="arr-task-index">
+              ${idx+1}
+            </div>
 
+            <div
+              class="arr-task-name"
+              title="${escapeAttr(t.name || '')}">
 
-        card.innerHTML = `
-
-          <div class="row">
-
-            <div>
-
-              <label>
-                任務名稱
-              </label>
-
-              <input
-                data-k="name"
-                data-i="${idx}"
-                value="${escapeAttr(t.name || '')}"
-                ${
-                  t.pinned
-                    ? 'disabled'
-                    : ''
-                }
-              />
+              ${escapeHtml(t.name || '')}
 
             </div>
 
+            <input
+              class="arr-task-minutes"
+              type="number"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              aria-label="Duration minutes"
+              data-k="minutes"
+              data-i="${idx}"
+              value="${dur}"
+              ${
+                t.pinned
+                  ? 'disabled'
+                  : ''
+              }
+            />
 
-            <div>
+            <details class="arr-task-more">
 
-              <label>
-                自訂時長（分鐘）
-              </label>
+              <summary title="更多">
+                ⋯
+              </summary>
 
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="分鐘"
-                data-k="minutes"
-                data-i="${idx}"
-                value="${dur}"
-                ${
-                  t.pinned
-                    ? 'disabled'
-                    : ''
-                }
-              />
+              <div class="arr-task-expanded">
 
+                <label>
+                  Task name
+                </label>
 
-              <div class="small">
-                快速按鈕：
-              </div>
+                <input
+                  data-k="name"
+                  data-i="${idx}"
+                  value="${escapeAttr(t.name || '')}"
+                  ${
+                    t.pinned
+                      ? 'disabled'
+                      : ''
+                  }
+                />
 
+                <label>
+                  Quick duration
+                </label>
 
-              <div
-                class="chips"
-                data-kind="dur"
-                data-i="${idx}">
+                <div
+                  class="chips"
+                  data-kind="dur"
+                  data-i="${idx}">
 
-                ${
-                  DUR_PRESETS
-                    .map(
-                      m => `
+                  ${
+                    DUR_PRESETS
+                      .map(
+                        m => `
 
-                        <div
-                          class="chip ${
-                            Number(dur) === m
-                              ? 'selected'
-                              : ''
-                          }"
-                          data-v="${m}"
-                          ${
-                            t.pinned
-                              ? 'aria-disabled="true"'
-                              : ''
-                          }>
+                          <div
+                            class="chip ${
+                              Number(dur) === m
+                                ? 'selected'
+                                : ''
+                            }"
+                            data-v="${m}">
 
-                          ${
-                            m === 60
-                              ? '1hr'
-                              : m === 90
-                                ? '1.5hr'
-                                : m === 120
-                                  ? '2hr'
-                                  : m+'mins'
-                          }
+                            ${
+                              m === 60
+                                ? '1hr'
+                                : m === 90
+                                  ? '1.5hr'
+                                  : m === 120
+                                    ? '2hr'
+                                    : m+'m'
+                            }
 
-                        </div>
+                          </div>
 
-                      `
+                        `
+                      )
+                      .join('')
+                  }
+
+                </div>
+
+                <div class="arr-task-raw">
+                  ${
+                    escapeHtml(
+                      (t.raw || '')
+                        .replace(/\s+/g,' ')
+                        .slice(0,180)
                     )
-                    .join('')
-                }
+                  }
+                </div>
 
               </div>
 
-            </div>
-
-
-            <div>
-
-              <label>
-                Rank（1=最高，5=最低）
-              </label>
-
-              <div
-                class="rank-group"
-                data-kind="rank"
-                data-i="${idx}">
-
-                ${
-                  [1,2,3,4,5]
-                    .map(
-                      r => `
-
-                        <button
-                          type="button"
-                          class="rank ${
-                            rank === r
-                              ? 'selected'
-                              : ''
-                          }"
-                          data-v="${r}"
-                          ${
-                            t.pinned
-                              ? 'disabled'
-                              : ''
-                          }>
-
-                          ${r}
-
-                        </button>
-
-                      `
-                    )
-                    .join('')
-                }
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <div
-            class="small mono"
-            style="margin-top:8px">
-
-            原始標記：
-
-            ${
-              escapeHtml(
-                (t.raw || '')
-                  .slice(0,160)
-              )
-            }
-
-            ${
-              (t.raw || '').length > 160
-                ? '…'
-                : ''
-            }
+            </details>
 
           </div>
 
         `;
 
 
-        host.appendChild(card);
+        host.appendChild(
+          row
+        );
 
       }
     );
@@ -5001,15 +6450,11 @@ function renderTaskCards(){
             }
 
 
-            const v =
-              Number(
-                el.dataset.v
-              );
-
-
             arrangementTasks[i]
               .minutes =
-                v;
+                Number(
+                  el.dataset.v
+                );
 
 
             if(
@@ -5025,7 +6470,13 @@ function renderTaskCards(){
             }
 
 
+            saveArrangementMemory();
+
+            saveDailyArrangementSession();
+
             renderTaskCards();
+
+            refreshArrangementLive();
 
           }
         );
@@ -5036,53 +6487,7 @@ function renderTaskCards(){
 
   host
     .querySelectorAll(
-      '.rank-group .rank'
-    )
-    .forEach(
-      btn => {
-
-        btn.addEventListener(
-          'click',
-          () => {
-
-            const i =
-              Number(
-                btn.parentElement
-                  .dataset.i
-              );
-
-
-            if(
-              arrangementTasks[i]
-                .pinned
-            ){
-              return;
-            }
-
-
-            const v =
-              Number(
-                btn.dataset.v
-              );
-
-
-            arrangementTasks[i]
-              .rank =
-                v;
-
-
-            renderTaskCards();
-
-          }
-        );
-
-      }
-    );
-
-
-  host
-    .querySelectorAll(
-      'input'
+      'input[data-k]'
     )
     .forEach(
       inp => {
@@ -5098,6 +6503,7 @@ function renderTaskCards(){
 
 
             if(
+              !arrangementTasks[i] ||
               arrangementTasks[i]
                 .pinned
             ){
@@ -5114,8 +6520,7 @@ function renderTaskCards(){
 
 
             if(
-              k === 'minutes' ||
-              k === 'rank'
+              k === 'minutes'
             ){
 
               v =
@@ -5129,12 +6534,34 @@ function renderTaskCards(){
             arrangementTasks[i][k] =
               v;
 
+
+            if(
+              k === 'minutes' &&
+              arrangementTasks[i]
+                .startOverride
+              != null
+            ){
+
+              clearOverridesFrom(
+                i+1
+              );
+
+            }
+
+
+            saveArrangementMemory();
+
+            saveDailyArrangementSession();
+
+            renderTaskCards();
+
+            refreshArrangementLive();
+
           }
         );
 
       }
     );
-
 }
 
 
@@ -5144,14 +6571,562 @@ function saveArrangementStep2(){
 
   saveDailyArrangementSession();
 
+  refreshArrangementLive();
+
+  showArrangementStep(
+    'arrStep1'
+  );
+}
+
+
+
+/* ============================================================
+   Arrangement Dashboard helpers
+   - UI only
+   - arrangementTasks/buildSchedule/sync data structure unchanged
+============================================================ */
+
+function refreshArrangementLive(){
+
   renderArrangementStats();
 
   renderArrangementTimetable();
 
+  renderPriorityAssistant();
+}
+
+
+function setupArrangementLiveEvents(){
+
+  ['homeTime','bedTime']
+    .forEach(
+      id => {
+
+        const el =
+          document.getElementById(id);
+
+
+        if(
+          !el ||
+          el.dataset.liveBound === '1'
+        ){
+          return;
+        }
+
+
+        el.dataset.liveBound =
+          '1';
+
+
+        el.addEventListener(
+          'change',
+          () => {
+
+            saveArrangementMemory();
+
+            saveDailyArrangementSession();
+
+            refreshArrangementLive();
+
+          }
+        );
+
+      }
+    );
+}
+
+
+function reloadArrangementDashboard(){
+
+  loadArrangementTasksFromToday();
+
   showArrangementStep(
-    'arrStep3'
+    'arrStep1'
   );
 
+  refreshArrangementLive();
+}
+
+
+function returnToArrangementDashboard(){
+
+  showArrangementStep(
+    'arrStep1'
+  );
+
+  renderTaskCards();
+
+  refreshArrangementLive();
+}
+
+
+function getEffectivePriority(t){
+
+  const n =
+    Number(
+      t?.rank
+    );
+
+
+  return (
+    Number.isFinite(n) &&
+    n >= 1 &&
+    n <= 5
+  )
+    ? n
+    : 3;
+}
+
+
+function setArrangementPriority(
+  index,
+  priority
+){
+
+  const t =
+    arrangementTasks[index];
+
+
+  if(!t){
+    return;
+  }
+
+
+  t.rank =
+    Number(priority);
+
+
+  saveArrangementMemory();
+
+  saveDailyArrangementSession();
+
+  refreshArrangementLive();
+}
+
+
+function getOverloadMinutes(){
+
+  const home =
+    timeStrToMinutesToday(
+      document
+        .getElementById('homeTime')
+        ?.value
+    );
+
+
+  const bed =
+    timeStrToMinutesToday(
+      document
+        .getElementById('bedTime')
+        ?.value
+    );
+
+
+  if(
+    home == null ||
+    bed == null ||
+    bed <= home
+  ){
+    return 0;
+  }
+
+
+  const available =
+    bed - home;
+
+
+  const required =
+    arrangementTasks.reduce(
+      (sum,t) =>
+        sum +
+        (
+          Number(t.minutes)
+          ||
+          0
+        ),
+      0
+    );
+
+
+  return Math.max(
+    0,
+    required - available
+  );
+}
+
+
+function getSuggestedPostponeIndexes(){
+
+  let need =
+    getOverloadMinutes();
+
+
+  if(need <= 0){
+    return [];
+  }
+
+
+  /*
+   * Low importance first: P5 -> P4 -> P3 -> P2 -> P1.
+   * Fixed/pinned tasks are protected from automatic suggestion.
+   */
+  const candidates =
+    arrangementTasks
+      .map(
+        (t,index) => ({
+          t,
+          index,
+          priority:
+            getEffectivePriority(t),
+          minutes:
+            Math.max(
+              0,
+              Number(t.minutes)
+              ||
+              0
+            )
+        })
+      )
+      .filter(
+        x =>
+          !x.t.pinned &&
+          !x.t.isFixedTime &&
+          x.minutes > 0
+      )
+      .sort(
+        (a,b) =>
+          (
+            b.priority -
+            a.priority
+          )
+          ||
+          (
+            b.index -
+            a.index
+          )
+      );
+
+
+  const picked = [];
+
+
+  for(
+    const x of candidates
+  ){
+
+    picked.push(
+      x.index
+    );
+
+
+    need -=
+      x.minutes;
+
+
+    if(need <= 0){
+      break;
+    }
+
+  }
+
+
+  return picked;
+}
+
+
+function renderPriorityAssistant(){
+
+  const host =
+    document.getElementById(
+      'priorityAssistant'
+    );
+
+
+  if(!host){
+    return;
+  }
+
+
+  const over =
+    getOverloadMinutes();
+
+
+  if(
+    over <= 0 ||
+    !arrangementTasks.length
+  ){
+
+    host.style.display =
+      'none';
+
+    host.innerHTML =
+      '';
+
+    return;
+  }
+
+
+  const suggested =
+    getSuggestedPostponeIndexes();
+
+
+  const suggestedSet =
+    new Set(
+      suggested
+    );
+
+
+  const suggestedMinutes =
+    suggested.reduce(
+      (sum,i) =>
+        sum +
+        (
+          Number(
+            arrangementTasks[i]
+              ?.minutes
+          )
+          ||
+          0
+        ),
+      0
+    );
+
+
+  host.style.display =
+    '';
+
+
+  host.innerHTML = `
+
+    <div class="priority-assistant-head">
+
+      <div>
+
+        <h3>
+          ⚠ Priority Assistant
+        </h3>
+
+        <div class="hint">
+          超時 ${over} 分鐘。
+          Priority 只在時間不足時介入；
+          P1 最高重要性、P5 最低。
+          未設定 Priority 暫按 P3 計算。
+        </div>
+
+      </div>
+
+      ${
+        suggested.length
+
+          ? `
+            <button
+              class="btn"
+              onclick="applySuggestedPostpone()">
+
+              Apply suggestion
+
+            </button>
+          `
+
+          : ''
+      }
+
+    </div>
+
+
+    <div class="priority-list">
+
+      ${
+        arrangementTasks
+          .map(
+            (t,i) => {
+
+              const p =
+                getEffectivePriority(t);
+
+
+              const protectedTask =
+                !!(
+                  t.pinned ||
+                  t.isFixedTime
+                );
+
+
+              return `
+
+                <div class="priority-row">
+
+                  <div class="priority-name">
+
+                    <strong>
+                      ${escapeHtml(t.name || '')}
+                    </strong>
+
+                    <span class="small">
+                      · ${Number(t.minutes) || 0}m
+                      ${
+                        protectedTask
+                          ? ' · 🔒 fixed/pinned'
+                          : ''
+                      }
+                      ${
+                        suggestedSet.has(i)
+                          ? ' · 建議 postpone'
+                          : ''
+                      }
+                    </span>
+
+                  </div>
+
+
+                  <div>
+                    ${
+                      suggestedSet.has(i)
+                        ? '<span class="tag-warn">suggest</span>'
+                        : protectedTask
+                          ? '<span class="tag-ok">protect</span>'
+                          : ''
+                    }
+                  </div>
+
+
+                  <div
+                    class="priority-controls"
+                    aria-label="Priority">
+
+                    ${
+                      [1,2,3,4,5]
+                        .map(
+                          n => `
+
+                            <button
+                              type="button"
+                              class="${
+                                p === n
+                                  ? 'selected'
+                                  : ''
+                              }"
+                              onclick="setArrangementPriority(${i},${n})">
+
+                              P${n}
+
+                            </button>
+
+                          `
+                        )
+                        .join('')
+                    }
+
+                  </div>
+
+                </div>
+
+              `;
+
+            }
+          )
+          .join('')
+      }
+
+    </div>
+
+
+    <div class="priority-suggest">
+
+      ${
+        suggested.length
+
+          ? `
+            建議暫緩：
+            <strong>
+              ${
+                suggested
+                  .map(
+                    i =>
+                      escapeHtml(
+                        arrangementTasks[i]
+                          ?.name
+                        ||
+                        ''
+                      )
+                  )
+                  .join('、')
+              }
+            </strong>
+
+            · 可移除約 ${suggestedMinutes} 分鐘
+            · 目標至少 ${over} 分鐘。
+          `
+
+          : `
+            現有任務均為 fixed/pinned，
+            無可安全自動建議 postponement。
+          `
+      }
+
+    </div>
+
+  `;
+}
+
+
+function applySuggestedPostpone(){
+
+  const picked =
+    getSuggestedPostponeIndexes();
+
+
+  if(!picked.length){
+    return;
+  }
+
+
+  const pickedSet =
+    new Set(
+      picked
+    );
+
+
+  /*
+   * Remove only from the current Arrangement working set.
+   * No Today schema changes are introduced.
+   * Finish still syncs the final arrangementTasks through
+   * syncArrangementToTodayTodos().
+   */
+  arrangementTasks =
+    arrangementTasks.filter(
+      (_,i) =>
+        !pickedSet.has(i)
+    );
+
+
+  clearOverridesFrom(
+    0
+  );
+
+
+  saveArrangementMemory();
+
+  saveDailyArrangementSession();
+
+  renderDetected(
+    arrangementTasks
+  );
+
+  renderTaskCards();
+
+  refreshArrangementLive();
+}
+
+
+function finishArrangementDirect(){
+
+  /*
+   * One-click path intentionally reuses the original finalizer.
+   * Therefore Today ToDoList receives exactly the same fields
+   * from syncArrangementToTodayTodos() as the old Step 4 flow.
+   */
+  finishArrangementStep4();
 }
 
 
@@ -5203,7 +7178,6 @@ function resetArrangementStats(){
     )
     .textContent =
       '—';
-
 }
 
 
@@ -5325,7 +7299,6 @@ function renderArrangementStats(){
 
 
     return;
-
   }
 
 
@@ -5382,7 +7355,6 @@ function renderArrangementStats(){
       'small';
 
   }
-
 }
 
 
@@ -5477,7 +7449,6 @@ function buildSchedule(){
 
 
   return rows;
-
 }
 
 
@@ -5497,7 +7468,6 @@ function renderArrangementTimetable(){
       '—';
 
     return;
-
   }
 
 
@@ -5545,7 +7515,6 @@ function renderArrangementTimetable(){
 
   el.textContent =
     lines.join('\n');
-
 }
 
 
@@ -5587,18 +7556,20 @@ async function copyArrangementTimetable(){
     );
 
   }
-
 }
 
 
 function prepareReorderStep(){
+
+  saveArrangementMemory();
+
+  saveDailyArrangementSession();
 
   renderReorderList();
 
   showArrangementStep(
     'arrStep4'
   );
-
 }
 
 
@@ -5634,7 +7605,6 @@ function clearOverridesFrom(
         : null;
 
   }
-
 }
 
 
@@ -5697,7 +7667,6 @@ function halfHourOptions(
 
 
   return html;
-
 }
 
 
@@ -5746,7 +7715,6 @@ function fixedTimeOptions(
 
 
   return html;
-
 }
 
 
@@ -5963,7 +7931,6 @@ function renderReorderList(){
   enablePointerReorder();
 
   validateOverflow();
-
 }
 
 
@@ -6021,7 +7988,6 @@ function toggleArrangementPin(index){
   saveDailyArrangementSession();
 
   renderReorderList();
-
 }
 
 
@@ -6060,7 +8026,6 @@ function moveArrangementTask(
   saveDailyArrangementSession();
 
   renderReorderList();
-
 }
 
 
@@ -6224,8 +8189,7 @@ function enablePointerReorder(){
 
       window.removeEventListener(
         'pointermove',
-        onMove,
-        {passive:false}
+        onMove
       );
 
 
@@ -6279,7 +8243,6 @@ function enablePointerReorder(){
     );
 
   });
-
 }
 
 
@@ -6522,7 +8485,6 @@ function validateOverflow(){
     parent.appendChild(warn);
 
   }
-
 }
 
 
@@ -6552,7 +8514,6 @@ function finishArrangementStep4(){
 
 
     return;
-
   }
 
 
@@ -6561,15 +8522,6 @@ function finishArrangementStep4(){
   saveDailyArrangementSession();
 
 
-  /*
-   * IMPORTANT
-   *
-   * Step 4 完成後：
-   * arrangementTasks → todayTodos
-   *
-   * 從此刻開始，Today ToDoList
-   * 是今日正式 execution record。
-   */
   syncArrangementToTodayTodos();
 
 
@@ -6582,42 +8534,12 @@ function finishArrangementStep4(){
   showPage(
     'pageToday'
   );
-
 }
 
 
 /* ============================================================
    SUCCESS DAILY
-   ============================================================
-
-   FIXED ARCHITECTURE:
-
-   Arrangement
-        ↓
-   Step 4
-        ↓
-   Today ToDoList
-        ↓
-   SuccessDaily
-
-   SuccessDaily 不再從 arrangementTasks
-   建立 timetable。
-
 ============================================================ */
-
-
-/* ------------------------------------------------------------
-   NEW:
-   SuccessDaily / output 共用 Today 排序方法。
-
-   Priority:
-   1. arrangementOrder
-   2. arrangementStart
-   3. createdAt
-
-   因此即使兩個 task 都是 17:30，
-   仍保留 Step 4 的真正次序。
------------------------------------------------------------- */
 
 function sortTodayTodosForOutput(
   todos
@@ -6652,10 +8574,6 @@ function sortTodayTodosForOutput(
             : null;
 
 
-        /*
-         * 第一優先：
-         * Arrangement Step 4 最終 order
-         */
         if(
           ao !== null &&
           bo !== null
@@ -6684,10 +8602,6 @@ function sortTodayTodosForOutput(
         }
 
 
-        /*
-         * 第二優先：
-         * Today 實際 start time
-         */
         const aStart =
           a.arrangementStart
           ||
@@ -6729,10 +8643,6 @@ function sortTodayTodosForOutput(
         }
 
 
-        /*
-         * 第三優先：
-         * 建立時間
-         */
         return (
           (a.createdAt || 0)
           -
@@ -6741,15 +8651,8 @@ function sortTodayTodosForOutput(
 
       }
     );
-
 }
 
-
-/* ------------------------------------------------------------
-   FIXED:
-   SaveToSuccessDaily Shortcut Text
-   source = Today ToDoList
------------------------------------------------------------- */
 
 function buildSuccessDailyText(){
 
@@ -6808,25 +8711,8 @@ function buildSuccessDailyText(){
 
 
   return lines.join('\n');
-
 }
 
-
-/* ------------------------------------------------------------
-   NEW:
-   SuccessDaily timetable
-   source = Today ToDoList
-
-   以前：
-      buildSchedule()
-         ↓
-      arrangementTasks
-
-   現在：
-      getTodayTodos()
-         ↓
-      final Today data
------------------------------------------------------------- */
 
 function buildTodayTimetableText(){
 
@@ -6887,37 +8773,21 @@ function buildTodayTimetableText(){
     )
 
     .join('\n');
-
 }
 
 
-/* ------------------------------------------------------------
-   Shortcut
------------------------------------------------------------- */
-
 function runSaveToSuccessDailyShortcut(){
 
-  /*
-   * IMPORTANT:
-   * This is now directly generated from
-   * Today ToDoList only.
-   */
   const output =
     buildSuccessDailyText();
 
 
-  /*
-   * Keep exact local copy
-   */
   localStorage.setItem(
     'mainPlanner_lastSuccessDailyText_v1',
     output
   );
 
 
-  /*
-   * iOS Shortcut
-   */
   const url =
 
     'shortcuts://run-shortcut?name='
@@ -6941,19 +8811,8 @@ function runSaveToSuccessDailyShortcut(){
 
   window.location.href =
     url;
-
 }
 
-
-/* ------------------------------------------------------------
-   SuccessDaily snapshot
-
-   FIX:
-   timetable = buildTodayTimetableText()
-
-   NOT:
-   buildSchedule()
------------------------------------------------------------- */
 
 function buildSuccessDailySnapshot(){
 
@@ -6983,18 +8842,9 @@ function buildSuccessDailySnapshot(){
     autoSaveTime:
       '18:00',
 
-
-    /*
-     * Source:
-     * Today ToDoList
-     */
     outputText:
       buildSuccessDailyText(),
 
-
-    /*
-     * 保留設定資料
-     */
     homeTime:
       document
         .getElementById(
@@ -7009,28 +8859,9 @@ function buildSuccessDailySnapshot(){
         )
         .value,
 
-
-    /*
-     * FIXED
-     *
-     * OLD:
-     *
-     * timetable:
-     *   buildSchedule().map(...)
-     *
-     * buildSchedule() reads arrangementTasks.
-     *
-     * NEW:
-     *
-     * timetable reads Today ToDoList.
-     */
     timetable:
       buildTodayTimetableText(),
 
-
-    /*
-     * Exact Today records
-     */
     todos:
       todos.map(
         x => ({
@@ -7100,14 +8931,6 @@ function buildSuccessDailySnapshot(){
         })
       ),
 
-
-    /*
-     * Arrangement remains as diagnostic/history data only.
-     *
-     * IMPORTANT:
-     * It is no longer used to generate
-     * SuccessDaily output/timetable.
-     */
     arrangement:
       arrangementTasks.map(
         (t,order) => ({
@@ -7148,13 +8971,8 @@ function buildSuccessDailySnapshot(){
       )
 
   };
-
 }
 
-
-/* ------------------------------------------------------------
-   Save snapshot
------------------------------------------------------------- */
 
 function saveToSuccessDaily(){
 
@@ -7222,13 +9040,8 @@ function saveToSuccessDaily(){
 
 
   updateSuccessDailySaveStatus();
-
 }
 
-
-/* ------------------------------------------------------------
-   Status
------------------------------------------------------------- */
 
 function updateSuccessDailySaveStatus(){
 
@@ -7256,13 +9069,8 @@ function updateSuccessDailySaveStatus(){
         ? `已儲存 ${fmtTime(ts)}`
 
         : '等待 18:00';
-
 }
 
-
-/* ------------------------------------------------------------
-   18:00 automatic save
------------------------------------------------------------- */
 
 function checkSuccessDailyAutoSave(){
 
@@ -7300,7 +9108,6 @@ function checkSuccessDailyAutoSave(){
     updateSuccessDailySaveStatus();
 
   }
-
 }
 
 
@@ -7411,12 +9218,6 @@ function runDevTests(){
   );
 
 
-  /*
-   * NEW TEST
-   *
-   * SuccessDaily timetable function exists
-   * and returns a string generated from Today.
-   */
   ok(
     'SuccessDaily timetable is generated from Today ToDoList',
     typeof buildTodayTimetableText()
@@ -7425,9 +9226,6 @@ function runDevTests(){
   );
 
 
-  /*
-   * preserve current arrangement data
-   */
   const backupTasks =
     arrangementTasks.slice();
 
@@ -7595,7 +9393,6 @@ function runDevTests(){
 
 
   loadArrangementTasksFromToday();
-
 }
 
 
@@ -7609,6 +9406,9 @@ function runDevTests(){
 
 
   presetTimes();
+
+
+  setupArrangementLiveEvents();
 
 
   migrateLegacyTodayToArrangementInput();
@@ -7626,17 +9426,9 @@ function runDevTests(){
   runDevTests();
 
 
-  /*
-   * Restore current Step 4 session
-   */
   restoreDailyArrangementSession();
 
 
-  /*
-   * Check SuccessDaily immediately.
-   *
-   * Then check once per minute.
-   */
   checkSuccessDailyAutoSave();
 
 
@@ -7646,6 +9438,7 @@ function runDevTests(){
   );
 
 })();
+
 </script>
 
 </body>
