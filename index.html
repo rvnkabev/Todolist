@@ -517,6 +517,34 @@
       font-size:.7rem;
     }
 
+    .plan-card-side{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+    }
+
+    .plan-delete-btn{
+      width:26px;
+      height:26px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #2a3767;
+      border-radius:7px;
+      color:var(--muted);
+      cursor:pointer;
+      user-select:none;
+      font-size:.9rem;
+      line-height:1;
+    }
+
+    .plan-delete-btn:hover{
+      color:#ff9aad;
+      border-color:#5c1c2c;
+      background:#2d1018;
+    }
+
     .plan-add-row{
       margin-top:10px;
     }
@@ -1346,6 +1374,21 @@
        */
       #planTodoCards .todo-card > .small{
         display:none;
+      }
+
+      #planTodoCards .plan-card-side{
+        grid-column:2;
+        grid-row:1;
+        justify-self:end;
+        align-self:center;
+      }
+
+      #planTodoCards .plan-card-side .small{
+        display:none;
+      }
+
+      #planTodoCards .todo-title{
+        padding-right:34px;
       }
 
       #planTodoCards .todo-title{
@@ -3818,13 +3861,29 @@ function addPlanTodoCard(item){
 
     </div>
 
-    <div class="small">
+    <div class="plan-card-side">
 
-      ${
-        item.tag
-          ? '預設時長'
-          : '自訂'
-      }
+      <span class="small">
+
+        ${
+          item.tag
+            ? '預設時長'
+            : '自訂'
+        }
+
+      </span>
+
+      <span
+        class="plan-delete-btn"
+        role="button"
+        tabindex="0"
+        aria-label="從今日 Plan 移除此任務"
+        title="從今日 Plan 移除"
+        data-plan-delete="1">
+
+        ×
+
+      </span>
 
     </div>
 
@@ -3834,6 +3893,24 @@ function addPlanTodoCard(item){
   label.addEventListener(
     'click',
     e => {
+
+      const deleteBtn =
+        e.target.closest(
+          '[data-plan-delete="1"]'
+        );
+
+
+      if(deleteBtn){
+
+        e.preventDefault();
+
+        e.stopPropagation();
+
+        label.remove();
+
+        return;
+      }
+
 
       const cb =
         label.querySelector(
@@ -3861,6 +3938,31 @@ function addPlanTodoCard(item){
         'selected',
         cb.checked
       );
+
+    }
+  );
+
+
+  const deleteBtn =
+    label.querySelector(
+      '[data-plan-delete="1"]'
+    );
+
+
+  deleteBtn?.addEventListener(
+    'keydown',
+    e => {
+
+      if(
+        e.key === 'Enter' ||
+        e.key === ' '
+      ){
+
+        e.preventDefault();
+
+        label.remove();
+
+      }
 
     }
   );
