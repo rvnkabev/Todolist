@@ -81,7 +81,7 @@
     .draglist{list-style:none;padding:0;margin:0}
     /* [NEW MINIMAL] Step 4 compact flight-board row */
     .draglist li{
-      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 72px 64px;gap:6px;align-items:center;
+      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 64px;gap:6px;align-items:center;
       padding:6px 8px;border:1px solid #2a3767;border-radius:8px;margin:4px 0;background:#0e142b;
       min-height:46px;
     }
@@ -94,8 +94,6 @@
     .flight-move{display:flex;gap:3px;justify-content:flex-end}
     .flight-move button{padding:5px 7px;min-width:28px;border-radius:7px;font-size:.84rem;line-height:1}
     .ghost{opacity:.45}
-    .pin-btn{padding:6px 7px;font-size:.78rem;border-radius:7px;white-space:nowrap}
-    .pin-btn.active{background:var(--warn);border-color:var(--warn);color:#271700;font-weight:700}
     .schedule-warning{grid-column:2 / -1;color:#ff9aad;font-size:.76rem;line-height:1.3}
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
     .empty{padding:18px;text-align:center;color:var(--muted)}
@@ -179,7 +177,7 @@
       .permanent-edit,.recurring-config{grid-template-columns:1fr}
       .recurring-config{grid-column:auto}
       .permanent-actions{grid-column:auto}
-      .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 64px 58px;gap:4px;padding:5px}
+      .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 58px;gap:4px;padding:5px}
       .flight-control{padding:5px 4px;font-size:.8rem}
     }
   </style>
@@ -401,9 +399,9 @@
       <!-- Step 4 -->
       <section id="arrStep4" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 4｜獨立調整次序、時間、時長 & Pinned</h3>
+          <h3>Step 4｜獨立調整次序、時間與時長</h3>
           <div class="hint">
-            Start time 會令未釘選任務依次自動排列。按 Pinned 可鎖定指定任務的開始時間；換序後如與前一任務重疊，系統會保留指定時間並顯示 Warning。Step 4 的修改不會改動 Plan 任務設定。
+            Start time 會令任務依次自動排列。你亦可更改個別任務的開始時間；其後任務會自動接續排列。Step 4 的修改不會改動 Plan 任務設定。
           </div>
         </div>
         <div class="panel">
@@ -970,7 +968,6 @@
           minutes:item.arrangementMinutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
           rank:item.arrangementRank ?? '',
           startOverride:item.arrangementStart ? timeStrToMinutesToday(item.arrangementStart) : null,
-          pinned:!!item.arrangementPinned,
           status:item.status,
           isFixedTime:!!item.isFixedTime,
           fixedStart:item.fixedStart || '',
@@ -1085,7 +1082,8 @@
     function refreshTodayPage(){
       moveOldTodayTodosToHistory();
       ensureRecurringTasksForToday();
-      const todos = getTodayTodos();
+      // Today ToDoList receives its visible task data from Arrangement Step 4.
+      const todos = getTodayTodos().filter(x => Number.isFinite(Number(x.arrangementOrder)));
       const hist = pruneHistory24();
       const planned = todos.filter(x => x.status === 'planned').length;
       const done = todos.filter(x => x.status === 'done').length;
@@ -1126,7 +1124,6 @@
           startOffset: t.startOverride != null
             ? t.startOverride - (timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0)
             : null,
-          pinned: !!t.pinned,
           savedAt: now()
         };
       });
@@ -1148,8 +1145,7 @@
           arrangementStart: minutesToTimeStr(r.start),
           arrangementEnd: minutesToTimeStr(r.end),
           arrangementMinutes: r.minutes,
-          arrangementRank: t.rank ?? '',
-          arrangementPinned: !!t.pinned
+          arrangementRank: t.rank ?? ''
         }];
       }));
 
@@ -1176,7 +1172,6 @@
           minutes: t.minutes ?? null,
           rank: t.rank ?? '',
           startOverride: t.startOverride ?? null,
-          pinned: !!t.pinned,
           status: t.status || 'planned',
           isFixedTime: !!t.isFixedTime,
           fixedStart: t.fixedStart || '',
@@ -1289,8 +1284,6 @@
           startOverride: item.isFixedTime && item.fixedStart
             ? timeStrToMinutesToday(item.fixedStart)
             : (remembered.startOffset != null ? home + Number(remembered.startOffset) : null),
-          // [NEW MINIMAL] Plan fixed time does not force a Step 4 pin.
-          pinned: !!remembered.pinned,
           status: item.status,
           isFixedTime: !!item.isFixedTime,
           fixedStart: item.fixedStart || '',
@@ -1443,13 +1436,11 @@
       const rows = [];
       arrangementTasks.forEach((t, idx) => {
         const m = Math.max(0, Number(t.minutes) || 0);
-        // [NEW MINIMAL] Step 4 is independent: every task may be pinned or unpinned.
-        const pinned = !!t.pinned;
-        const requestedStart = pinned && t.startOverride != null ? t.startOverride : null;
+        const requestedStart = t.startOverride != null ? t.startOverride : null;
         const conflict = requestedStart != null && requestedStart < cur;
         const start = requestedStart != null ? requestedStart : cur;
         const end = start + m;
-        rows.push({ name:t.name, start, end, minutes:m, idx, pinned, conflict, previousEnd:cur });
+        rows.push({ name:t.name, start, end, minutes:m, idx, conflict, previousEnd:cur });
         cur = Math.max(cur, end);
       });
       return rows;
@@ -1486,7 +1477,6 @@
     function clearOverridesFrom(indexInclusive){
       for(let j=indexInclusive; j<arrangementTasks.length; j++){
         const t = arrangementTasks[j];
-        if(t.pinned && t.startOverride != null) continue;
         t.startOverride = null;
       }
     }
@@ -1534,12 +1524,11 @@
             ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
           <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
-          <button type="button" class="pin-btn ${r.pinned ? 'active' : ''}" onclick="toggleArrangementPin(${visIdx})" title="鎖定／解除指定開始時間">${r.pinned ? '📌 Pinned' : 'Pin'}</button>
           <div class="flight-move">
             <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
             <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
           </div>
-          ${r.conflict ? `<div class="schedule-warning">⚠️ Warning：Pinned ${minutesToTimeStr(r.start)} 早於前面任務完成時間 ${minutesToTimeStr(r.previousEnd)}，時間重疊 ${r.previousEnd-r.start} 分鐘。</div>` : ''}
+          ${r.conflict ? `<div class="schedule-warning">⚠️ Warning：指定時間 ${minutesToTimeStr(r.start)} 早於前面任務完成時間 ${minutesToTimeStr(r.previousEnd)}，時間重疊 ${r.previousEnd-r.start} 分鐘。</div>` : ''}
         `;
         list.appendChild(li);
       });
@@ -1553,22 +1542,6 @@
       if(target < 0 || target >= arrangementTasks.length) return;
       [arrangementTasks[index], arrangementTasks[target]] = [arrangementTasks[target], arrangementTasks[index]];
       clearOverridesFrom(0);
-      saveArrangementMemory();
-      saveDailyArrangementSession();
-      renderReorderList();
-    }
-
-    function toggleArrangementPin(index){
-      const t = arrangementTasks[index];
-      if(!t) return;
-      if(t.pinned){
-        t.pinned = false;
-        t.startOverride = null;
-      } else {
-        const row = buildSchedule()[index];
-        t.pinned = true;
-        t.startOverride = row ? row.start : (timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0);
-      }
       saveArrangementMemory();
       saveDailyArrangementSession();
       renderReorderList();
@@ -1630,7 +1603,6 @@
         const newStart = timeStrToMinutesToday(e.target.value);
         if(newStart == null) return;
         arrangementTasks[i].startOverride = newStart;
-        arrangementTasks[i].pinned = true;
         clearOverridesFrom(i+1);
       }
       saveArrangementMemory(); // [NEW]
@@ -1649,7 +1621,7 @@
         const warn = document.createElement('div');
         warn.className = 'small overflow-msg';
         warn.style.marginTop = '8px';
-        warn.innerHTML = `<span class="tag-danger">⚠️ Pinned 次序衝突：${conflicts.length} 項</span> 請移動任務、縮短時長或解除 Pin。`;
+        warn.innerHTML = `<span class="tag-danger">⚠️ 指定時間衝突：${conflicts.length} 項</span> 請移動任務、縮短時長或更改開始時間。`;
         parent.appendChild(warn);
       }
       if(endAll != null && bed != null && endAll > bed){
@@ -1832,7 +1804,6 @@
       let rows = buildSchedule();
       ok('buildSchedule T1 start 19:30', minutesToTimeStr(rows[0].start) === '19:30');
       arrangementTasks[1].startOverride = 20*60;
-      arrangementTasks[1].pinned = true;
       clearOverridesFrom(2);
       rows = buildSchedule();
       ok('T2 start 20:00', minutesToTimeStr(rows[1].start) === '20:00');
