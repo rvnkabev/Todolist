@@ -223,7 +223,7 @@
           <button class="btn" onclick="gotoPlanBuilder()">重新載入任務</button>
         </div>
         <h2>Plan</h2>
-        <div class="small">沿用 Success Daily TonightToDoList 思路：建立今晚任務，按一下就送去 Today ToDoList。</div>
+        <div class="small">Plan 保持獨立；選取任務後會複製到 Arrangement，不會直接改動 Today ToDoList。</div>
       </div>
 
       <!-- [NEW] Permanent tasks -->
@@ -277,10 +277,10 @@
 
         <div class="sep"></div>
         <div class="btn-row">
-          <button class="btn" onclick="savePlanToToday('planned')">儲存為 Planned → Today ToDoList</button>
-          <button class="btn-ok" onclick="savePlanToToday('done')">儲存為 Done → Today ToDoList</button>
+          <button class="btn" onclick="savePlanToToday('planned')">儲存為 Planned → Arrangement</button>
+          <button class="btn-ok" onclick="savePlanToToday('done')">儲存為 Done → Arrangement</button>
         </div>
-        <div class="small" style="margin-top:8px">會寫入今天任務池，Arrangement 會自動讀取這些任務。</div>
+        <div class="small" style="margin-top:8px">只會複製所選任務；符合今天規則的 Repeat 任務也會自動加入 Arrangement。</div>
       </div>
     </section>
 
@@ -325,13 +325,13 @@
           <button onclick="showArrangementStep('arrStep4')">Step 4</button>
         </div>
         <h2>Arrangement</h2>
-        <div class="small">Step 1 直接使用 Today ToDoList 資料；已加入 Arrangement Memory，會記住任務時長、Rank、順序和時間偏好。</div>
+        <div class="small">Step 1 直接使用 Plan 複製的 Selected Task + Repeat Task；Arrangement 修改的是獨立副本，不會修改 Plan。</div>
       </div>
 
       <!-- Step 1 -->
       <section id="arrStep1" class="arr-step">
         <div class="panel">
-          <h3>Step 1｜自動載入 Today ToDoList + 今晚時段</h3>
+          <h3>Step 1｜自動載入 Plan Task + 今晚時段</h3>
           <div class="row">
             <div>
               <label for="homeTime">預計回到家時間（今天）</label>
@@ -344,7 +344,7 @@
           </div>
           <div class="small">時間選擇簡化為每 30 分鐘：00 / 30。</div>
           <div class="btn-row">
-            <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Today ToDoList 載入</button>
+            <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Plan 載入</button>
             <button class="btn" onclick="prepareArrangementAndGoStep2()">載入任務 & 前往 Step 2</button>
           </div>
           <div id="detectedWrap" style="margin-top:10px;display:none">
@@ -407,7 +407,7 @@
           <ul id="reorderList" class="draglist"></ul>
           <div class="btn-row">
             <button onclick="showArrangementStep('arrStep3')">← 回 Step 3</button>
-            <button class="btn" onclick="finishArrangementStep4()">更新 Timetable & 回 Step 3</button>
+            <button class="btn" onclick="finishArrangementStep4()">完成 Arrangement → Today ToDoList</button>
           </div>
         </div>
       </section>
@@ -431,6 +431,8 @@
     // =========================
     const STORAGE_KEYS = {
       todayTodos: 'mainPlanner_todayTodos_v1',
+      arrangementInputs: 'mainPlanner_arrangementInputs_v1',
+      arrangementInputMigrated: 'mainPlanner_arrangementInputMigrated_v1',
       history24: 'mainPlanner_history24_v1',
 
       // [NEW]
@@ -497,8 +499,21 @@
     function todayStr(){ return getTodayStrLocal(); }
     function getTodayTodos(){ return loadLS(STORAGE_KEYS.todayTodos, []); }
     function setTodayTodos(arr){ saveLS(STORAGE_KEYS.todayTodos, arr); }
+    function getArrangementInputs(){ return loadLS(STORAGE_KEYS.arrangementInputs, []); }
+    function setArrangementInputs(arr){ saveLS(STORAGE_KEYS.arrangementInputs, arr); }
     function getHistory24(){ return loadLS(STORAGE_KEYS.history24, []); }
     function setHistory24(arr){ saveLS(STORAGE_KEYS.history24, arr); }
+
+    // One-time compatibility: keep old Today input data when opening this restructured version.
+    function migrateLegacyTodayToArrangementInput(){
+      if(localStorage.getItem(STORAGE_KEYS.arrangementInputMigrated)) return;
+      const existing = getArrangementInputs();
+      if(!existing.length){
+        const legacyToday = getTodayTodos().filter(x => x.date === todayStr());
+        if(legacyToday.length) setArrangementInputs(legacyToday.map(x => ({...x})));
+      }
+      localStorage.setItem(STORAGE_KEYS.arrangementInputMigrated, '1');
+    }
 
     function pruneHistory24(){
       const cutoff = now() - 24*60*60*1000;
@@ -740,7 +755,7 @@
     function ensureRecurringTasksForToday(){
       const today = todayStr();
       const permanent = getPermanentTasks();
-      let todos = getTodayTodos();
+      let todos = getArrangementInputs();
       const permById = new Map(permanent.map(p => [p.id, p]));
 
       todos = todos.filter(item => {
@@ -784,7 +799,7 @@
         }
       });
 
-      setTodayTodos(todos);
+      setArrangementInputs(todos);
       return todos;
     }
 
@@ -896,8 +911,7 @@
         .map(card => card.querySelector('.todo-title').innerText.trim());
       if(!picked.length){ alert('請至少選擇一項'); return; }
 
-      moveOldTodayTodosToHistory();
-      const todos = getTodayTodos();
+      const todos = getArrangementInputs();
       const createdAt = now();
       picked.forEach(text => {
         todos.push({
@@ -912,10 +926,10 @@
           source: 'plan'
         });
       });
-      setTodayTodos(todos);
+      setArrangementInputs(todos);
       updateHomeStats();
-      alert(`已加入 Today ToDoList：${picked.length} 項`);
-      showPage('pageToday');
+      alert(`已加入 Arrangement：${picked.length} 項`);
+      openArrangementFromStoredData();
     }
 
     // =========================
@@ -1052,20 +1066,10 @@
               <div class="today-flight-title">${escapeHtml(item.displayText || item.text)}</div>
               <div class="today-flight-sub">${escapeHtml(subBits.join(' · '))}</div>
             </div>
-            <div class="today-flight-time mono">
-              ${allowActions ? `
-                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="${item.isFixedTime ? '固定時間' : '更改開始時間'}" ${item.isFixedTime ? 'disabled' : ''}>
-                  ${halfHourOptions(item.fixedStart || item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
-                </select>
-              ` : escapeHtml(timeText)}
-            </div>
+            <div class="today-flight-time mono">${escapeHtml(timeText)}</div>
             <div class="today-flight-duration mono">${duration != null ? `${duration}m` : '—'}</div>
             <div class="today-flight-actions">
               ${allowActions ? `
-                <span class="today-flight-move">
-                  <button onclick="moveTodayArrangementTask('${item.id}',-1)" title="上移">↑</button>
-                  <button onclick="moveTodayArrangementTask('${item.id}',1)" title="下移">↓</button>
-                </span>
                 <button onclick="markTodoStatus('${item.id}','planned')">Plan</button>
                 <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
                 <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">×</button>
@@ -1132,7 +1136,7 @@
       });
     }
 
-    // [NEW MINIMAL] Sync Step 4 result back into Today ToDoList.
+    // [NEW MINIMAL] Step 4 完成後，才把最終 timetable 輸出到 Today ToDoList。
     function syncArrangementToTodayTodos(){
       if(!arrangementTasks.length) return;
       const rows = buildSchedule();
@@ -1147,17 +1151,36 @@
         }];
       }));
 
-      const todos = getTodayTodos().map(item => {
-        const arranged = byId.get(item.id);
-        return arranged ? {...item, ...arranged} : item;
+      const existingById = new Map(getTodayTodos().filter(x => x.date === todayStr()).map(x => [x.id, x]));
+      const oldOtherDays = getTodayTodos().filter(x => x.date !== todayStr());
+      const finished = arrangementTasks.map(t => {
+        const arranged = byId.get(t.id) || {};
+        const old = existingById.get(t.id) || {};
+        return {
+          ...old,
+          id: t.id || uid(),
+          text: t.name,
+          displayText: t.name,
+          minutes: t.minutes ?? null,
+          date: todayStr(),
+          status: t.status || old.status || 'planned',
+          createdAt: old.createdAt || now(),
+          updatedAt: now(),
+          source: t.recurringTaskId ? 'recurring' : 'plan',
+          isFixedTime: !!t.isFixedTime,
+          fixedStart: t.fixedStart || '',
+          recurringTaskId: t.recurringTaskId || '',
+          recurringRule: t.recurringRule || '',
+          recurringDays: t.recurringDays || [],
+          ...arranged
+        };
       });
-      setTodayTodos(todos);
+      setTodayTodos(oldOtherDays.concat(finished));
     }
 
     // [NEW MINIMAL] Persist today's exact Step 4 arrangement across HTML/browser close.
     function saveDailyArrangementSession(){
       if(!arrangementTasks.length) return;
-      syncArrangementToTodayTodos();
       saveLS(STORAGE_KEYS.arrangementDailySession, {
         date: todayStr(),
         savedAt: now(),
@@ -1187,7 +1210,7 @@
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       if(log[todayStr()]) return false; // already exported today
 
-      const todayIds = getTodayTodos().filter(x => x.date === todayStr()).map(x => x.id).sort();
+      const todayIds = getArrangementInputs().filter(x => x.date === todayStr()).map(x => x.id).sort();
       const sessionIds = session.tasks.map(x => x.id).sort();
       if(todayIds.join('|') !== sessionIds.join('|')) return false;
 
@@ -1266,7 +1289,7 @@
     }
 
     function loadArrangementTasksFromToday(){
-      const todos = getTodayTodos().filter(x => x.date === todayStr());
+      const todos = getArrangementInputs().filter(x => x.date === todayStr());
       const mem = getArrangementMemory();
       const home = timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0;
 
@@ -1305,7 +1328,7 @@
 
     function prepareArrangementAndGoStep2(){
       loadArrangementTasksFromToday();
-      if(!arrangementTasks.length){ alert('Today ToDoList 沒有任務，請先到 Plan 或 Today ToDoList 新增。'); return; }
+      if(!arrangementTasks.length){ alert('Arrangement 沒有任務，請先到 Plan 選取任務。'); return; }
       showArrangementStep('arrStep2');
     }
 
@@ -1632,9 +1655,11 @@
     function finishArrangementStep4(){
       saveArrangementMemory(); // [NEW]
       saveDailyArrangementSession();
+      syncArrangementToTodayTodos();
       renderArrangementStats();
       renderArrangementTimetable();
-      showArrangementStep('arrStep3');
+      refreshTodayPage();
+      showPage('pageToday');
     }
 
     // =========================
@@ -1819,6 +1844,7 @@
     (function init(){
       moveOldTodayTodosToHistory();
       presetTimes();
+      migrateLegacyTodayToArrangementInput();
       ensureRecurringTasksForToday();
       updateHomeStats();
       gotoPlanBuilder();
