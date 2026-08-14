@@ -81,7 +81,7 @@
     .draglist{list-style:none;padding:0;margin:0}
     /* [NEW MINIMAL] Step 4 compact flight-board row */
     .draglist li{
-      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 64px;gap:6px;align-items:center;
+      display:grid;grid-template-columns:34px minmax(140px,1fr) 92px 72px 58px 64px;gap:6px;align-items:center;
       padding:6px 8px;border:1px solid #2a3767;border-radius:8px;margin:4px 0;background:#0e142b;
       min-height:46px;
     }
@@ -93,6 +93,11 @@
     .flight-control{width:100%;padding:6px 7px;border-radius:7px;font-size:.86rem}
     .flight-move{display:flex;gap:3px;justify-content:flex-end}
     .flight-move button{padding:5px 7px;min-width:28px;border-radius:7px;font-size:.84rem;line-height:1}
+    .pin-btn{padding:6px;font-size:.78rem;border-radius:7px}
+    .pin-btn.active{background:var(--warn);color:#241600;border-color:var(--warn);font-weight:700}
+    .draglist li.pinned{border-color:var(--warn)}
+    .draglist li.pinned .flight-task{cursor:default}
+    .step4-warning{margin:8px 0;padding:9px;border:1px solid #5c1c2c;border-radius:8px;background:#2d1018;color:#ffb0be}
     .ghost{opacity:.45}
     .sticky-footer{position:sticky;bottom:0;background:linear-gradient(180deg,#101736,#0b1020);padding:12px;border-top:1px solid #223061;margin-top:18px}
     .empty{padding:18px;text-align:center;color:var(--muted)}
@@ -176,7 +181,7 @@
       .permanent-edit,.recurring-config{grid-template-columns:1fr}
       .recurring-config{grid-column:auto}
       .permanent-actions{grid-column:auto}
-      .draglist li{grid-template-columns:30px minmax(105px,1fr) 82px 62px 58px;gap:4px;padding:5px}
+      .draglist li{grid-template-columns:30px minmax(105px,1fr) 78px 58px 48px 54px;gap:4px;padding:5px}
       .flight-control{padding:5px 4px;font-size:.8rem}
     }
   </style>
@@ -398,9 +403,9 @@
       <!-- Step 4 -->
       <section id="arrStep4" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 4｜拖曳調整順序 & 直接改時間段</h3>
+          <h3>Step 4｜排序、時間、Pin</h3>
           <div class="hint">
-            先確定任務次序，再修改開始時間或時長。開始時間選擇只保留 00 / 30；儲存後會記入 Arrangement Memory。
+            未 Pin 任務會由 Start time 起自動接續。Pin 後會鎖定該任務的開始時間及時長；再次按 Pin 可解鎖。重排造成時間衝突時會顯示警告。
           </div>
         </div>
         <div class="panel">
@@ -1198,7 +1203,8 @@
           fixedStart: t.fixedStart || '',
           recurringTaskId: t.recurringTaskId || '',
           recurringRule: t.recurringRule || '',
-          recurringDays: t.recurringDays || []
+          recurringDays: t.recurringDays || [],
+          pinned: !!t.pinned
         }))
       });
     }
@@ -1225,6 +1231,7 @@
         ...t,
         // Arrangement copy stays editable; Plan recurring time remains unchanged.
         isFixedTime: false,
+        pinned: !!t.pinned,
         rememberedOrder: i,
         originalIndex: i
       }));
@@ -1314,6 +1321,7 @@
           recurringTaskId: item.recurringTaskId || '',
           recurringRule: item.recurringRule || '',
           recurringDays: item.recurringDays || [],
+          pinned: false,
           rememberedOrder: remembered.order ?? 9999,
           originalIndex
         };
@@ -1356,20 +1364,20 @@
           <div class="row">
             <div>
               <label>任務名稱</label>
-              <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name || '')}" />
+              <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name || '')}" ${t.pinned ? 'disabled' : ''} />
             </div>
             <div>
               <label>自訂時長（分鐘）</label>
-              <input type="number" min="0" step="1" placeholder="分鐘" data-k="minutes" data-i="${idx}" value="${dur}" />
+              <input type="number" min="0" step="1" placeholder="分鐘" data-k="minutes" data-i="${idx}" value="${dur}" ${t.pinned ? 'disabled' : ''} />
               <div class="small">快速按鈕：</div>
               <div class="chips" data-kind="dur" data-i="${idx}">
-                ${DUR_PRESETS.map(m => `<div class="chip ${Number(dur)===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
+                ${DUR_PRESETS.map(m => `<div class="chip ${Number(dur)===m?'selected':''}" data-v="${m}" ${t.pinned ? 'aria-disabled="true"' : ''}>${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
               </div>
             </div>
             <div>
               <label>Rank（1=最高，5=最低）</label>
               <div class="rank-group" data-kind="rank" data-i="${idx}">
-                ${[1,2,3,4,5].map(r => `<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
+                ${[1,2,3,4,5].map(r => `<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}" ${t.pinned ? 'disabled' : ''}>${r}</button>`).join('')}
               </div>
             </div>
           </div>
@@ -1381,6 +1389,7 @@
       host.querySelectorAll('.chips .chip').forEach(el => {
         el.addEventListener('click', () => {
           const i = Number(el.parentElement.dataset.i);
+          if(arrangementTasks[i].pinned) return;
           const v = Number(el.dataset.v);
           arrangementTasks[i].minutes = v;
           if(arrangementTasks[i].startOverride != null) clearOverridesFrom(i+1);
@@ -1390,6 +1399,7 @@
       host.querySelectorAll('.rank-group .rank').forEach(btn => {
         btn.addEventListener('click', () => {
           const i = Number(btn.parentElement.dataset.i);
+          if(arrangementTasks[i].pinned) return;
           const v = Number(btn.dataset.v);
           arrangementTasks[i].rank = v;
           renderTaskCards();
@@ -1398,6 +1408,7 @@
       host.querySelectorAll('input').forEach(inp => {
         inp.addEventListener('change', () => {
           const i = Number(inp.dataset.i);
+          if(arrangementTasks[i].pinned) return;
           const k = inp.dataset.k;
           let v = inp.value;
           if(k === 'minutes' || k === 'rank') v = v === '' ? '' : Number(v);
@@ -1504,6 +1515,7 @@
     function clearOverridesFrom(indexInclusive){
       for(let j=indexInclusive; j<arrangementTasks.length; j++){
         const t = arrangementTasks[j];
+        if(t.pinned) continue;
         t.startOverride = (t.isFixedTime && t.fixedStart)
           ? timeStrToMinutesToday(t.fixedStart)
           : null;
@@ -1543,16 +1555,18 @@
         const t = arrangementTasks[visIdx];
         const li = document.createElement('li');
         li.dataset.index = String(visIdx);
+        li.classList.toggle('pinned', !!t.pinned);
         li.innerHTML = `
           <div class="handle" title="拖曳改位置">☰</div>
           <div class="flight-task" title="按住任務名稱也可拖曳">
-            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)} ${t.isFixedTime ? '<span class="fixed-lock">🔒</span>' : ''}</div>
+            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)} ${t.pinned ? '<span class="fixed-lock">📌 Pinned</span>' : ''}</div>
             <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}${t.isFixedTime && t.fixedStart ? ` · Fixed ${t.fixedStart}` : ''}</div>
           </div>
-          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}" ${t.isFixedTime ? 'disabled' : ''}>
+          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}" ${t.pinned ? 'disabled' : ''}>
             ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
-          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
+          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" ${t.pinned ? 'disabled' : ''} />
+          <button type="button" class="pin-btn ${t.pinned ? 'active' : ''}" onclick="toggleArrangementPin(${visIdx})" title="${t.pinned ? 'Unpin' : 'Pin and lock task details'}">${t.pinned ? 'Unpin' : 'Pin'}</button>
           <div class="flight-move">
             <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
             <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
@@ -1562,6 +1576,22 @@
       });
       enablePointerReorder();
       validateOverflow();
+    }
+
+    function toggleArrangementPin(index){
+      const t = arrangementTasks[index];
+      if(!t) return;
+      if(t.pinned){
+        t.pinned = false;
+      } else {
+        const row = buildSchedule()[index];
+        t.startOverride = row ? row.start : (timeStrToMinutesToday(document.getElementById('homeTime').value) ?? 0);
+        t.pinned = true;
+      }
+      clearOverridesFrom(index + 1);
+      saveArrangementMemory();
+      saveDailyArrangementSession();
+      renderReorderList();
     }
 
     // [NEW MINIMAL] One-tap move; uses the same arrangementTasks + memory model.
@@ -1624,11 +1654,12 @@
       const k = e.target.dataset.k;
       if(Number.isNaN(i) || !k) return;
       if(k === 'minutes'){
+        if(arrangementTasks[i].pinned) return;
         arrangementTasks[i].minutes = Math.max(0, Math.round(Number(e.target.value) || 0));
         clearOverridesFrom(i+1);
       }
       if(k === 'start'){
-        if(arrangementTasks[i].isFixedTime) return;
+        if(arrangementTasks[i].pinned) return;
         const newStart = timeStrToMinutesToday(e.target.value);
         if(newStart == null) return;
         arrangementTasks[i].startOverride = newStart;
@@ -1644,8 +1675,19 @@
       const rows = buildSchedule();
       const endAll = rows.length ? rows[rows.length-1].end : null;
       const parent = document.getElementById('reorderList').parentElement;
-      const old = parent.querySelector('.overflow-msg');
-      if(old) old.remove();
+      parent.querySelectorAll('.overflow-msg,.step4-warning').forEach(el => el.remove());
+      const errors = [];
+      rows.forEach((r, i) => {
+        if(i > 0 && arrangementTasks[i].pinned && r.start < rows[i-1].end){
+          errors.push(`#${i+1} ${arrangementTasks[i].name} pinned at ${minutesToTimeStr(r.start)}, but previous task ends ${minutesToTimeStr(rows[i-1].end)}.`);
+        }
+      });
+      if(errors.length){
+        const warn = document.createElement('div');
+        warn.className = 'step4-warning';
+        warn.innerHTML = `<span class="tag-danger">Time arrangement error</span><br>${errors.map(escapeHtml).join('<br>')}`;
+        parent.appendChild(warn);
+      }
       if(endAll != null && bed != null && endAll > bed){
         const warn = document.createElement('div');
         warn.className = 'small overflow-msg';
@@ -1656,6 +1698,13 @@
     }
 
     function finishArrangementStep4(){
+      const rows = buildSchedule();
+      const hasConflict = rows.some((r,i) => i > 0 && arrangementTasks[i].pinned && r.start < rows[i-1].end);
+      if(hasConflict){
+        validateOverflow();
+        alert('Time arrangement error: pinned task overlaps the previous task. Please reorder, unpin, or adjust the unpinned task duration.');
+        return;
+      }
       saveArrangementMemory(); // [NEW]
       saveDailyArrangementSession();
       syncArrangementToTodayTodos();
@@ -1832,6 +1881,13 @@
       rows = buildSchedule();
       ok('T2 start 20:00', minutesToTimeStr(rows[1].start) === '20:00');
       ok('T3 start 20:20', minutesToTimeStr(rows[2].start) === '20:20');
+
+      arrangementTasks[1].pinned = true;
+      arrangementTasks[1].startOverride = 20*60;
+      clearOverridesFrom(0);
+      rows = buildSchedule();
+      ok('Pinned T2 keeps 20:00 after reorder recalculation', minutesToTimeStr(rows[1].start) === '20:00');
+      ok('Unpinned T3 auto-follows pinned T2', minutesToTimeStr(rows[2].start) === '20:20');
 
       arrangementTasks = backupTasks;
       document.getElementById('homeTime').value = backupHome;
