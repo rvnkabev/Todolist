@@ -1223,6 +1223,8 @@
 
       arrangementTasks = session.tasks.map((t, i) => ({
         ...t,
+        // Arrangement copy stays editable; Plan recurring time remains unchanged.
+        isFixedTime: false,
         rememberedOrder: i,
         originalIndex: i
       }));
@@ -1306,7 +1308,8 @@
             ? timeStrToMinutesToday(item.fixedStart)
             : (remembered.startOffset != null ? home + Number(remembered.startOffset) : null),
           status: item.status,
-          isFixedTime: !!item.isFixedTime,
+          // Plan fixedStart is only Arrangement's initial time, not a Step 4 lock.
+          isFixedTime: false,
           fixedStart: item.fixedStart || '',
           recurringTaskId: item.recurringTaskId || '',
           recurringRule: item.recurringRule || '',
@@ -1547,7 +1550,7 @@
             <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}${t.isFixedTime && t.fixedStart ? ` · Fixed ${t.fixedStart}` : ''}</div>
           </div>
           <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}" ${t.isFixedTime ? 'disabled' : ''}>
-            ${halfHourOptions(t.fixedStart || minutesToTimeStr(Math.round(r.start/30)*30))}
+            ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
           <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
           <div class="flight-move">
