@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Main Planner — Plan / Today ToDoList / Arrangement</title>
+  <title>Main Planner â€” Plan / Today ToDoList / Arrangement</title>
   <style>
     :root{
       --bg:#0b1020; --bg2:#111936; --panel:#141a33; --ink:#e9eefc; --muted:#a8b6f5;
@@ -146,8 +146,8 @@
     .permanent-summary-name{font-size:.92rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .permanent-summary-meta{font-size:.76rem;color:var(--muted);white-space:nowrap}
     .permanent-summary-edit{font-size:.75rem;color:var(--accent)}
-    .permanent-item[open] .permanent-summary-edit::after{content:" ▲"}
-    .permanent-item:not([open]) .permanent-summary-edit::after{content:" ▼"}
+    .permanent-item[open] .permanent-summary-edit::after{content:" â–²"}
+    .permanent-item:not([open]) .permanent-summary-edit::after{content:" â–¼"}
     .permanent-edit{
       display:grid;grid-template-columns:minmax(180px,1fr) 120px;gap:8px;
       padding:10px;border-top:1px solid #223061;
@@ -184,33 +184,33 @@
 <body>
   <div class="wrap">
     <h1>Main Planner</h1>
-    <div class="sub">整合三個主頁：1. Plan → 2. Arrangement → 3. Today ToDoList。全部資料以瀏覽器 localStorage 保存，不需要手動貼 Step 1 原文。</div>
+    <div class="sub">æ•´åˆä¸‰å€‹ä¸»é ï¼š1. Plan â†’ 2. Arrangement â†’ 3. Today ToDoListã€‚å…¨éƒ¨è³‡æ–™ä»¥ç€è¦½å™¨ localStorage ä¿å­˜ï¼Œä¸éœ€è¦æ‰‹å‹•è²¼ Step 1 åŽŸæ–‡ã€‚</div>
 
     <!-- Home -->
     <section id="pageHome" class="page active">
       <div class="panel">
-        <h2>首頁</h2>
+        <h2>é¦–é </h2>
         <div class="grid grid-3">
           <button class="hero-btn" onclick="showPage('pagePlan')">
             <strong>1. Plan</strong>
-            建立今天任務，儲存後交給 Arrangement 排程。
+            å»ºç«‹ä»Šå¤©ä»»å‹™ï¼Œå„²å­˜å¾Œäº¤çµ¦ Arrangement æŽ’ç¨‹ã€‚
           </button>
           <button class="hero-btn" onclick="openArrangementFromStoredData()">
             <strong>2. Arrangement</strong>
-            讀取今天任務，安排 Step 4 的次序、開始時間與時長。
+            è®€å–ä»Šå¤©ä»»å‹™ï¼Œå®‰æŽ’ Step 4 çš„æ¬¡åºã€é–‹å§‹æ™‚é–“èˆ‡æ™‚é•·ã€‚
           </button>
           <button class="hero-btn" onclick="showPage('pageToday')">
             <strong>3. Today ToDoList</strong>
-            顯示任務資料，並採用 Arrangement Step 4 的最終次序與時間。
+            é¡¯ç¤ºä»»å‹™è³‡æ–™ï¼Œä¸¦æŽ¡ç”¨ Arrangement Step 4 çš„æœ€çµ‚æ¬¡åºèˆ‡æ™‚é–“ã€‚
           </button>
         </div>
       </div>
 
       <div class="panel">
         <div class="stat">
-          <div class="box"><div class="small">今天任務數</div><div id="homeTodayCount" class="mono">0</div></div>
-          <div class="box"><div class="small">今天已完成</div><div id="homeDoneCount" class="mono">0</div></div>
-          <div class="box"><div class="small">最近 24 小時紀錄</div><div id="home24Count" class="mono">0</div></div>
+          <div class="box"><div class="small">ä»Šå¤©ä»»å‹™æ•¸</div><div id="homeTodayCount" class="mono">0</div></div>
+          <div class="box"><div class="small">ä»Šå¤©å·²å®Œæˆ</div><div id="homeDoneCount" class="mono">0</div></div>
+          <div class="box"><div class="small">æœ€è¿‘ 24 å°æ™‚ç´€éŒ„</div><div id="home24Count" class="mono">0</div></div>
         </div>
       </div>
     </section>
@@ -219,26 +219,26 @@
     <section id="pagePlan" class="page">
       <div class="panel">
         <div class="btn-row">
-          <button onclick="goHome()">← Home</button>
-          <button class="btn" onclick="gotoPlanBuilder()">重新載入任務</button>
+          <button onclick="goHome()">â† Home</button>
+          <button class="btn" onclick="gotoPlanBuilder()">é‡æ–°è¼‰å…¥ä»»å‹™</button>
         </div>
         <h2>Plan</h2>
-        <div class="small">沿用 Success Daily TonightToDoList 思路：建立今晚任務，按一下就送去 Today ToDoList。</div>
+        <div class="small">æ²¿ç”¨ Success Daily TonightToDoList æ€è·¯ï¼šå»ºç«‹ä»Šæ™šä»»å‹™ï¼ŒæŒ‰ä¸€ä¸‹å°±é€åŽ» Today ToDoListã€‚</div>
       </div>
 
       <!-- [NEW] Permanent tasks -->
       <div class="panel">
         <h3>Permanent Tasks</h3>
-        <div class="small">永久任務會保存在瀏覽器，可新增、修改、刪除。亦可設定固定時間 + 重複日（Weekday / Weekend / Monday–Sunday），符合日期時會自動加入 Today。</div>
+        <div class="small">æ°¸ä¹…ä»»å‹™æœƒä¿å­˜åœ¨ç€è¦½å™¨ï¼Œå¯æ–°å¢žã€ä¿®æ”¹ã€åˆªé™¤ã€‚äº¦å¯è¨­å®šå›ºå®šæ™‚é–“ + é‡è¤‡æ—¥ï¼ˆWeekday / Weekend / Mondayâ€“Sundayï¼‰ï¼Œç¬¦åˆæ—¥æœŸæ™‚æœƒè‡ªå‹•åŠ å…¥ Todayã€‚</div>
         <div class="row">
           <div>
-            <label for="permanentNewText">永久任務名稱</label>
-            <input id="permanentNewText" type="text" placeholder="如：運動、食藥、Success Daily" />
+            <label for="permanentNewText">æ°¸ä¹…ä»»å‹™åç¨±</label>
+            <input id="permanentNewText" type="text" placeholder="å¦‚ï¼šé‹å‹•ã€é£Ÿè—¥ã€Success Daily" />
           </div>
           <div>
-            <label for="permanentNewMinutes">預設時長</label>
+            <label for="permanentNewMinutes">é è¨­æ™‚é•·</label>
             <select id="permanentNewMinutes">
-              <option value="">未設定</option>
+              <option value="">æœªè¨­å®š</option>
               <option value="5">5mins</option>
               <option value="15">15mins</option>
               <option value="30">30mins</option>
@@ -249,7 +249,7 @@
           </div>
           <div style="flex:0 0 120px">
             <label>&nbsp;</label>
-            <button class="btn" onclick="addPermanentTask()">＋ 新增</button>
+            <button class="btn" onclick="addPermanentTask()">ï¼‹ æ–°å¢ž</button>
           </div>
         </div>
         <div id="permanentTaskEditor"></div>
@@ -258,18 +258,18 @@
       <div class="panel">
         <div class="small" id="planDateTime"></div>
         <div class="toolbar">
-          <button onclick="selectAllPlanTodos()">全選</button>
-          <button onclick="clearAllPlanTodos()">清空</button>
+          <button onclick="selectAllPlanTodos()">å…¨é¸</button>
+          <button onclick="clearAllPlanTodos()">æ¸…ç©º</button>
         </div>
 
         <div class="row">
           <div>
-            <label for="planNewTodo">新增項目</label>
-            <input id="planNewTodo" type="text" placeholder="如：買雞、洗衫、運動 30mins" />
+            <label for="planNewTodo">æ–°å¢žé …ç›®</label>
+            <input id="planNewTodo" type="text" placeholder="å¦‚ï¼šè²·é›žã€æ´—è¡«ã€é‹å‹• 30mins" />
           </div>
           <div style="flex:0 0 120px">
             <label>&nbsp;</label>
-            <button class="btn" onclick="addPlanTodoFromInput()">＋ 加入</button>
+            <button class="btn" onclick="addPlanTodoFromInput()">ï¼‹ åŠ å…¥</button>
           </div>
         </div>
 
@@ -277,10 +277,10 @@
 
         <div class="sep"></div>
         <div class="btn-row">
-          <button class="btn" onclick="savePlanToToday('planned')">儲存為 Planned → Today ToDoList</button>
-          <button class="btn-ok" onclick="savePlanToToday('done')">儲存為 Done → Today ToDoList</button>
+          <button class="btn" onclick="savePlanToToday('planned')">å„²å­˜ç‚º Planned â†’ Today ToDoList</button>
+          <button class="btn-ok" onclick="savePlanToToday('done')">å„²å­˜ç‚º Done â†’ Today ToDoList</button>
         </div>
-        <div class="small" style="margin-top:8px">會寫入今天任務池，Arrangement 會自動讀取這些任務。</div>
+        <div class="small" style="margin-top:8px">æœƒå¯«å…¥ä»Šå¤©ä»»å‹™æ± ï¼ŒArrangement æœƒè‡ªå‹•è®€å–é€™äº›ä»»å‹™ã€‚</div>
       </div>
     </section>
 
@@ -288,29 +288,29 @@
     <section id="pageToday" class="page">
       <div class="panel">
         <div class="btn-row">
-          <button onclick="goHome()">← Home</button>
-          <button class="btn" onclick="refreshTodayPage()">重新整理</button>
-          <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
+          <button onclick="goHome()">â† Home</button>
+          <button class="btn" onclick="refreshTodayPage()">é‡æ–°æ•´ç†</button>
+          <button class="btn-danger" onclick="clear24hHistory()">æ¸…é™¤æœ€è¿‘ 24 å°æ™‚ç´€éŒ„</button>
         </div>
         <h2>Today ToDoList</h2>
-        <div class="small">顯示今天任務；如已完成 Arrangement Step 4，會按最終排程次序及時間顯示，並保留最近 24 小時紀錄。</div>
+        <div class="small">é¡¯ç¤ºä»Šå¤©ä»»å‹™ï¼›å¦‚å·²å®Œæˆ Arrangement Step 4ï¼ŒæœƒæŒ‰æœ€çµ‚æŽ’ç¨‹æ¬¡åºåŠæ™‚é–“é¡¯ç¤ºï¼Œä¸¦ä¿ç•™æœ€è¿‘ 24 å°æ™‚ç´€éŒ„ã€‚</div>
       </div>
 
       <div class="panel">
         <div class="stat">
-          <div class="box"><div class="small">今天 Planned/Done</div><div id="todayStats1" class="mono">0 / 0</div></div>
-          <div class="box"><div class="small">今天總數</div><div id="todayStats2" class="mono">0</div></div>
-          <div class="box"><div class="small">最近 24 小時</div><div id="todayStats3" class="mono">0</div></div>
+          <div class="box"><div class="small">ä»Šå¤© Planned/Done</div><div id="todayStats1" class="mono">0 / 0</div></div>
+          <div class="box"><div class="small">ä»Šå¤©ç¸½æ•¸</div><div id="todayStats2" class="mono">0</div></div>
+          <div class="box"><div class="small">æœ€è¿‘ 24 å°æ™‚</div><div id="todayStats3" class="mono">0</div></div>
         </div>
       </div>
 
       <div class="panel">
-        <h3>今天任務</h3>
+        <h3>ä»Šå¤©ä»»å‹™</h3>
         <div id="todayList" class="cards"></div>
       </div>
 
       <div class="panel">
-        <h3>最近 24 小時紀錄</h3>
+        <h3>æœ€è¿‘ 24 å°æ™‚ç´€éŒ„</h3>
         <div id="history24List" class="cards"></div>
       </div>
     </section>
@@ -319,36 +319,36 @@
     <section id="pageArrangement" class="page">
       <div class="panel">
         <div class="btn-row">
-          <button onclick="goHome()">← Home</button>
+          <button onclick="goHome()">â† Home</button>
           <button onclick="showArrangementStep('arrStep2')">Step 2</button>
           <button onclick="showArrangementStep('arrStep3')">Step 3</button>
           <button onclick="showArrangementStep('arrStep4')">Step 4</button>
         </div>
         <h2>Arrangement</h2>
-        <div class="small">Step 1 直接使用 Today ToDoList 資料；已加入 Arrangement Memory，會記住任務時長、Rank、順序和時間偏好。</div>
+        <div class="small">Step 1 ç›´æŽ¥ä½¿ç”¨ Today ToDoList è³‡æ–™ï¼›å·²åŠ å…¥ Arrangement Memoryï¼Œæœƒè¨˜ä½ä»»å‹™æ™‚é•·ã€Rankã€é †åºå’Œæ™‚é–“åå¥½ã€‚</div>
       </div>
 
       <!-- Step 1 -->
       <section id="arrStep1" class="arr-step">
         <div class="panel">
-          <h3>Step 1｜自動載入 Today ToDoList + 今晚時段</h3>
+          <h3>Step 1ï½œè‡ªå‹•è¼‰å…¥ Today ToDoList + ä»Šæ™šæ™‚æ®µ</h3>
           <div class="row">
             <div>
-              <label for="homeTime">預計回到家時間（今天）</label>
+              <label for="homeTime">é è¨ˆå›žåˆ°å®¶æ™‚é–“ï¼ˆä»Šå¤©ï¼‰</label>
               <select id="homeTime"></select>
             </div>
             <div>
-              <label for="bedTime">上床時間（今天）</label>
+              <label for="bedTime">ä¸ŠåºŠæ™‚é–“ï¼ˆä»Šå¤©ï¼‰</label>
               <select id="bedTime"></select>
             </div>
           </div>
-          <div class="small">時間選擇簡化為每 30 分鐘：00 / 30。</div>
+          <div class="small">æ™‚é–“é¸æ“‡ç°¡åŒ–ç‚ºæ¯ 30 åˆ†é˜ï¼š00 / 30ã€‚</div>
           <div class="btn-row">
-            <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Today ToDoList 載入</button>
-            <button class="btn" onclick="prepareArrangementAndGoStep2()">載入任務 & 前往 Step 2</button>
+            <button class="btn" onclick="loadArrangementTasksFromToday()">é‡æ–°å¾ž Today ToDoList è¼‰å…¥</button>
+            <button class="btn" onclick="prepareArrangementAndGoStep2()">è¼‰å…¥ä»»å‹™ & å‰å¾€ Step 2</button>
           </div>
           <div id="detectedWrap" style="margin-top:10px;display:none">
-            <div class="hint">已偵測到以下今天任務：</div>
+            <div class="hint">å·²åµæ¸¬åˆ°ä»¥ä¸‹ä»Šå¤©ä»»å‹™ï¼š</div>
             <div id="detected" class="mono"></div>
           </div>
         </div>
@@ -358,76 +358,76 @@
       <section id="arrStep2" class="arr-step" style="display:none">
         <div class="panel">
           <div class="btn-row" style="margin-bottom:10px">
-            <button class="btn" onclick="saveArrangementStep2()">儲存 & 前往 Step 3</button>
+            <button class="btn" onclick="saveArrangementStep2()">å„²å­˜ & å‰å¾€ Step 3</button>
           </div>
-          <h3>Step 2｜友善填「預估時長」與「Rank」</h3>
-          <div class="hint">任務名稱包含時長會自動填入；若曾經安排過同名任務，Arrangement Memory 會優先帶回上次設定。</div>
+          <h3>Step 2ï½œå‹å–„å¡«ã€Œé ä¼°æ™‚é•·ã€èˆ‡ã€ŒRankã€</h3>
+          <div class="hint">ä»»å‹™åç¨±åŒ…å«æ™‚é•·æœƒè‡ªå‹•å¡«å…¥ï¼›è‹¥æ›¾ç¶“å®‰æŽ’éŽåŒåä»»å‹™ï¼ŒArrangement Memory æœƒå„ªå…ˆå¸¶å›žä¸Šæ¬¡è¨­å®šã€‚</div>
         </div>
         <div id="taskList" class="panel"></div>
         <div class="btn-row">
-          <button onclick="showArrangementStep('arrStep1')">← 回 Step 1</button>
-          <button class="btn" onclick="saveArrangementStep2()">儲存 & 前往 Step 3</button>
+          <button onclick="showArrangementStep('arrStep1')">â† å›ž Step 1</button>
+          <button class="btn" onclick="saveArrangementStep2()">å„²å­˜ & å‰å¾€ Step 3</button>
         </div>
       </section>
 
       <!-- Step 3 -->
       <section id="arrStep3" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 3｜是否能在上床前做完？</h3>
+          <h3>Step 3ï½œæ˜¯å¦èƒ½åœ¨ä¸ŠåºŠå‰åšå®Œï¼Ÿ</h3>
           <div class="stat">
-            <div class="box"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
-            <div class="box"><div class="small">任務總時長（分鐘）</div><div id="totalMins" class="mono">—</div></div>
-            <div class="box"><div class="small">差額（可用−需求）</div><div id="deltaMins" class="mono">—</div></div>
+            <div class="box"><div class="small">å¯ç”¨æ™‚é–“ï¼ˆåˆ†é˜ï¼‰</div><div id="availMins" class="mono">â€”</div></div>
+            <div class="box"><div class="small">ä»»å‹™ç¸½æ™‚é•·ï¼ˆåˆ†é˜ï¼‰</div><div id="totalMins" class="mono">â€”</div></div>
+            <div class="box"><div class="small">å·®é¡ï¼ˆå¯ç”¨âˆ’éœ€æ±‚ï¼‰</div><div id="deltaMins" class="mono">â€”</div></div>
           </div>
-          <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
+          <div id="fitMsg" class="hint" style="margin-top:10px">â€”</div>
         </div>
 
         <div class="panel">
           <div class="btn-row">
-            <button class="btn" onclick="copyArrangementTimetable()">複製 Timetable</button>
-            <button class="btn" onclick="prepareReorderStep()">下一步 → 調整順序與時間</button>
+            <button class="btn" onclick="copyArrangementTimetable()">è¤‡è£½ Timetable</button>
+            <button class="btn" onclick="prepareReorderStep()">ä¸‹ä¸€æ­¥ â†’ èª¿æ•´é †åºèˆ‡æ™‚é–“</button>
           </div>
-          <div class="small" style="margin-top:8px">Timetable 預覽</div>
+          <div class="small" style="margin-top:8px">Timetable é è¦½</div>
           <div id="timetable" class="mono" style="white-space:pre-wrap"></div>
         </div>
         <div class="btn-row">
-          <button onclick="showArrangementStep('arrStep2')">← 回 Step 2</button>
+          <button onclick="showArrangementStep('arrStep2')">â† å›ž Step 2</button>
         </div>
       </section>
 
       <!-- Step 4 -->
       <section id="arrStep4" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 4｜拖曳調整順序 & 直接改時間段</h3>
+          <h3>Step 4ï½œæ‹–æ›³èª¿æ•´é †åº & ç›´æŽ¥æ”¹æ™‚é–“æ®µ</h3>
           <div class="hint">
-            先確定任務次序，再修改開始時間或時長。開始時間選擇只保留 00 / 30；儲存後會記入 Arrangement Memory。
+            å…ˆç¢ºå®šä»»å‹™æ¬¡åºï¼Œå†ä¿®æ”¹é–‹å§‹æ™‚é–“æˆ–æ™‚é•·ã€‚é–‹å§‹æ™‚é–“é¸æ“‡åªä¿ç•™ 00 / 30ï¼›å„²å­˜å¾Œæœƒè¨˜å…¥ Arrangement Memoryã€‚
           </div>
         </div>
         <div class="panel">
           <ul id="reorderList" class="draglist"></ul>
           <div class="btn-row">
-            <button onclick="showArrangementStep('arrStep3')">← 回 Step 3</button>
-            <button class="btn" onclick="finishArrangementStep4()">更新 Timetable & 回 Step 3</button>
+            <button onclick="showArrangementStep('arrStep3')">â† å›ž Step 3</button>
+            <button class="btn" onclick="finishArrangementStep4()">æ›´æ–° Timetable & å›ž Step 3</button>
           </div>
         </div>
       </section>
     </section>
 
     <div class="panel">
-      <h3>開發測試</h3>
-      <div id="tests" class="mono small">—</div>
+      <h3>é–‹ç™¼æ¸¬è©¦</h3>
+      <div id="tests" class="mono small">â€”</div>
     </div>
 
     <div class="sticky-footer small">
-      今天日期：<span id="todayStr"></span>
-      · SuccessDaily Auto Save：<span id="successDailySaveStatus">等待 18:00</span>
-      · <button style="padding:5px 8px;font-size:.78rem" onclick="runSaveToSuccessDailyShortcut()">SaveToSuccessDaily</button>
+      ä»Šå¤©æ—¥æœŸï¼š<span id="todayStr"></span>
+      Â· SuccessDaily Auto Saveï¼š<span id="successDailySaveStatus">ç­‰å¾… 18:00</span>
+      Â· <button style="padding:5px 8px;font-size:.78rem" onclick="runSaveToSuccessDailyShortcut()">SaveToSuccessDaily</button>
     </div>
   </div>
 
   <script>
     // =========================
-    // 基本工具
+    // åŸºæœ¬å·¥å…·
     // =========================
     const STORAGE_KEYS = {
       todayTodos: 'mainPlanner_todayTodos_v1',
@@ -443,11 +443,11 @@
     };
 
     const DEFAULT_PLAN_TODOS = [
-      { text: '買雞' },
-      { text: '整雞水', tag: '1.5hr' },
-      { text: '整雞水', tag: '30mins' },
-      { text: '運動' },
-      { text: '游水' }
+      { text: 'è²·é›ž' },
+      { text: 'æ•´é›žæ°´', tag: '1.5hr' },
+      { text: 'æ•´é›žæ°´', tag: '30mins' },
+      { text: 'é‹å‹•' },
+      { text: 'æ¸¸æ°´' }
     ];
 
     const DUR_PRESETS = [5,15,30,60,90,120];
@@ -586,14 +586,14 @@
       const repeatEl = document.querySelector(`[data-perm-repeat="${id}"]`);
       const fixedEl = document.querySelector(`[data-perm-fixed="${id}"]`);
       const text = (textEl?.value || '').trim();
-      if(!text) return alert('任務名稱不可為空');
+      if(!text) return alert('ä»»å‹™åç¨±ä¸å¯ç‚ºç©º');
       const recurringRule = repeatEl?.value || '';
       const fixedStart = fixedEl?.value || '';
       const recurringDays = recurringRule === 'custom'
         ? Array.from(document.querySelectorAll(`[data-custom-days="${id}"] .day-chip.selected`)).map(btn => Number(btn.dataset.day))
         : [];
-      if(recurringRule && !fixedStart) return alert('重複任務請先選擇固定時間');
-      if(recurringRule === 'custom' && !recurringDays.length) return alert('Custom days 請至少選擇一日');
+      if(recurringRule && !fixedStart) return alert('é‡è¤‡ä»»å‹™è«‹å…ˆé¸æ“‡å›ºå®šæ™‚é–“');
+      if(recurringRule === 'custom' && !recurringDays.length) return alert('Custom days è«‹è‡³å°‘é¸æ“‡ä¸€æ—¥');
       item.text = text;
       item.minutes = minEl?.value === '' ? null : Number(minEl.value);
       item.recurringRule = recurringRule;
@@ -605,7 +605,7 @@
     }
 
     function deletePermanentTask(id){
-      if(!confirm('刪除這個 Permanent Task？')) return;
+      if(!confirm('åˆªé™¤é€™å€‹ Permanent Taskï¼Ÿ')) return;
       setPermanentTasks(getPermanentTasks().filter(x => x.id !== id));
       gotoPlanBuilder();
     }
@@ -615,7 +615,7 @@
       const arr = getPermanentTasks();
       host.innerHTML = '';
       if(!arr.length){
-        host.innerHTML = '<div class="empty">沒有 Permanent Task</div>';
+        host.innerHTML = '<div class="empty">æ²’æœ‰ Permanent Task</div>';
         return;
       }
 
@@ -626,7 +626,7 @@
         if(item.recurringRule === 'custom'){
           return (item.recurringDays || [])
             .map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d])
-            .join(' · ') || 'Custom';
+            .join(' Â· ') || 'Custom';
         }
         return item.recurringRule.charAt(0).toUpperCase() + item.recurringRule.slice(1);
       };
@@ -636,7 +636,7 @@
         details.className = 'permanent-item';
 
         const durationText = item.minutes == null
-          ? '—'
+          ? 'â€”'
           : item.minutes === 60 ? '1hr'
           : item.minutes === 90 ? '1.5hr'
           : item.minutes === 120 ? '2hr'
@@ -648,21 +648,21 @@
             <div class="permanent-summary-meta">${escapeHtml(durationText)}</div>
             <div class="permanent-summary-meta">
               ${escapeHtml(repeatLabel(item))}
-              ${item.fixedStart ? ` · <span class="fixed-lock">🔒 ${escapeHtml(item.fixedStart)}</span>` : ''}
+              ${item.fixedStart ? ` Â· <span class="fixed-lock">ðŸ”’ ${escapeHtml(item.fixedStart)}</span>` : ''}
             </div>
             <div class="permanent-summary-edit">Edit</div>
           </summary>
 
           <div class="permanent-edit">
             <div>
-              <label class="small">任務名稱</label>
+              <label class="small">ä»»å‹™åç¨±</label>
               <input data-perm-text="${item.id}" value="${escapeAttr(item.text)}" />
             </div>
 
             <div>
-              <label class="small">時長</label>
+              <label class="small">æ™‚é•·</label>
               <select data-perm-min="${item.id}">
-                <option value="" ${item.minutes==null?'selected':''}>未設定</option>
+                <option value="" ${item.minutes==null?'selected':''}>æœªè¨­å®š</option>
                 ${DUR_PRESETS.map(m => `<option value="${m}" ${Number(item.minutes)===m?'selected':''}>${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</option>`).join('')}
               </select>
             </div>
@@ -672,9 +672,9 @@
                 <label class="small">Repeat</label>
                 <select data-perm-repeat="${item.id}" onchange="toggleCustomDays('${item.id}')">
                   <option value="" ${!item.recurringRule?'selected':''}>None</option>
-                  <option value="weekday" ${item.recurringRule==='weekday'?'selected':''}>Weekday (Mon–Fri)</option>
-                  <option value="weekend" ${item.recurringRule==='weekend'?'selected':''}>Weekend (Sat–Sun)</option>
-                  <option value="custom" ${item.recurringRule==='custom'?'selected':''}>Custom days…</option>
+                  <option value="weekday" ${item.recurringRule==='weekday'?'selected':''}>Weekday (Monâ€“Fri)</option>
+                  <option value="weekend" ${item.recurringRule==='weekend'?'selected':''}>Weekend (Satâ€“Sun)</option>
+                  <option value="custom" ${item.recurringRule==='custom'?'selected':''}>Custom daysâ€¦</option>
                   <option value="monday" ${item.recurringRule==='monday'?'selected':''}>Monday</option>
                   <option value="tuesday" ${item.recurringRule==='tuesday'?'selected':''}>Tuesday</option>
                   <option value="wednesday" ${item.recurringRule==='wednesday'?'selected':''}>Wednesday</option>
@@ -693,15 +693,15 @@
               <div>
                 <label class="small">Fixed Time</label>
                 <select data-perm-fixed="${item.id}">
-                  <option value="" ${!item.fixedStart?'selected':''}>—</option>
+                  <option value="" ${!item.fixedStart?'selected':''}>â€”</option>
                   ${fixedTimeOptions(item.fixedStart || '')}
                 </select>
               </div>
 
               <div class="small">
                 ${item.recurringRule && item.fixedStart
-                  ? `<span class="tag-ok">Auto</span> <span class="fixed-lock">🔒 ${escapeHtml(item.fixedStart)}</span>${item.recurringRule==='custom' ? ` · ${(item.recurringDays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}` : ''}`
-                  : '不重複：只作 Permanent Task 選項'}
+                  ? `<span class="tag-ok">Auto</span> <span class="fixed-lock">ðŸ”’ ${escapeHtml(item.fixedStart)}</span>${item.recurringRule==='custom' ? ` Â· ${(item.recurringDays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}` : ''}`
+                  : 'ä¸é‡è¤‡ï¼šåªä½œ Permanent Task é¸é …'}
               </div>
             </div>
 
@@ -816,9 +816,9 @@
         <input type="checkbox" id="${id}" />
         <div>
           <div class="todo-title">${escapeHtml(item.text)}${item.tag ? ` <span class="pill">${escapeHtml(item.tag)}</span>` : ''}</div>
-          <div class="todo-meta">點選後會加入本日任務池</div>
+          <div class="todo-meta">é»žé¸å¾ŒæœƒåŠ å…¥æœ¬æ—¥ä»»å‹™æ± </div>
         </div>
-        <div class="small">${item.tag ? '預設時長' : '自訂'}</div>
+        <div class="small">${item.tag ? 'é è¨­æ™‚é•·' : 'è‡ªè¨‚'}</div>
       `;
       label.addEventListener('click', (e) => {
         const cb = label.querySelector('input');
@@ -852,7 +852,7 @@
 
     function parseDurationMinutes(text){
       if(!text) return null;
-      if(/半\s*小?時/.test(text)) return 30;
+      if(/åŠ\s*å°?æ™‚/.test(text)) return 30;
       const patterns = [
         /dur\s*=\s*(\d+)\s*m\b/i,
         /dur\s*=\s*(\d+)\s*min\b/i,
@@ -867,14 +867,14 @@
         /\b(\d+)\s*m\b/i,
         /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i,
         /\b(\d+(?:\.\d+)?)\s*hr\b/i,
-        /(\d+(?:\.\d+)?)\s*小?時/i,
-        /(\d+)\s*分(?:鐘)?/i
+        /(\d+(?:\.\d+)?)\s*å°?æ™‚/i,
+        /(\d+)\s*åˆ†(?:é˜)?/i
       ];
       for(const re of patterns){
         const m = text.match(re);
         if(m){
           const val = parseFloat(m[1]);
-          if(/h(?:ours?)?|hr|小?時/i.test(re.source)) return Math.round(val*60);
+          if(/h(?:ours?)?|hr|å°?æ™‚/i.test(re.source)) return Math.round(val*60);
           return Math.round(val);
         }
       }
@@ -884,9 +884,9 @@
     function normalizeTaskName(text){
       return (text || '')
         .replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hr|hours?)\b/ig,'')
-        .replace(/(\d+(?:\.\d+)?)\s*小?時/ig,'')
-        .replace(/(\d+)\s*分(?:鐘)?/ig,'')
-        .replace(/半\s*小?時/ig,'')
+        .replace(/(\d+(?:\.\d+)?)\s*å°?æ™‚/ig,'')
+        .replace(/(\d+)\s*åˆ†(?:é˜)?/ig,'')
+        .replace(/åŠ\s*å°?æ™‚/ig,'')
         .trim();
     }
 
@@ -894,7 +894,7 @@
       const picked = Array.from(document.querySelectorAll('#planTodoCards .todo-card'))
         .filter(card => card.querySelector('input').checked)
         .map(card => card.querySelector('.todo-title').innerText.trim());
-      if(!picked.length){ alert('請至少選擇一項'); return; }
+      if(!picked.length){ alert('è«‹è‡³å°‘é¸æ“‡ä¸€é …'); return; }
 
       moveOldTodayTodosToHistory();
       const todos = getTodayTodos();
@@ -914,7 +914,7 @@
       });
       setTodayTodos(todos);
       updateHomeStats();
-      alert(`已加入 Today ToDoList：${picked.length} 項`);
+      alert(`å·²åŠ å…¥ Today ToDoListï¼š${picked.length} é …`);
       showPage('pageToday');
     }
 
@@ -1012,7 +1012,7 @@
       const host = document.getElementById(elId);
       host.innerHTML = '';
       host.className = 'today-flight-list';
-      if(!list.length){ host.innerHTML = '<div class="empty">沒有資料</div>'; return; }
+      if(!list.length){ host.innerHTML = '<div class="empty">æ²’æœ‰è³‡æ–™</div>'; return; }
 
       list
         .slice()
@@ -1033,8 +1033,8 @@
             : visualIndex + 1;
 
           const timeText = item.arrangementStart && item.arrangementEnd
-            ? `${item.arrangementStart}–${item.arrangementEnd}`
-            : '—';
+            ? `${item.arrangementStart}â€“${item.arrangementEnd}`
+            : 'â€”';
 
           const duration = item.arrangementMinutes != null
             ? item.arrangementMinutes
@@ -1044,31 +1044,31 @@
           if(item.arrangementRank !== '' && item.arrangementRank != null) subBits.push(`Rank ${item.arrangementRank}`);
           subBits.push(item.status === 'done' ? 'Done' : 'Planned');
           if(item.source) subBits.push(item.source);
-          if(item.isFixedTime && item.fixedStart) subBits.push(`🔒 ${item.fixedStart}`);
+          if(item.isFixedTime && item.fixedStart) subBits.push(`ðŸ”’ ${item.fixedStart}`);
 
           div.innerHTML = `
             <div class="today-flight-no">#${orderNo}</div>
             <div class="today-flight-main">
               <div class="today-flight-title">${escapeHtml(item.displayText || item.text)}</div>
-              <div class="today-flight-sub">${escapeHtml(subBits.join(' · '))}</div>
+              <div class="today-flight-sub">${escapeHtml(subBits.join(' Â· '))}</div>
             </div>
             <div class="today-flight-time mono">
               ${allowActions ? `
-                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="${item.isFixedTime ? '固定時間' : '更改開始時間'}" ${item.isFixedTime ? 'disabled' : ''}>
-                  ${halfHourOptions(item.fixedStart || item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
+                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="${item.isFixedTime ? 'å›ºå®šæ™‚é–“' : 'æ›´æ”¹é–‹å§‹æ™‚é–“'}" ${item.isFixedTime ? 'disabled' : ''}>
+                  ${halfHourOptions(item.fixedStart || item.arrangementStart || (timeText !== 'â€”' ? timeText.slice(0,5) : ''))}
                 </select>
               ` : escapeHtml(timeText)}
             </div>
-            <div class="today-flight-duration mono">${duration != null ? `${duration}m` : '—'}</div>
+            <div class="today-flight-duration mono">${duration != null ? `${duration}m` : 'â€”'}</div>
             <div class="today-flight-actions">
               ${allowActions ? `
                 <span class="today-flight-move">
-                  <button onclick="moveTodayArrangementTask('${item.id}',-1)" title="上移">↑</button>
-                  <button onclick="moveTodayArrangementTask('${item.id}',1)" title="下移">↓</button>
+                  <button onclick="moveTodayArrangementTask('${item.id}',-1)" title="ä¸Šç§»">â†‘</button>
+                  <button onclick="moveTodayArrangementTask('${item.id}',1)" title="ä¸‹ç§»">â†“</button>
                 </span>
                 <button onclick="markTodoStatus('${item.id}','planned')">Plan</button>
                 <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
-                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">×</button>
+                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">Ã—</button>
               ` : `
                 <span class="${item.status==='done' ? 'tag-ok' : 'tag-warn'}">${item.status==='done' ? 'Done' : 'Planned'}</span>
               `}
@@ -1093,7 +1093,7 @@
     }
 
     function clear24hHistory(){
-      if(!confirm('清除最近 24 小時紀錄？')) return;
+      if(!confirm('æ¸…é™¤æœ€è¿‘ 24 å°æ™‚ç´€éŒ„ï¼Ÿ')) return;
       setHistory24([]);
       refreshTodayPage();
       updateHomeStats();
@@ -1275,7 +1275,7 @@
         const remembered = mem[arrangementMemoryKey(name)] || {};
         return {
           id: item.id,
-          raw: `[${item.date}\n${fmtTime(item.createdAt)} ｜ Tonight: ${item.displayText || item.text} | status=${item.status} #tonighttodolist]`,
+          raw: `[${item.date}\n${fmtTime(item.createdAt)} ï½œ Tonight: ${item.displayText || item.text} | status=${item.status} #tonighttodolist]`,
           name,
           minutes: remembered.minutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
           rank: remembered.rank ?? '',
@@ -1305,7 +1305,7 @@
 
     function prepareArrangementAndGoStep2(){
       loadArrangementTasksFromToday();
-      if(!arrangementTasks.length){ alert('Today ToDoList 沒有任務，請先到 Plan 或 Today ToDoList 新增。'); return; }
+      if(!arrangementTasks.length){ alert('Today ToDoList æ²’æœ‰ä»»å‹™ï¼Œè«‹å…ˆåˆ° Plan æˆ– Today ToDoList æ–°å¢žã€‚'); return; }
       showArrangementStep('arrStep2');
     }
 
@@ -1314,13 +1314,13 @@
       const el = document.getElementById('detected');
       if(!items.length){ wrap.style.display = 'none'; el.innerHTML = ''; return; }
       wrap.style.display = '';
-      el.innerHTML = items.map((it,i)=>`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null ? `<span class="tag-ok">${it.minutes}m</span>` : `<span class="tag-warn">未填時長</span>`} ${it.status==='done' ? `<span class="tag-ok">done</span>` : `<span class="tag-warn">planned</span>`}`).join('<br/>');
+      el.innerHTML = items.map((it,i)=>`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null ? `<span class="tag-ok">${it.minutes}m</span>` : `<span class="tag-warn">æœªå¡«æ™‚é•·</span>`} ${it.status==='done' ? `<span class="tag-ok">done</span>` : `<span class="tag-warn">planned</span>`}`).join('<br/>');
     }
 
     function renderTaskCards(){
       const host = document.getElementById('taskList');
       host.innerHTML = '';
-      if(!arrangementTasks.length){ host.innerHTML = '<div class="empty">（尚無任務，請先在 Step 1 載入 Today ToDoList）</div>'; return; }
+      if(!arrangementTasks.length){ host.innerHTML = '<div class="empty">ï¼ˆå°šç„¡ä»»å‹™ï¼Œè«‹å…ˆåœ¨ Step 1 è¼‰å…¥ Today ToDoListï¼‰</div>'; return; }
       arrangementTasks.forEach((t, idx) => {
         const card = document.createElement('div');
         card.className = 'card';
@@ -1329,25 +1329,25 @@
         card.innerHTML = `
           <div class="row">
             <div>
-              <label>任務名稱</label>
+              <label>ä»»å‹™åç¨±</label>
               <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name || '')}" />
             </div>
             <div>
-              <label>自訂時長（分鐘）</label>
-              <input type="number" min="0" step="1" placeholder="分鐘" data-k="minutes" data-i="${idx}" value="${dur}" />
-              <div class="small">快速按鈕：</div>
+              <label>è‡ªè¨‚æ™‚é•·ï¼ˆåˆ†é˜ï¼‰</label>
+              <input type="number" min="0" step="1" placeholder="åˆ†é˜" data-k="minutes" data-i="${idx}" value="${dur}" />
+              <div class="small">å¿«é€ŸæŒ‰éˆ•ï¼š</div>
               <div class="chips" data-kind="dur" data-i="${idx}">
                 ${DUR_PRESETS.map(m => `<div class="chip ${Number(dur)===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
               </div>
             </div>
             <div>
-              <label>Rank（1=最高，5=最低）</label>
+              <label>Rankï¼ˆ1=æœ€é«˜ï¼Œ5=æœ€ä½Žï¼‰</label>
               <div class="rank-group" data-kind="rank" data-i="${idx}">
                 ${[1,2,3,4,5].map(r => `<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
               </div>
             </div>
           </div>
-          <div class="small mono" style="margin-top:8px">原始標記：${escapeHtml((t.raw || '').slice(0,160))}${(t.raw || '').length > 160 ? '…' : ''}</div>
+          <div class="small mono" style="margin-top:8px">åŽŸå§‹æ¨™è¨˜ï¼š${escapeHtml((t.raw || '').slice(0,160))}${(t.raw || '').length > 160 ? 'â€¦' : ''}</div>
         `;
         host.appendChild(card);
       });
@@ -1389,12 +1389,12 @@
     }
 
     function resetArrangementStats(){
-      document.getElementById('availMins').textContent = '—';
-      document.getElementById('totalMins').textContent = '—';
-      document.getElementById('deltaMins').textContent = '—';
-      document.getElementById('fitMsg').textContent = '—';
+      document.getElementById('availMins').textContent = 'â€”';
+      document.getElementById('totalMins').textContent = 'â€”';
+      document.getElementById('deltaMins').textContent = 'â€”';
+      document.getElementById('fitMsg').textContent = 'â€”';
       document.getElementById('fitMsg').className = 'hint';
-      document.getElementById('timetable').textContent = '—';
+      document.getElementById('timetable').textContent = 'â€”';
     }
 
     function renderArrangementStats(){
@@ -1402,17 +1402,17 @@
       const bed = timeStrToMinutesToday(document.getElementById('bedTime').value);
       let avail = null;
       let msg = '';
-      if(home == null || bed == null) msg = '請先輸入回家時間與上床時間。';
-      else if(bed <= home) msg = '上床時間需晚於回家時間。';
+      if(home == null || bed == null) msg = 'è«‹å…ˆè¼¸å…¥å›žå®¶æ™‚é–“èˆ‡ä¸ŠåºŠæ™‚é–“ã€‚';
+      else if(bed <= home) msg = 'ä¸ŠåºŠæ™‚é–“éœ€æ™šæ–¼å›žå®¶æ™‚é–“ã€‚';
       else avail = bed - home;
-      document.getElementById('availMins').textContent = avail == null ? '—' : avail;
+      document.getElementById('availMins').textContent = avail == null ? 'â€”' : avail;
 
       const mins = arrangementTasks.reduce((sum,t) => sum + (Number(t.minutes) || 0), 0);
-      document.getElementById('totalMins').textContent = arrangementTasks.length ? mins : '—';
+      document.getElementById('totalMins').textContent = arrangementTasks.length ? mins : 'â€”';
 
       if(avail == null || !arrangementTasks.length){
-        document.getElementById('deltaMins').textContent = '—';
-        document.getElementById('fitMsg').textContent = msg || '—';
+        document.getElementById('deltaMins').textContent = 'â€”';
+        document.getElementById('fitMsg').textContent = msg || 'â€”';
         document.getElementById('fitMsg').className = 'hint';
         return;
       }
@@ -1420,10 +1420,10 @@
       document.getElementById('deltaMins').textContent = delta;
       const fitMsg = document.getElementById('fitMsg');
       if(delta >= 0){
-        fitMsg.innerHTML = `<span class="tag-ok">✅ 可完成</span> 還剩 ${delta} 分鐘`;
+        fitMsg.innerHTML = `<span class="tag-ok">âœ… å¯å®Œæˆ</span> é‚„å‰© ${delta} åˆ†é˜`;
         fitMsg.className = 'small';
       } else {
-        fitMsg.innerHTML = `<span class="tag-danger">⛔ 超時 ${Math.abs(delta)} 分鐘</span> 請調整順序或縮短時長`;
+        fitMsg.innerHTML = `<span class="tag-danger">â›” è¶…æ™‚ ${Math.abs(delta)} åˆ†é˜</span> è«‹èª¿æ•´é †åºæˆ–ç¸®çŸ­æ™‚é•·`;
         fitMsg.className = 'small';
       }
     }
@@ -1449,24 +1449,24 @@
 
     function renderArrangementTimetable(){
       const el = document.getElementById('timetable');
-      if(!arrangementTasks.length){ el.textContent = '—'; return; }
+      if(!arrangementTasks.length){ el.textContent = 'â€”'; return; }
       const bed = timeStrToMinutesToday(document.getElementById('bedTime').value);
       const rows = buildSchedule();
-      const lines = rows.map(r => `${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
+      const lines = rows.map(r => `${minutesToTimeStr(r.start)}â€“${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
       const endAll = rows.length ? rows[rows.length-1].end : null;
-      if(endAll != null && bed != null && endAll > bed){ lines.push(`\n⚠️ 超過上床時間：${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
+      if(endAll != null && bed != null && endAll > bed){ lines.push(`\nâš ï¸ è¶…éŽä¸ŠåºŠæ™‚é–“ï¼š${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
       el.textContent = lines.join('\n');
     }
 
     async function copyArrangementTimetable(){
-      const header = `Tonight Timetable — ${fmtDateTime()}`;
+      const header = `Tonight Timetable â€” ${fmtDateTime()}`;
       const body = document.getElementById('timetable').textContent || '';
       const text = `${header}\n\n${body}`;
       try {
         await navigator.clipboard.writeText(text);
-        alert('已複製 Timetable');
+        alert('å·²è¤‡è£½ Timetable');
       } catch {
-        alert('複製失敗，請手動複製。');
+        alert('è¤‡è£½å¤±æ•—ï¼Œè«‹æ‰‹å‹•è¤‡è£½ã€‚');
       }
     }
 
@@ -1518,18 +1518,18 @@
         const li = document.createElement('li');
         li.dataset.index = String(visIdx);
         li.innerHTML = `
-          <div class="handle" title="拖曳改位置">☰</div>
-          <div class="flight-task" title="按住任務名稱也可拖曳">
-            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)} ${t.isFixedTime ? '<span class="fixed-lock">🔒</span>' : ''}</div>
-            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}${t.isFixedTime && t.fixedStart ? ` · Fixed ${t.fixedStart}` : ''}</div>
+          <div class="handle" title="æ‹–æ›³æ”¹ä½ç½®">â˜°</div>
+          <div class="flight-task" title="æŒ‰ä½ä»»å‹™åç¨±ä¹Ÿå¯æ‹–æ›³">
+            <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)} ${t.isFixedTime ? '<span class="fixed-lock">ðŸ”’</span>' : ''}</div>
+            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? 'â€”' : t.rank} Â· ${minutesToTimeStr(r.start)} â†’ ${minutesToTimeStr(r.end)}${t.isFixedTime && t.fixedStart ? ` Â· Fixed ${t.fixedStart}` : ''}</div>
           </div>
-          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}" ${t.isFixedTime ? 'disabled' : ''}>
+          <select class="flight-control" aria-label="é–‹å§‹æ™‚é–“" data-k="start" data-i="${visIdx}">
             ${halfHourOptions(t.fixedStart || minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
-          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
+          <input class="flight-control" aria-label="æ™‚é•·åˆ†é˜" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
           <div class="flight-move">
-            <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
-            <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
+            <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="ä¸Šç§»">â†‘</button>
+            <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="ä¸‹ç§»">â†“</button>
           </div>
         `;
         list.appendChild(li);
@@ -1602,7 +1602,6 @@
         clearOverridesFrom(i+1);
       }
       if(k === 'start'){
-        if(arrangementTasks[i].isFixedTime) return;
         const newStart = timeStrToMinutesToday(e.target.value);
         if(newStart == null) return;
         arrangementTasks[i].startOverride = newStart;
@@ -1624,7 +1623,7 @@
         const warn = document.createElement('div');
         warn.className = 'small overflow-msg';
         warn.style.marginTop = '8px';
-        warn.innerHTML = `<span class="tag-danger">⛔ 超時 ${endAll-bed} 分鐘</span> 請調整順序或縮短時長。`;
+        warn.innerHTML = `<span class="tag-danger">â›” è¶…æ™‚ ${endAll-bed} åˆ†é˜</span> è«‹èª¿æ•´é †åºæˆ–ç¸®çŸ­æ™‚é•·ã€‚`;
         parent.appendChild(warn);
       }
     }
@@ -1705,7 +1704,7 @@
         homeTime: document.getElementById('homeTime').value,
         bedTime: document.getElementById('bedTime').value,
         timetable: buildSchedule().map(r =>
-          `${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`
+          `${minutesToTimeStr(r.start)}â€“${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`
         ).join('\n'),
         todos: todos.map(x => ({
           id: x.id,
@@ -1753,7 +1752,7 @@
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       const ts = log[todayStr()];
       document.getElementById('successDailySaveStatus').textContent =
-        ts ? `已儲存 ${fmtTime(ts)}` : '等待 18:00';
+        ts ? `å·²å„²å­˜ ${fmtTime(ts)}` : 'ç­‰å¾… 18:00';
     }
 
     function checkSuccessDailyAutoSave(){
@@ -1774,11 +1773,11 @@
     // =========================
     function runDevTests(){
       const out = [];
-      const ok = (name, cond) => out.push(`${cond ? '✅ PASS' : '❌ FAIL'}  ${name}`);
+      const ok = (name, cond) => out.push(`${cond ? 'âœ… PASS' : 'âŒ FAIL'}  ${name}`);
       ok('parseDurationMinutes("dur=30m") === 30', parseDurationMinutes('dur=30m') === 30);
       ok('parseDurationMinutes("1.5hr") === 90', parseDurationMinutes('1.5hr') === 90);
-      ok('parseDurationMinutes("半小時") === 30', parseDurationMinutes('半小時') === 30);
-      ok('normalizeTaskName("整雞水 30mins") === 整雞水', normalizeTaskName('整雞水 30mins') === '整雞水');
+      ok('parseDurationMinutes("åŠå°æ™‚") === 30', parseDurationMinutes('åŠå°æ™‚') === 30);
+      ok('normalizeTaskName("æ•´é›žæ°´ 30mins") === æ•´é›žæ°´', normalizeTaskName('æ•´é›žæ°´ 30mins') === 'æ•´é›žæ°´');
       ok('weekday matches Monday', recurringRuleMatchesDate('weekday', new Date('2026-08-10T12:00:00')) === true);
       ok('weekend matches Sunday', recurringRuleMatchesDate('weekend', new Date('2026-08-09T12:00:00')) === true);
       ok('thursday matches Thursday', recurringRuleMatchesDate('thursday', new Date('2026-08-13T12:00:00')) === true);
@@ -1948,33 +1947,33 @@
 <body>
   <div class="wrap">
     <h1>Main Planner</h1>
-    <div class="sub">整合三個主頁：1. Plan → 2. Arrangement → 3. Today ToDoList。全部資料以瀏覽器 localStorage 保存，不需要手動貼 Step 1 原文。</div>
+    <div class="sub">æ•´åˆä¸‰å€‹ä¸»é ï¼š1. Plan â†’ 2. Arrangement â†’ 3. Today ToDoListã€‚å…¨éƒ¨è³‡æ–™ä»¥ç€è¦½å™¨ localStorage ä¿å­˜ï¼Œä¸éœ€è¦æ‰‹å‹•è²¼ Step 1 åŽŸæ–‡ã€‚</div>
 
     <!-- Home -->
     <section id="pageHome" class="page active">
       <div class="panel">
-        <h2>首頁</h2>
+        <h2>é¦–é </h2>
         <div class="grid grid-3">
           <button class="hero-btn" onclick="showPage('pagePlan')">
             <strong>1. Plan</strong>
-            建立今天任務，儲存後交給 Arrangement 排程。
+            å»ºç«‹ä»Šå¤©ä»»å‹™ï¼Œå„²å­˜å¾Œäº¤çµ¦ Arrangement æŽ’ç¨‹ã€‚
           </button>
           <button class="hero-btn" onclick="openArrangementFromStoredData()">
             <strong>2. Arrangement</strong>
-            讀取今天任務，安排 Step 4 的次序、開始時間與時長。
+            è®€å–ä»Šå¤©ä»»å‹™ï¼Œå®‰æŽ’ Step 4 çš„æ¬¡åºã€é–‹å§‹æ™‚é–“èˆ‡æ™‚é•·ã€‚
           </button>
           <button class="hero-btn" onclick="showPage('pageToday')">
             <strong>3. Today ToDoList</strong>
-            顯示任務資料，並採用 Arrangement Step 4 的最終次序與時間。
+            é¡¯ç¤ºä»»å‹™è³‡æ–™ï¼Œä¸¦æŽ¡ç”¨ Arrangement Step 4 çš„æœ€çµ‚æ¬¡åºèˆ‡æ™‚é–“ã€‚
           </button>
         </div>
       </div>
 
       <div class="panel">
         <div class="stat">
-          <div class="box"><div class="small">今天任務數</div><div id="homeTodayCount" class="mono">0</div></div>
-          <div class="box"><div class="small">今天已完成</div><div id="homeDoneCount" class="mono">0</div></div>
-          <div class="box"><div class="small">最近 24 小時紀錄</div><div id="home24Count" class="mono">0</div></div>
+          <div class="box"><div class="small">ä»Šå¤©ä»»å‹™æ•¸</div><div id="homeTodayCount" class="mono">0</div></div>
+          <div class="box"><div class="small">ä»Šå¤©å·²å®Œæˆ</div><div id="homeDoneCount" class="mono">0</div></div>
+          <div class="box"><div class="small">æœ€è¿‘ 24 å°æ™‚ç´€éŒ„</div><div id="home24Count" class="mono">0</div></div>
         </div>
       </div>
     </section>
@@ -1983,26 +1982,26 @@
     <section id="pagePlan" class="page">
       <div class="panel">
         <div class="btn-row">
-          <button onclick="goHome()">← Home</button>
-          <button class="btn" onclick="gotoPlanBuilder()">重新載入任務</button>
+          <button onclick="goHome()">â† Home</button>
+          <button class="btn" onclick="gotoPlanBuilder()">é‡æ–°è¼‰å…¥ä»»å‹™</button>
         </div>
         <h2>Plan</h2>
-        <div class="small">沿用 Success Daily TonightToDoList 思路：建立今晚任務，按一下就送去 Today ToDoList。</div>
+        <div class="small">æ²¿ç”¨ Success Daily TonightToDoList æ€è·¯ï¼šå»ºç«‹ä»Šæ™šä»»å‹™ï¼ŒæŒ‰ä¸€ä¸‹å°±é€åŽ» Today ToDoListã€‚</div>
       </div>
 
       <!-- [NEW] Permanent tasks -->
       <div class="panel">
         <h3>Permanent Tasks</h3>
-        <div class="small">永久任務會保存在瀏覽器，可新增、修改、刪除；每次進入 Plan 都會顯示。</div>
+        <div class="small">æ°¸ä¹…ä»»å‹™æœƒä¿å­˜åœ¨ç€è¦½å™¨ï¼Œå¯æ–°å¢žã€ä¿®æ”¹ã€åˆªé™¤ï¼›æ¯æ¬¡é€²å…¥ Plan éƒ½æœƒé¡¯ç¤ºã€‚</div>
         <div class="row">
           <div>
-            <label for="permanentNewText">永久任務名稱</label>
-            <input id="permanentNewText" type="text" placeholder="如：運動、食藥、Success Daily" />
+            <label for="permanentNewText">æ°¸ä¹…ä»»å‹™åç¨±</label>
+            <input id="permanentNewText" type="text" placeholder="å¦‚ï¼šé‹å‹•ã€é£Ÿè—¥ã€Success Daily" />
           </div>
           <div>
-            <label for="permanentNewMinutes">預設時長</label>
+            <label for="permanentNewMinutes">é è¨­æ™‚é•·</label>
             <select id="permanentNewMinutes">
-              <option value="">未設定</option>
+              <option value="">æœªè¨­å®š</option>
               <option value="5">5mins</option>
               <option value="15">15mins</option>
               <option value="30">30mins</option>
@@ -2013,7 +2012,7 @@
           </div>
           <div style="flex:0 0 120px">
             <label>&nbsp;</label>
-            <button class="btn" onclick="addPermanentTask()">＋ 新增</button>
+            <button class="btn" onclick="addPermanentTask()">ï¼‹ æ–°å¢ž</button>
           </div>
         </div>
         <div id="permanentTaskEditor"></div>
@@ -2022,18 +2021,18 @@
       <div class="panel">
         <div class="small" id="planDateTime"></div>
         <div class="toolbar">
-          <button onclick="selectAllPlanTodos()">全選</button>
-          <button onclick="clearAllPlanTodos()">清空</button>
+          <button onclick="selectAllPlanTodos()">å…¨é¸</button>
+          <button onclick="clearAllPlanTodos()">æ¸…ç©º</button>
         </div>
 
         <div class="row">
           <div>
-            <label for="planNewTodo">新增項目</label>
-            <input id="planNewTodo" type="text" placeholder="如：買雞、洗衫、運動 30mins" />
+            <label for="planNewTodo">æ–°å¢žé …ç›®</label>
+            <input id="planNewTodo" type="text" placeholder="å¦‚ï¼šè²·é›žã€æ´—è¡«ã€é‹å‹• 30mins" />
           </div>
           <div style="flex:0 0 120px">
             <label>&nbsp;</label>
-            <button class="btn" onclick="addPlanTodoFromInput()">＋ 加入</button>
+            <button class="btn" onclick="addPlanTodoFromInput()">ï¼‹ åŠ å…¥</button>
           </div>
         </div>
 
@@ -2041,10 +2040,10 @@
 
         <div class="sep"></div>
         <div class="btn-row">
-          <button class="btn" onclick="savePlanToToday('planned')">儲存為 Planned → Today ToDoList</button>
-          <button class="btn-ok" onclick="savePlanToToday('done')">儲存為 Done → Today ToDoList</button>
+          <button class="btn" onclick="savePlanToToday('planned')">å„²å­˜ç‚º Planned â†’ Today ToDoList</button>
+          <button class="btn-ok" onclick="savePlanToToday('done')">å„²å­˜ç‚º Done â†’ Today ToDoList</button>
         </div>
-        <div class="small" style="margin-top:8px">會寫入今天任務池，Arrangement 會自動讀取這些任務。</div>
+        <div class="small" style="margin-top:8px">æœƒå¯«å…¥ä»Šå¤©ä»»å‹™æ± ï¼ŒArrangement æœƒè‡ªå‹•è®€å–é€™äº›ä»»å‹™ã€‚</div>
       </div>
     </section>
 
@@ -2052,29 +2051,29 @@
     <section id="pageToday" class="page">
       <div class="panel">
         <div class="btn-row">
-          <button onclick="goHome()">← Home</button>
-          <button class="btn" onclick="refreshTodayPage()">重新整理</button>
-          <button class="btn-danger" onclick="clear24hHistory()">清除最近 24 小時紀錄</button>
+          <button onclick="goHome()">â† Home</button>
+          <button class="btn" onclick="refreshTodayPage()">é‡æ–°æ•´ç†</button>
+          <button class="btn-danger" onclick="clear24hHistory()">æ¸…é™¤æœ€è¿‘ 24 å°æ™‚ç´€éŒ„</button>
         </div>
         <h2>Today ToDoList</h2>
-        <div class="small">顯示今天任務；如已完成 Arrangement Step 4，會按最終排程次序及時間顯示，並保留最近 24 小時紀錄。</div>
+        <div class="small">é¡¯ç¤ºä»Šå¤©ä»»å‹™ï¼›å¦‚å·²å®Œæˆ Arrangement Step 4ï¼ŒæœƒæŒ‰æœ€çµ‚æŽ’ç¨‹æ¬¡åºåŠæ™‚é–“é¡¯ç¤ºï¼Œä¸¦ä¿ç•™æœ€è¿‘ 24 å°æ™‚ç´€éŒ„ã€‚</div>
       </div>
 
       <div class="panel">
         <div class="stat">
-          <div class="box"><div class="small">今天 Planned/Done</div><div id="todayStats1" class="mono">0 / 0</div></div>
-          <div class="box"><div class="small">今天總數</div><div id="todayStats2" class="mono">0</div></div>
-          <div class="box"><div class="small">最近 24 小時</div><div id="todayStats3" class="mono">0</div></div>
+          <div class="box"><div class="small">ä»Šå¤© Planned/Done</div><div id="todayStats1" class="mono">0 / 0</div></div>
+          <div class="box"><div class="small">ä»Šå¤©ç¸½æ•¸</div><div id="todayStats2" class="mono">0</div></div>
+          <div class="box"><div class="small">æœ€è¿‘ 24 å°æ™‚</div><div id="todayStats3" class="mono">0</div></div>
         </div>
       </div>
 
       <div class="panel">
-        <h3>今天任務</h3>
+        <h3>ä»Šå¤©ä»»å‹™</h3>
         <div id="todayList" class="cards"></div>
       </div>
 
       <div class="panel">
-        <h3>最近 24 小時紀錄</h3>
+        <h3>æœ€è¿‘ 24 å°æ™‚ç´€éŒ„</h3>
         <div id="history24List" class="cards"></div>
       </div>
     </section>
@@ -2083,36 +2082,36 @@
     <section id="pageArrangement" class="page">
       <div class="panel">
         <div class="btn-row">
-          <button onclick="goHome()">← Home</button>
+          <button onclick="goHome()">â† Home</button>
           <button onclick="showArrangementStep('arrStep2')">Step 2</button>
           <button onclick="showArrangementStep('arrStep3')">Step 3</button>
           <button onclick="showArrangementStep('arrStep4')">Step 4</button>
         </div>
         <h2>Arrangement</h2>
-        <div class="small">Step 1 直接使用 Today ToDoList 資料；已加入 Arrangement Memory，會記住任務時長、Rank、順序和時間偏好。</div>
+        <div class="small">Step 1 ç›´æŽ¥ä½¿ç”¨ Today ToDoList è³‡æ–™ï¼›å·²åŠ å…¥ Arrangement Memoryï¼Œæœƒè¨˜ä½ä»»å‹™æ™‚é•·ã€Rankã€é †åºå’Œæ™‚é–“åå¥½ã€‚</div>
       </div>
 
       <!-- Step 1 -->
       <section id="arrStep1" class="arr-step">
         <div class="panel">
-          <h3>Step 1｜自動載入 Today ToDoList + 今晚時段</h3>
+          <h3>Step 1ï½œè‡ªå‹•è¼‰å…¥ Today ToDoList + ä»Šæ™šæ™‚æ®µ</h3>
           <div class="row">
             <div>
-              <label for="homeTime">預計回到家時間（今天）</label>
+              <label for="homeTime">é è¨ˆå›žåˆ°å®¶æ™‚é–“ï¼ˆä»Šå¤©ï¼‰</label>
               <select id="homeTime"></select>
             </div>
             <div>
-              <label for="bedTime">上床時間（今天）</label>
+              <label for="bedTime">ä¸ŠåºŠæ™‚é–“ï¼ˆä»Šå¤©ï¼‰</label>
               <select id="bedTime"></select>
             </div>
           </div>
-          <div class="small">時間選擇簡化為每 30 分鐘：00 / 30。</div>
+          <div class="small">æ™‚é–“é¸æ“‡ç°¡åŒ–ç‚ºæ¯ 30 åˆ†é˜ï¼š00 / 30ã€‚</div>
           <div class="btn-row">
-            <button class="btn" onclick="loadArrangementTasksFromToday()">重新從 Today ToDoList 載入</button>
-            <button class="btn" onclick="prepareArrangementAndGoStep2()">載入任務 & 前往 Step 2</button>
+            <button class="btn" onclick="loadArrangementTasksFromToday()">é‡æ–°å¾ž Today ToDoList è¼‰å…¥</button>
+            <button class="btn" onclick="prepareArrangementAndGoStep2()">è¼‰å…¥ä»»å‹™ & å‰å¾€ Step 2</button>
           </div>
           <div id="detectedWrap" style="margin-top:10px;display:none">
-            <div class="hint">已偵測到以下今天任務：</div>
+            <div class="hint">å·²åµæ¸¬åˆ°ä»¥ä¸‹ä»Šå¤©ä»»å‹™ï¼š</div>
             <div id="detected" class="mono"></div>
           </div>
         </div>
@@ -2122,75 +2121,75 @@
       <section id="arrStep2" class="arr-step" style="display:none">
         <div class="panel">
           <div class="btn-row" style="margin-bottom:10px">
-            <button class="btn" onclick="saveArrangementStep2()">儲存 & 前往 Step 3</button>
+            <button class="btn" onclick="saveArrangementStep2()">å„²å­˜ & å‰å¾€ Step 3</button>
           </div>
-          <h3>Step 2｜友善填「預估時長」與「Rank」</h3>
-          <div class="hint">任務名稱包含時長會自動填入；若曾經安排過同名任務，Arrangement Memory 會優先帶回上次設定。</div>
+          <h3>Step 2ï½œå‹å–„å¡«ã€Œé ä¼°æ™‚é•·ã€èˆ‡ã€ŒRankã€</h3>
+          <div class="hint">ä»»å‹™åç¨±åŒ…å«æ™‚é•·æœƒè‡ªå‹•å¡«å…¥ï¼›è‹¥æ›¾ç¶“å®‰æŽ’éŽåŒåä»»å‹™ï¼ŒArrangement Memory æœƒå„ªå…ˆå¸¶å›žä¸Šæ¬¡è¨­å®šã€‚</div>
         </div>
         <div id="taskList" class="panel"></div>
         <div class="btn-row">
-          <button onclick="showArrangementStep('arrStep1')">← 回 Step 1</button>
-          <button class="btn" onclick="saveArrangementStep2()">儲存 & 前往 Step 3</button>
+          <button onclick="showArrangementStep('arrStep1')">â† å›ž Step 1</button>
+          <button class="btn" onclick="saveArrangementStep2()">å„²å­˜ & å‰å¾€ Step 3</button>
         </div>
       </section>
 
       <!-- Step 3 -->
       <section id="arrStep3" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 3｜是否能在上床前做完？</h3>
+          <h3>Step 3ï½œæ˜¯å¦èƒ½åœ¨ä¸ŠåºŠå‰åšå®Œï¼Ÿ</h3>
           <div class="stat">
-            <div class="box"><div class="small">可用時間（分鐘）</div><div id="availMins" class="mono">—</div></div>
-            <div class="box"><div class="small">任務總時長（分鐘）</div><div id="totalMins" class="mono">—</div></div>
-            <div class="box"><div class="small">差額（可用−需求）</div><div id="deltaMins" class="mono">—</div></div>
+            <div class="box"><div class="small">å¯ç”¨æ™‚é–“ï¼ˆåˆ†é˜ï¼‰</div><div id="availMins" class="mono">â€”</div></div>
+            <div class="box"><div class="small">ä»»å‹™ç¸½æ™‚é•·ï¼ˆåˆ†é˜ï¼‰</div><div id="totalMins" class="mono">â€”</div></div>
+            <div class="box"><div class="small">å·®é¡ï¼ˆå¯ç”¨âˆ’éœ€æ±‚ï¼‰</div><div id="deltaMins" class="mono">â€”</div></div>
           </div>
-          <div id="fitMsg" class="hint" style="margin-top:10px">—</div>
+          <div id="fitMsg" class="hint" style="margin-top:10px">â€”</div>
         </div>
 
         <div class="panel">
           <div class="btn-row">
-            <button class="btn" onclick="copyArrangementTimetable()">複製 Timetable</button>
-            <button class="btn" onclick="prepareReorderStep()">下一步 → 調整順序與時間</button>
+            <button class="btn" onclick="copyArrangementTimetable()">è¤‡è£½ Timetable</button>
+            <button class="btn" onclick="prepareReorderStep()">ä¸‹ä¸€æ­¥ â†’ èª¿æ•´é †åºèˆ‡æ™‚é–“</button>
           </div>
-          <div class="small" style="margin-top:8px">Timetable 預覽</div>
+          <div class="small" style="margin-top:8px">Timetable é è¦½</div>
           <div id="timetable" class="mono" style="white-space:pre-wrap"></div>
         </div>
         <div class="btn-row">
-          <button onclick="showArrangementStep('arrStep2')">← 回 Step 2</button>
+          <button onclick="showArrangementStep('arrStep2')">â† å›ž Step 2</button>
         </div>
       </section>
 
       <!-- Step 4 -->
       <section id="arrStep4" class="arr-step" style="display:none">
         <div class="panel">
-          <h3>Step 4｜拖曳調整順序 & 直接改時間段</h3>
+          <h3>Step 4ï½œæ‹–æ›³èª¿æ•´é †åº & ç›´æŽ¥æ”¹æ™‚é–“æ®µ</h3>
           <div class="hint">
-            先確定任務次序，再修改開始時間或時長。開始時間選擇只保留 00 / 30；儲存後會記入 Arrangement Memory。
+            å…ˆç¢ºå®šä»»å‹™æ¬¡åºï¼Œå†ä¿®æ”¹é–‹å§‹æ™‚é–“æˆ–æ™‚é•·ã€‚é–‹å§‹æ™‚é–“é¸æ“‡åªä¿ç•™ 00 / 30ï¼›å„²å­˜å¾Œæœƒè¨˜å…¥ Arrangement Memoryã€‚
           </div>
         </div>
         <div class="panel">
           <ul id="reorderList" class="draglist"></ul>
           <div class="btn-row">
-            <button onclick="showArrangementStep('arrStep3')">← 回 Step 3</button>
-            <button class="btn" onclick="finishArrangementStep4()">更新 Timetable & 回 Step 3</button>
+            <button onclick="showArrangementStep('arrStep3')">â† å›ž Step 3</button>
+            <button class="btn" onclick="finishArrangementStep4()">æ›´æ–° Timetable & å›ž Step 3</button>
           </div>
         </div>
       </section>
     </section>
 
     <div class="panel">
-      <h3>開發測試</h3>
-      <div id="tests" class="mono small">—</div>
+      <h3>é–‹ç™¼æ¸¬è©¦</h3>
+      <div id="tests" class="mono small">â€”</div>
     </div>
 
     <div class="sticky-footer small">
-      今天日期：<span id="todayStr"></span>
-      · SuccessDaily Auto Save：<span id="successDailySaveStatus">等待 18:00</span>
+      ä»Šå¤©æ—¥æœŸï¼š<span id="todayStr"></span>
+      Â· SuccessDaily Auto Saveï¼š<span id="successDailySaveStatus">ç­‰å¾… 18:00</span>
     </div>
   </div>
 
   <script>
     // =========================
-    // 基本工具
+    // åŸºæœ¬å·¥å…·
     // =========================
     const STORAGE_KEYS = {
       todayTodos: 'mainPlanner_todayTodos_v1',
@@ -2206,11 +2205,11 @@
     };
 
     const DEFAULT_PLAN_TODOS = [
-      { text: '買雞' },
-      { text: '整雞水', tag: '1.5hr' },
-      { text: '整雞水', tag: '30mins' },
-      { text: '運動' },
-      { text: '游水' }
+      { text: 'è²·é›ž' },
+      { text: 'æ•´é›žæ°´', tag: '1.5hr' },
+      { text: 'æ•´é›žæ°´', tag: '30mins' },
+      { text: 'é‹å‹•' },
+      { text: 'æ¸¸æ°´' }
     ];
 
     const DUR_PRESETS = [5,15,30,60,90,120];
@@ -2343,7 +2342,7 @@
       const textEl = document.querySelector(`[data-perm-text="${id}"]`);
       const minEl = document.querySelector(`[data-perm-min="${id}"]`);
       const text = (textEl?.value || '').trim();
-      if(!text) return alert('任務名稱不可為空');
+      if(!text) return alert('ä»»å‹™åç¨±ä¸å¯ç‚ºç©º');
       item.text = text;
       item.minutes = minEl?.value === '' ? null : Number(minEl.value);
       setPermanentTasks(arr);
@@ -2351,7 +2350,7 @@
     }
 
     function deletePermanentTask(id){
-      if(!confirm('刪除這個 Permanent Task？')) return;
+      if(!confirm('åˆªé™¤é€™å€‹ Permanent Taskï¼Ÿ')) return;
       setPermanentTasks(getPermanentTasks().filter(x => x.id !== id));
       gotoPlanBuilder();
     }
@@ -2361,7 +2360,7 @@
       const arr = getPermanentTasks();
       host.innerHTML = '';
       if(!arr.length){
-        host.innerHTML = '<div class="empty">沒有 Permanent Task</div>';
+        host.innerHTML = '<div class="empty">æ²’æœ‰ Permanent Task</div>';
         return;
       }
       arr.forEach(item => {
@@ -2369,13 +2368,13 @@
         row.className = 'permanent-row';
         row.innerHTML = `
           <div>
-            <label class="small">任務名稱</label>
+            <label class="small">ä»»å‹™åç¨±</label>
             <input data-perm-text="${item.id}" value="${escapeAttr(item.text)}" />
           </div>
           <div>
-            <label class="small">時長</label>
+            <label class="small">æ™‚é•·</label>
             <select data-perm-min="${item.id}">
-              <option value="" ${item.minutes==null?'selected':''}>未設定</option>
+              <option value="" ${item.minutes==null?'selected':''}>æœªè¨­å®š</option>
               ${DUR_PRESETS.map(m => `<option value="${m}" ${Number(item.minutes)===m?'selected':''}>${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</option>`).join('')}
             </select>
           </div>
@@ -2415,9 +2414,9 @@
         <input type="checkbox" id="${id}" />
         <div>
           <div class="todo-title">${escapeHtml(item.text)}${item.tag ? ` <span class="pill">${escapeHtml(item.tag)}</span>` : ''}</div>
-          <div class="todo-meta">點選後會加入本日任務池</div>
+          <div class="todo-meta">é»žé¸å¾ŒæœƒåŠ å…¥æœ¬æ—¥ä»»å‹™æ± </div>
         </div>
-        <div class="small">${item.tag ? '預設時長' : '自訂'}</div>
+        <div class="small">${item.tag ? 'é è¨­æ™‚é•·' : 'è‡ªè¨‚'}</div>
       `;
       label.addEventListener('click', (e) => {
         const cb = label.querySelector('input');
@@ -2451,7 +2450,7 @@
 
     function parseDurationMinutes(text){
       if(!text) return null;
-      if(/半\s*小?時/.test(text)) return 30;
+      if(/åŠ\s*å°?æ™‚/.test(text)) return 30;
       const patterns = [
         /dur\s*=\s*(\d+)\s*m\b/i,
         /dur\s*=\s*(\d+)\s*min\b/i,
@@ -2466,14 +2465,14 @@
         /\b(\d+)\s*m\b/i,
         /\b(\d+(?:\.\d+)?)\s*h(?:ours?)?\b/i,
         /\b(\d+(?:\.\d+)?)\s*hr\b/i,
-        /(\d+(?:\.\d+)?)\s*小?時/i,
-        /(\d+)\s*分(?:鐘)?/i
+        /(\d+(?:\.\d+)?)\s*å°?æ™‚/i,
+        /(\d+)\s*åˆ†(?:é˜)?/i
       ];
       for(const re of patterns){
         const m = text.match(re);
         if(m){
           const val = parseFloat(m[1]);
-          if(/h(?:ours?)?|hr|小?時/i.test(re.source)) return Math.round(val*60);
+          if(/h(?:ours?)?|hr|å°?æ™‚/i.test(re.source)) return Math.round(val*60);
           return Math.round(val);
         }
       }
@@ -2483,9 +2482,9 @@
     function normalizeTaskName(text){
       return (text || '')
         .replace(/\b\d+(?:\.\d+)?\s*(?:mins?|min|m|h|hr|hours?)\b/ig,'')
-        .replace(/(\d+(?:\.\d+)?)\s*小?時/ig,'')
-        .replace(/(\d+)\s*分(?:鐘)?/ig,'')
-        .replace(/半\s*小?時/ig,'')
+        .replace(/(\d+(?:\.\d+)?)\s*å°?æ™‚/ig,'')
+        .replace(/(\d+)\s*åˆ†(?:é˜)?/ig,'')
+        .replace(/åŠ\s*å°?æ™‚/ig,'')
         .trim();
     }
 
@@ -2493,7 +2492,7 @@
       const picked = Array.from(document.querySelectorAll('#planTodoCards .todo-card'))
         .filter(card => card.querySelector('input').checked)
         .map(card => card.querySelector('.todo-title').innerText.trim());
-      if(!picked.length){ alert('請至少選擇一項'); return; }
+      if(!picked.length){ alert('è«‹è‡³å°‘é¸æ“‡ä¸€é …'); return; }
 
       moveOldTodayTodosToHistory();
       const todos = getTodayTodos();
@@ -2513,7 +2512,7 @@
       });
       setTodayTodos(todos);
       updateHomeStats();
-      alert(`已加入 Today ToDoList：${picked.length} 項`);
+      alert(`å·²åŠ å…¥ Today ToDoListï¼š${picked.length} é …`);
       showPage('pageToday');
     }
 
@@ -2605,7 +2604,7 @@
       const host = document.getElementById(elId);
       host.innerHTML = '';
       host.className = 'today-flight-list';
-      if(!list.length){ host.innerHTML = '<div class="empty">沒有資料</div>'; return; }
+      if(!list.length){ host.innerHTML = '<div class="empty">æ²’æœ‰è³‡æ–™</div>'; return; }
 
       list
         .slice()
@@ -2626,8 +2625,8 @@
             : visualIndex + 1;
 
           const timeText = item.arrangementStart && item.arrangementEnd
-            ? `${item.arrangementStart}–${item.arrangementEnd}`
-            : '—';
+            ? `${item.arrangementStart}â€“${item.arrangementEnd}`
+            : 'â€”';
 
           const duration = item.arrangementMinutes != null
             ? item.arrangementMinutes
@@ -2642,25 +2641,25 @@
             <div class="today-flight-no">#${orderNo}</div>
             <div class="today-flight-main">
               <div class="today-flight-title">${escapeHtml(item.displayText || item.text)}</div>
-              <div class="today-flight-sub">${escapeHtml(subBits.join(' · '))}</div>
+              <div class="today-flight-sub">${escapeHtml(subBits.join(' Â· '))}</div>
             </div>
             <div class="today-flight-time mono">
               ${allowActions ? `
-                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="更改開始時間">
-                  ${halfHourOptions(item.arrangementStart || (timeText !== '—' ? timeText.slice(0,5) : ''))}
+                <select onchange="changeTodayArrangementStart('${item.id}', this.value)" title="æ›´æ”¹é–‹å§‹æ™‚é–“">
+                  ${halfHourOptions(item.arrangementStart || (timeText !== 'â€”' ? timeText.slice(0,5) : ''))}
                 </select>
               ` : escapeHtml(timeText)}
             </div>
-            <div class="today-flight-duration mono">${duration != null ? `${duration}m` : '—'}</div>
+            <div class="today-flight-duration mono">${duration != null ? `${duration}m` : 'â€”'}</div>
             <div class="today-flight-actions">
               ${allowActions ? `
                 <span class="today-flight-move">
-                  <button onclick="moveTodayArrangementTask('${item.id}',-1)" title="上移">↑</button>
-                  <button onclick="moveTodayArrangementTask('${item.id}',1)" title="下移">↓</button>
+                  <button onclick="moveTodayArrangementTask('${item.id}',-1)" title="ä¸Šç§»">â†‘</button>
+                  <button onclick="moveTodayArrangementTask('${item.id}',1)" title="ä¸‹ç§»">â†“</button>
                 </span>
                 <button onclick="markTodoStatus('${item.id}','planned')">Plan</button>
                 <button class="btn-ok" onclick="markTodoStatus('${item.id}','done')">Done</button>
-                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">×</button>
+                <button class="btn-danger" onclick="deleteTodayTodo('${item.id}')">Ã—</button>
               ` : `
                 <span class="${item.status==='done' ? 'tag-ok' : 'tag-warn'}">${item.status==='done' ? 'Done' : 'Planned'}</span>
               `}
@@ -2684,7 +2683,7 @@
     }
 
     function clear24hHistory(){
-      if(!confirm('清除最近 24 小時紀錄？')) return;
+      if(!confirm('æ¸…é™¤æœ€è¿‘ 24 å°æ™‚ç´€éŒ„ï¼Ÿ')) return;
       setHistory24([]);
       refreshTodayPage();
       updateHomeStats();
@@ -2856,7 +2855,7 @@
         const remembered = mem[arrangementMemoryKey(name)] || {};
         return {
           id: item.id,
-          raw: `[${item.date}\n${fmtTime(item.createdAt)} ｜ Tonight: ${item.displayText || item.text} | status=${item.status} #tonighttodolist]`,
+          raw: `[${item.date}\n${fmtTime(item.createdAt)} ï½œ Tonight: ${item.displayText || item.text} | status=${item.status} #tonighttodolist]`,
           name,
           minutes: remembered.minutes ?? item.minutes ?? parseDurationMinutes(item.displayText || item.text),
           rank: remembered.rank ?? '',
@@ -2879,7 +2878,7 @@
 
     function prepareArrangementAndGoStep2(){
       loadArrangementTasksFromToday();
-      if(!arrangementTasks.length){ alert('Today ToDoList 沒有任務，請先到 Plan 或 Today ToDoList 新增。'); return; }
+      if(!arrangementTasks.length){ alert('Today ToDoList æ²’æœ‰ä»»å‹™ï¼Œè«‹å…ˆåˆ° Plan æˆ– Today ToDoList æ–°å¢žã€‚'); return; }
       showArrangementStep('arrStep2');
     }
 
@@ -2888,13 +2887,13 @@
       const el = document.getElementById('detected');
       if(!items.length){ wrap.style.display = 'none'; el.innerHTML = ''; return; }
       wrap.style.display = '';
-      el.innerHTML = items.map((it,i)=>`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null ? `<span class="tag-ok">${it.minutes}m</span>` : `<span class="tag-warn">未填時長</span>`} ${it.status==='done' ? `<span class="tag-ok">done</span>` : `<span class="tag-warn">planned</span>`}`).join('<br/>');
+      el.innerHTML = items.map((it,i)=>`<div class="pill">${i+1}</div><span class="mono">${escapeHtml(it.name)}</span> ${it.minutes!=null ? `<span class="tag-ok">${it.minutes}m</span>` : `<span class="tag-warn">æœªå¡«æ™‚é•·</span>`} ${it.status==='done' ? `<span class="tag-ok">done</span>` : `<span class="tag-warn">planned</span>`}`).join('<br/>');
     }
 
     function renderTaskCards(){
       const host = document.getElementById('taskList');
       host.innerHTML = '';
-      if(!arrangementTasks.length){ host.innerHTML = '<div class="empty">（尚無任務，請先在 Step 1 載入 Today ToDoList）</div>'; return; }
+      if(!arrangementTasks.length){ host.innerHTML = '<div class="empty">ï¼ˆå°šç„¡ä»»å‹™ï¼Œè«‹å…ˆåœ¨ Step 1 è¼‰å…¥ Today ToDoListï¼‰</div>'; return; }
       arrangementTasks.forEach((t, idx) => {
         const card = document.createElement('div');
         card.className = 'card';
@@ -2903,25 +2902,25 @@
         card.innerHTML = `
           <div class="row">
             <div>
-              <label>任務名稱</label>
+              <label>ä»»å‹™åç¨±</label>
               <input data-k="name" data-i="${idx}" value="${escapeAttr(t.name || '')}" />
             </div>
             <div>
-              <label>自訂時長（分鐘）</label>
-              <input type="number" min="0" step="1" placeholder="分鐘" data-k="minutes" data-i="${idx}" value="${dur}" />
-              <div class="small">快速按鈕：</div>
+              <label>è‡ªè¨‚æ™‚é•·ï¼ˆåˆ†é˜ï¼‰</label>
+              <input type="number" min="0" step="1" placeholder="åˆ†é˜" data-k="minutes" data-i="${idx}" value="${dur}" />
+              <div class="small">å¿«é€ŸæŒ‰éˆ•ï¼š</div>
               <div class="chips" data-kind="dur" data-i="${idx}">
                 ${DUR_PRESETS.map(m => `<div class="chip ${Number(dur)===m?'selected':''}" data-v="${m}">${m===60?'1hr':m===90?'1.5hr':m===120?'2hr':m+'mins'}</div>`).join('')}
               </div>
             </div>
             <div>
-              <label>Rank（1=最高，5=最低）</label>
+              <label>Rankï¼ˆ1=æœ€é«˜ï¼Œ5=æœ€ä½Žï¼‰</label>
               <div class="rank-group" data-kind="rank" data-i="${idx}">
                 ${[1,2,3,4,5].map(r => `<button type="button" class="rank ${rank===r?'selected':''}" data-v="${r}">${r}</button>`).join('')}
               </div>
             </div>
           </div>
-          <div class="small mono" style="margin-top:8px">原始標記：${escapeHtml((t.raw || '').slice(0,160))}${(t.raw || '').length > 160 ? '…' : ''}</div>
+          <div class="small mono" style="margin-top:8px">åŽŸå§‹æ¨™è¨˜ï¼š${escapeHtml((t.raw || '').slice(0,160))}${(t.raw || '').length > 160 ? 'â€¦' : ''}</div>
         `;
         host.appendChild(card);
       });
@@ -2963,12 +2962,12 @@
     }
 
     function resetArrangementStats(){
-      document.getElementById('availMins').textContent = '—';
-      document.getElementById('totalMins').textContent = '—';
-      document.getElementById('deltaMins').textContent = '—';
-      document.getElementById('fitMsg').textContent = '—';
+      document.getElementById('availMins').textContent = 'â€”';
+      document.getElementById('totalMins').textContent = 'â€”';
+      document.getElementById('deltaMins').textContent = 'â€”';
+      document.getElementById('fitMsg').textContent = 'â€”';
       document.getElementById('fitMsg').className = 'hint';
-      document.getElementById('timetable').textContent = '—';
+      document.getElementById('timetable').textContent = 'â€”';
     }
 
     function renderArrangementStats(){
@@ -2976,17 +2975,17 @@
       const bed = timeStrToMinutesToday(document.getElementById('bedTime').value);
       let avail = null;
       let msg = '';
-      if(home == null || bed == null) msg = '請先輸入回家時間與上床時間。';
-      else if(bed <= home) msg = '上床時間需晚於回家時間。';
+      if(home == null || bed == null) msg = 'è«‹å…ˆè¼¸å…¥å›žå®¶æ™‚é–“èˆ‡ä¸ŠåºŠæ™‚é–“ã€‚';
+      else if(bed <= home) msg = 'ä¸ŠåºŠæ™‚é–“éœ€æ™šæ–¼å›žå®¶æ™‚é–“ã€‚';
       else avail = bed - home;
-      document.getElementById('availMins').textContent = avail == null ? '—' : avail;
+      document.getElementById('availMins').textContent = avail == null ? 'â€”' : avail;
 
       const mins = arrangementTasks.reduce((sum,t) => sum + (Number(t.minutes) || 0), 0);
-      document.getElementById('totalMins').textContent = arrangementTasks.length ? mins : '—';
+      document.getElementById('totalMins').textContent = arrangementTasks.length ? mins : 'â€”';
 
       if(avail == null || !arrangementTasks.length){
-        document.getElementById('deltaMins').textContent = '—';
-        document.getElementById('fitMsg').textContent = msg || '—';
+        document.getElementById('deltaMins').textContent = 'â€”';
+        document.getElementById('fitMsg').textContent = msg || 'â€”';
         document.getElementById('fitMsg').className = 'hint';
         return;
       }
@@ -2994,10 +2993,10 @@
       document.getElementById('deltaMins').textContent = delta;
       const fitMsg = document.getElementById('fitMsg');
       if(delta >= 0){
-        fitMsg.innerHTML = `<span class="tag-ok">✅ 可完成</span> 還剩 ${delta} 分鐘`;
+        fitMsg.innerHTML = `<span class="tag-ok">âœ… å¯å®Œæˆ</span> é‚„å‰© ${delta} åˆ†é˜`;
         fitMsg.className = 'small';
       } else {
-        fitMsg.innerHTML = `<span class="tag-danger">⛔ 超時 ${Math.abs(delta)} 分鐘</span> 請調整順序或縮短時長`;
+        fitMsg.innerHTML = `<span class="tag-danger">â›” è¶…æ™‚ ${Math.abs(delta)} åˆ†é˜</span> è«‹èª¿æ•´é †åºæˆ–ç¸®çŸ­æ™‚é•·`;
         fitMsg.className = 'small';
       }
     }
@@ -3023,24 +3022,24 @@
 
     function renderArrangementTimetable(){
       const el = document.getElementById('timetable');
-      if(!arrangementTasks.length){ el.textContent = '—'; return; }
+      if(!arrangementTasks.length){ el.textContent = 'â€”'; return; }
       const bed = timeStrToMinutesToday(document.getElementById('bedTime').value);
       const rows = buildSchedule();
-      const lines = rows.map(r => `${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
+      const lines = rows.map(r => `${minutesToTimeStr(r.start)}â€“${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`);
       const endAll = rows.length ? rows[rows.length-1].end : null;
-      if(endAll != null && bed != null && endAll > bed){ lines.push(`\n⚠️ 超過上床時間：${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
+      if(endAll != null && bed != null && endAll > bed){ lines.push(`\nâš ï¸ è¶…éŽä¸ŠåºŠæ™‚é–“ï¼š${minutesToTimeStr(endAll)} > ${minutesToTimeStr(bed)}`); }
       el.textContent = lines.join('\n');
     }
 
     async function copyArrangementTimetable(){
-      const header = `Tonight Timetable — ${fmtDateTime()}`;
+      const header = `Tonight Timetable â€” ${fmtDateTime()}`;
       const body = document.getElementById('timetable').textContent || '';
       const text = `${header}\n\n${body}`;
       try {
         await navigator.clipboard.writeText(text);
-        alert('已複製 Timetable');
+        alert('å·²è¤‡è£½ Timetable');
       } catch {
-        alert('複製失敗，請手動複製。');
+        alert('è¤‡è£½å¤±æ•—ï¼Œè«‹æ‰‹å‹•è¤‡è£½ã€‚');
       }
     }
 
@@ -3076,18 +3075,18 @@
         const li = document.createElement('li');
         li.dataset.index = String(visIdx);
         li.innerHTML = `
-          <div class="handle" title="拖曳改位置">☰</div>
-          <div class="flight-task" title="按住任務名稱也可拖曳">
+          <div class="handle" title="æ‹–æ›³æ”¹ä½ç½®">â˜°</div>
+          <div class="flight-task" title="æŒ‰ä½ä»»å‹™åç¨±ä¹Ÿå¯æ‹–æ›³">
             <div class="flight-task-name mono">${visIdx+1}. ${escapeHtml(t.name)}</div>
-            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? '—' : t.rank} · ${minutesToTimeStr(r.start)} → ${minutesToTimeStr(r.end)}</div>
+            <div class="flight-meta">Rank ${t.rank === '' || t.rank == null ? 'â€”' : t.rank} Â· ${minutesToTimeStr(r.start)} â†’ ${minutesToTimeStr(r.end)}</div>
           </div>
-          <select class="flight-control" aria-label="開始時間" data-k="start" data-i="${visIdx}">
+          <select class="flight-control" aria-label="é–‹å§‹æ™‚é–“" data-k="start" data-i="${visIdx}">
             ${halfHourOptions(minutesToTimeStr(Math.round(r.start/30)*30))}
           </select>
-          <input class="flight-control" aria-label="時長分鐘" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
+          <input class="flight-control" aria-label="æ™‚é•·åˆ†é˜" type="number" min="0" step="5" data-k="minutes" data-i="${visIdx}" value="${t.minutes || 0}" />
           <div class="flight-move">
-            <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="上移">↑</button>
-            <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="下移">↓</button>
+            <button type="button" onclick="moveArrangementTask(${visIdx},-1)" ${visIdx===0?'disabled':''} title="ä¸Šç§»">â†‘</button>
+            <button type="button" onclick="moveArrangementTask(${visIdx},1)" ${visIdx===arrangementTasks.length-1?'disabled':''} title="ä¸‹ç§»">â†“</button>
           </div>
         `;
         list.appendChild(li);
@@ -3181,7 +3180,7 @@
         const warn = document.createElement('div');
         warn.className = 'small overflow-msg';
         warn.style.marginTop = '8px';
-        warn.innerHTML = `<span class="tag-danger">⛔ 超時 ${endAll-bed} 分鐘</span> 請調整順序或縮短時長。`;
+        warn.innerHTML = `<span class="tag-danger">â›” è¶…æ™‚ ${endAll-bed} åˆ†é˜</span> è«‹èª¿æ•´é †åºæˆ–ç¸®çŸ­æ™‚é•·ã€‚`;
         parent.appendChild(warn);
       }
     }
@@ -3215,7 +3214,7 @@
         homeTime: document.getElementById('homeTime').value,
         bedTime: document.getElementById('bedTime').value,
         timetable: buildSchedule().map(r =>
-          `${minutesToTimeStr(r.start)}–${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`
+          `${minutesToTimeStr(r.start)}â€“${minutesToTimeStr(r.end)}  ${r.name}  (${r.minutes}m)`
         ).join('\n'),
         todos: todos.map(x => ({
           id: x.id,
@@ -3253,7 +3252,7 @@
       const log = loadLS(STORAGE_KEYS.successDailyAutoSaveLog, {});
       const ts = log[todayStr()];
       document.getElementById('successDailySaveStatus').textContent =
-        ts ? `已儲存 ${fmtTime(ts)}` : '等待 18:00';
+        ts ? `å·²å„²å­˜ ${fmtTime(ts)}` : 'ç­‰å¾… 18:00';
     }
 
     function checkSuccessDailyAutoSave(){
@@ -3272,11 +3271,11 @@
     // =========================
     function runDevTests(){
       const out = [];
-      const ok = (name, cond) => out.push(`${cond ? '✅ PASS' : '❌ FAIL'}  ${name}`);
+      const ok = (name, cond) => out.push(`${cond ? 'âœ… PASS' : 'âŒ FAIL'}  ${name}`);
       ok('parseDurationMinutes("dur=30m") === 30', parseDurationMinutes('dur=30m') === 30);
       ok('parseDurationMinutes("1.5hr") === 90', parseDurationMinutes('1.5hr') === 90);
-      ok('parseDurationMinutes("半小時") === 30', parseDurationMinutes('半小時') === 30);
-      ok('normalizeTaskName("整雞水 30mins") === 整雞水', normalizeTaskName('整雞水 30mins') === '整雞水');
+      ok('parseDurationMinutes("åŠå°æ™‚") === 30', parseDurationMinutes('åŠå°æ™‚') === 30);
+      ok('normalizeTaskName("æ•´é›žæ°´ 30mins") === æ•´é›žæ°´', normalizeTaskName('æ•´é›žæ°´ 30mins') === 'æ•´é›žæ°´');
 
       // preserve user's data while testing arrangement scheduling
       const backupTasks = arrangementTasks.slice();
