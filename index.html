@@ -1359,7 +1359,7 @@
       }
 
       #planTodoCards .todo-card{
-        grid-template-columns:24px minmax(0,1fr);
+        grid-template-columns:24px minmax(0,1fr) 32px;
         padding:8px 9px;
         min-height:44px;
         border-radius:8px;
@@ -1383,7 +1383,7 @@
       }
 
       #planTodoCards .plan-card-side{
-        grid-column:2;
+        grid-column:3;
         grid-row:1;
         justify-self:end;
         align-self:center;
@@ -1394,11 +1394,10 @@
       }
 
       #planTodoCards .todo-title{
-        padding-right:34px;
-      }
-
-      #planTodoCards .todo-title{
+        padding-right:0;
         font-size:.93rem;
+        min-width:0;
+        overflow-wrap:anywhere;
       }
 
       #planTodoCards .pill{
