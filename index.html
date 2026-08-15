@@ -559,6 +559,34 @@
       margin-top:8px;
     }
 
+    .plan-day-switch{
+      display:inline-flex;
+      gap:4px;
+      padding:3px;
+      margin:2px 0 10px;
+      border:1px solid #2a3767;
+      border-radius:10px;
+      background:#0e142b;
+    }
+
+    .plan-day-switch button{
+      padding:7px 12px;
+      border:0;
+      border-radius:7px;
+      background:transparent;
+      font-size:.84rem;
+    }
+
+    .plan-day-switch button.active{
+      background:var(--accent);
+      color:#071329;
+      font-weight:700;
+    }
+
+    .plan-tomorrow-save{
+      display:none;
+    }
+
     .permanent-manager{
       border:1px solid #223061;
       border-radius:16px;
@@ -1335,6 +1363,15 @@
 
       /* Plan compact mobile */
 
+      .plan-day-switch{
+        margin-bottom:8px;
+      }
+
+      .plan-day-switch button{
+        padding:6px 10px;
+        font-size:.78rem;
+      }
+
       .plan-main-panel{
         padding:10px;
       }
@@ -1633,11 +1670,16 @@
 
     <div class="panel plan-main-panel">
 
+      <div class="plan-day-switch" aria-label="Plan date">
+        <button id="planTodayBtn" class="active" onclick="setPlanMode('today')">Today</button>
+        <button id="planTomorrowBtn" onclick="setPlanMode('tomorrow')">Tomorrow</button>
+      </div>
+
       <div class="small" id="planDateTime"></div>
 
       <div class="plan-task-header">
 
-        <h3>今日任務</h3>
+        <h3 id="planTaskHeading">今日任務</h3>
 
         <div class="toolbar">
 
@@ -1706,7 +1748,7 @@
 
       <!-- Save -->
 
-      <div class="btn-row plan-save-row">
+      <div id="planTodaySaveRow" class="btn-row plan-save-row">
 
         <button
           class="btn"
@@ -1726,8 +1768,14 @@
 
       </div>
 
+      <div id="planTomorrowSaveRow" class="plan-save-row plan-tomorrow-save">
+        <button class="btn-ok" style="width:100%" onclick="saveTomorrowPlan()">
+          Save Tomorrow
+        </button>
+      </div>
 
       <div
+        id="planSaveHint"
         class="small"
         style="margin-top:8px">
 
@@ -2319,6 +2367,9 @@ const STORAGE_KEYS = {
   permanentTasks:
     'mainPlanner_permanentTasks_v1',
 
+  dailyPlans:
+    'mainPlanner_dailyPlans_v1',
+
   arrangementMemory:
     'mainPlanner_arrangementMemory_v1',
 
@@ -2539,6 +2590,60 @@ function loadLS(key,fallback){
 
 function todayStr(){
   return getTodayStrLocal();
+}
+
+
+function getTomorrowStrLocal(){
+
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+
+  return (
+    `${d.getFullYear()}-` +
+    `${pad2(d.getMonth()+1)}-` +
+    `${pad2(d.getDate())}`
+  );
+}
+
+
+let planMode = 'today';
+
+
+function getPlanTargetDate(){
+  return planMode === 'tomorrow'
+    ? getTomorrowStrLocal()
+    : todayStr();
+}
+
+
+function getDailyPlans(){
+  return loadLS(
+    STORAGE_KEYS.dailyPlans,
+    {}
+  );
+}
+
+
+function setDailyPlans(obj){
+  saveLS(
+    STORAGE_KEYS.dailyPlans,
+    obj || {}
+  );
+}
+
+
+function getDailyPlan(dateStr){
+  const plans = getDailyPlans();
+  return Array.isArray(plans?.[dateStr])
+    ? plans[dateStr]
+    : [];
+}
+
+
+function setDailyPlan(dateStr,items){
+  const plans = getDailyPlans();
+  plans[dateStr] = items;
+  setDailyPlans(plans);
 }
 
 
@@ -3771,49 +3876,127 @@ function ensureRecurringTasksForToday(){
 function gotoPlanBuilder(){
 
   ensureRecurringTasksForToday();
-
-  document
-    .getElementById(
-      'planDateTime'
-    )
-    .textContent =
-      fmtDateTime();
-
-
-  const box =
-    document.getElementById(
-      'planTodoCards'
-    );
-
-  box.innerHTML = '';
-
-
-  getPermanentTasks()
-    .forEach(
-      item =>
-        addPlanTodoCard({
-
-          text:item.text,
-
-          tag:
-            item.minutes != null
-              ? `${item.minutes}mins`
-              : '',
-
-          permanentTaskId:item.id
-
-        })
-    );
-
-
+  renderPlanForMode();
   renderPermanentTaskEditor();
-
 
   document
     .getElementById(
       'planNewTodo'
     )
     .value = '';
+}
+
+
+function setPlanMode(mode){
+
+  planMode =
+    mode === 'tomorrow'
+      ? 'tomorrow'
+      : 'today';
+
+  renderPlanForMode();
+}
+
+
+function renderPlanForMode(){
+
+  const targetDate =
+    getPlanTargetDate();
+
+  const isTomorrow =
+    planMode === 'tomorrow';
+
+  document.getElementById('planTodayBtn')
+    ?.classList.toggle('active',!isTomorrow);
+
+  document.getElementById('planTomorrowBtn')
+    ?.classList.toggle('active',isTomorrow);
+
+  const dateEl =
+    document.getElementById('planDateTime');
+
+  if(dateEl){
+    dateEl.textContent =
+      isTomorrow
+        ? targetDate
+        : fmtDateTime();
+  }
+
+  const heading =
+    document.getElementById('planTaskHeading');
+
+  if(heading){
+    heading.textContent =
+      isTomorrow
+        ? '明日任務'
+        : '今日任務';
+  }
+
+  const todaySave =
+    document.getElementById('planTodaySaveRow');
+
+  const tomorrowSave =
+    document.getElementById('planTomorrowSaveRow');
+
+  if(todaySave){
+    todaySave.style.display =
+      isTomorrow ? 'none' : '';
+  }
+
+  if(tomorrowSave){
+    tomorrowSave.style.display =
+      isTomorrow ? 'block' : 'none';
+  }
+
+  const hint =
+    document.getElementById('planSaveHint');
+
+  if(hint){
+    hint.textContent =
+      isTomorrow
+        ? '儲存明日想做的任務；明天再用 Arrangement 安排時間。'
+        : '只會複製所選任務；符合今天規則的 Repeat 任務也會自動加入 Arrangement。';
+  }
+
+  const box =
+    document.getElementById('planTodoCards');
+
+  box.innerHTML = '';
+
+  const savedPlan =
+    getDailyPlan(targetDate);
+
+  const savedPermanentIds =
+    new Set(
+      savedPlan
+        .map(x => x.permanentTaskId)
+        .filter(Boolean)
+    );
+
+  getPermanentTasks().forEach(item => {
+    addPlanTodoCard({
+      text:item.text,
+      tag:item.minutes != null
+        ? `${item.minutes}mins`
+        : '',
+      minutes:item.minutes ?? null,
+      permanentTaskId:item.id,
+      checked:savedPermanentIds.has(item.id)
+    });
+  });
+
+  savedPlan
+    .filter(x => !x.permanentTaskId)
+    .forEach(item => {
+      addPlanTodoCard({
+        text:item.text,
+        tag:item.minutes != null
+          ? `${item.minutes}mins`
+          : '',
+        minutes:item.minutes ?? null,
+        checked:true
+      });
+    });
 }
 
 
@@ -3836,12 +4019,24 @@ function addPlanTodoCard(item){
   label.className =
     'todo-card';
 
+  label.dataset.taskText =
+    item.text || '';
+
+  label.dataset.taskMinutes =
+    item.minutes != null
+      ? String(item.minutes)
+      : '';
+
+  label.dataset.permanentTaskId =
+    item.permanentTaskId || '';
+
 
   label.innerHTML = `
 
     <input
       type="checkbox"
       id="${id}"
+      ${item.checked ? 'checked' : ''}
     />
 
     <div>
@@ -3895,6 +4090,11 @@ function addPlanTodoCard(item){
     </div>
 
   `;
+
+  label.classList.toggle(
+    'selected',
+    !!item.checked
+  );
 
 
   label.addEventListener(
@@ -4017,7 +4217,8 @@ function addPlanTodoFromInput(){
 
 
   addPlanTodoCard({
-    text:v
+    text:v,
+    minutes:null
   });
 
 
@@ -4181,6 +4382,40 @@ function normalizeTaskName(text){
       )
 
       .trim()
+  );
+}
+
+
+function saveTomorrowPlan(){
+
+  const targetDate =
+    getTomorrowStrLocal();
+
+  const picked =
+    Array.from(
+      document.querySelectorAll(
+        '#planTodoCards .todo-card'
+      )
+    )
+    .filter(card =>
+      card.querySelector('input')?.checked
+    )
+    .map(card => ({
+      permanentTaskId:
+        card.dataset.permanentTaskId || null,
+      text:
+        card.dataset.taskText || '',
+      minutes:
+        card.dataset.taskMinutes === ''
+          ? null
+          : Number(card.dataset.taskMinutes)
+    }))
+    .filter(x => x.text);
+
+  setDailyPlan(targetDate,picked);
+
+  alert(
+    `已儲存 ${targetDate}：${picked.length} 項`
   );
 }
 
