@@ -484,14 +484,17 @@
     }
 
     #planTodoCards{
-      gap:6px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
     }
 
     #planTodoCards .todo-card{
-      padding:9px 10px;
-      min-height:48px;
-      border-radius:9px;
-      gap:8px;
+      grid-template-columns:24px minmax(0,1fr) auto;
+      padding:7px 9px;
+      min-height:40px;
+      border-radius:8px;
+      gap:7px;
     }
 
     #planTodoCards .todo-card input[type="checkbox"]{
@@ -507,8 +510,7 @@
     }
 
     #planTodoCards .todo-meta{
-      margin-top:2px;
-      font-size:.72rem;
+      display:none;
     }
 
     #planTodoCards .pill{
@@ -521,7 +523,11 @@
       display:flex;
       align-items:center;
       justify-content:flex-end;
-      gap:6px;
+      gap:4px;
+    }
+
+    #planTodoCards .plan-card-side .small{
+      display:none;
     }
 
     .plan-delete-btn{
@@ -3002,7 +3008,7 @@ function deletePermanentTask(id){
 
   if(
     !confirm(
-      '刪除這個 Permanent Task？'
+      '永久刪除這個 Task？刪除後重新載入也不會再出現。'
     )
   ){
     return;
@@ -3793,7 +3799,9 @@ function gotoPlanBuilder(){
           tag:
             item.minutes != null
               ? `${item.minutes}mins`
-              : ''
+              : '',
+
+          permanentTaskId:item.id
 
         })
     );
@@ -3877,8 +3885,8 @@ function addPlanTodoCard(item){
         class="plan-delete-btn"
         role="button"
         tabindex="0"
-        aria-label="從今日 Plan 移除此任務"
-        title="從今日 Plan 移除"
+        aria-label="${item.permanentTaskId ? '永久刪除此任務' : '從今日 Plan 移除此任務'}"
+        title="${item.permanentTaskId ? '永久刪除' : '從今日 Plan 移除'}"
         data-plan-delete="1">
 
         ×
@@ -3906,7 +3914,17 @@ function addPlanTodoCard(item){
 
         e.stopPropagation();
 
-        label.remove();
+        if(item.permanentTaskId){
+
+          deletePermanentTask(
+            item.permanentTaskId
+          );
+
+        }else{
+
+          label.remove();
+
+        }
 
         return;
       }
@@ -3960,7 +3978,17 @@ function addPlanTodoCard(item){
 
         e.preventDefault();
 
-        label.remove();
+        if(item.permanentTaskId){
+
+          deletePermanentTask(
+            item.permanentTaskId
+          );
+
+        }else{
+
+          label.remove();
+
+        }
 
       }
 
