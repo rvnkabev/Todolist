@@ -2647,6 +2647,55 @@ function setDailyPlan(dateStr,items){
 }
 
 
+function consumeDailyPlanTasks(dateStr,cards){
+
+  const saved = getDailyPlan(dateStr);
+
+  if(!saved.length || !cards?.length){
+    return;
+  }
+
+  const consumedPermanentIds =
+    new Set(
+      cards
+        .map(card => card.dataset.permanentTaskId)
+        .filter(Boolean)
+    );
+
+  const consumedTemporaryKeys =
+    new Set(
+      cards
+        .filter(card => !card.dataset.permanentTaskId)
+        .map(card =>
+          `${card.dataset.taskText || ''}::${card.dataset.taskMinutes || ''}`
+        )
+    );
+
+  const remaining = saved.filter(item => {
+
+    if(
+      item.permanentTaskId &&
+      consumedPermanentIds.has(item.permanentTaskId)
+    ){
+      return false;
+    }
+
+    if(!item.permanentTaskId){
+      const key =
+        `${item.text || ''}::${item.minutes ?? ''}`;
+
+      if(consumedTemporaryKeys.has(key)){
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  setDailyPlan(dateStr,remaining);
+}
+
+
 function getTodayTodos(){
   return loadLS(
     STORAGE_KEYS.todayTodos,
@@ -4422,21 +4471,23 @@ function saveTomorrowPlan(){
 
 function savePlanToToday(state){
 
-  const picked =
+  const pickedCards =
     Array
       .from(
         document.querySelectorAll(
           '#planTodoCards .todo-card'
         )
       )
-
       .filter(
         card =>
           card.querySelector(
             'input'
           ).checked
-      )
+      );
 
+
+  const picked =
+    pickedCards
       .map(
         card =>
           card
@@ -4466,7 +4517,134 @@ function savePlanToToday(state){
     now();
 
 
-  picked.forEach(text => {
+  const permanentById =
+    new Map(
+      getPermanentTasks()
+        .map(p => [p.id,p])
+    );
+
+
+  pickedCards.forEach((card,index) => {
+
+    const text =
+      picked[index] || '';
+
+    const permanentTaskId =
+      card.dataset.permanentTaskId || '';
+
+    const permanent =
+      permanentTaskId
+        ? permanentById.get(permanentTaskId)
+        : null;
+
+    const isRecurringFixedToday =
+      !!(
+        permanent &&
+        permanent.recurringRule &&
+        permanent.fixedStart &&
+        recurringRuleMatchesDate(
+          permanent.recurringRule,
+          new Date(),
+          permanent.recurringDays || []
+        )
+      );
+
+
+    if(isRecurringFixedToday){
+
+      const existing =
+        todos.find(
+          x =>
+            x.date === todayStr() &&
+            x.source === 'recurring' &&
+            x.recurringTaskId === permanent.id
+        );
+
+      if(existing){
+
+        existing.text =
+          permanent.text;
+
+        existing.displayText =
+          permanent.text;
+
+        existing.minutes =
+          permanent.minutes ??
+          parseDurationMinutes(text);
+
+        existing.status =
+          state;
+
+        existing.updatedAt =
+          createdAt;
+
+        existing.isFixedTime =
+          true;
+
+        existing.fixedStart =
+          permanent.fixedStart;
+
+        existing.arrangementStart =
+          permanent.fixedStart;
+
+        existing.recurringRule =
+          permanent.recurringRule;
+
+        existing.recurringDays =
+          permanent.recurringDays || [];
+
+        return;
+      }
+
+
+      todos.push({
+
+        id:uid(),
+
+        text:
+          permanent.text,
+
+        displayText:
+          permanent.text,
+
+        minutes:
+          permanent.minutes ??
+          parseDurationMinutes(text),
+
+        date:
+          todayStr(),
+
+        status:state,
+
+        createdAt,
+
+        updatedAt:
+          createdAt,
+
+        source:'recurring',
+
+        recurringTaskId:
+          permanent.id,
+
+        recurringRule:
+          permanent.recurringRule,
+
+        recurringDays:
+          permanent.recurringDays || [],
+
+        isFixedTime:true,
+
+        fixedStart:
+          permanent.fixedStart,
+
+        arrangementStart:
+          permanent.fixedStart
+
+      });
+
+      return;
+    }
+
 
     todos.push({
 
@@ -4498,6 +4676,14 @@ function savePlanToToday(state){
 
 
   setArrangementInputs(todos);
+
+  // Tomorrow Plan becomes today's initial selection only once.
+  // After selected tasks enter Arrangement, consume those saved selections
+  // so a page refresh will not select them again.
+  consumeDailyPlanTasks(
+    todayStr(),
+    pickedCards
+  );
 
   updateHomeStats();
 
@@ -6456,7 +6642,7 @@ function loadArrangementTasksFromToday(){
             item.status,
 
           isFixedTime:
-            false,
+            !!item.isFixedTime,
 
           fixedStart:
             item.fixedStart || '',
