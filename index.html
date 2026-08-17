@@ -4517,134 +4517,7 @@ function savePlanToToday(state){
     now();
 
 
-  const permanentById =
-    new Map(
-      getPermanentTasks()
-        .map(p => [p.id,p])
-    );
-
-
-  pickedCards.forEach((card,index) => {
-
-    const text =
-      picked[index] || '';
-
-    const permanentTaskId =
-      card.dataset.permanentTaskId || '';
-
-    const permanent =
-      permanentTaskId
-        ? permanentById.get(permanentTaskId)
-        : null;
-
-    const isRecurringFixedToday =
-      !!(
-        permanent &&
-        permanent.recurringRule &&
-        permanent.fixedStart &&
-        recurringRuleMatchesDate(
-          permanent.recurringRule,
-          new Date(),
-          permanent.recurringDays || []
-        )
-      );
-
-
-    if(isRecurringFixedToday){
-
-      const existing =
-        todos.find(
-          x =>
-            x.date === todayStr() &&
-            x.source === 'recurring' &&
-            x.recurringTaskId === permanent.id
-        );
-
-      if(existing){
-
-        existing.text =
-          permanent.text;
-
-        existing.displayText =
-          permanent.text;
-
-        existing.minutes =
-          permanent.minutes ??
-          parseDurationMinutes(text);
-
-        existing.status =
-          state;
-
-        existing.updatedAt =
-          createdAt;
-
-        existing.isFixedTime =
-          true;
-
-        existing.fixedStart =
-          permanent.fixedStart;
-
-        existing.arrangementStart =
-          permanent.fixedStart;
-
-        existing.recurringRule =
-          permanent.recurringRule;
-
-        existing.recurringDays =
-          permanent.recurringDays || [];
-
-        return;
-      }
-
-
-      todos.push({
-
-        id:uid(),
-
-        text:
-          permanent.text,
-
-        displayText:
-          permanent.text,
-
-        minutes:
-          permanent.minutes ??
-          parseDurationMinutes(text),
-
-        date:
-          todayStr(),
-
-        status:state,
-
-        createdAt,
-
-        updatedAt:
-          createdAt,
-
-        source:'recurring',
-
-        recurringTaskId:
-          permanent.id,
-
-        recurringRule:
-          permanent.recurringRule,
-
-        recurringDays:
-          permanent.recurringDays || [],
-
-        isFixedTime:true,
-
-        fixedStart:
-          permanent.fixedStart,
-
-        arrangementStart:
-          permanent.fixedStart
-
-      });
-
-      return;
-    }
-
+  picked.forEach(text => {
 
     todos.push({
 
@@ -6306,20 +6179,55 @@ function restoreDailyArrangementSession(){
 
   arrangementTasks =
     session.tasks.map(
-      (t,i) => ({
+      (t,i) => {
 
-        ...t,
+        const fixedStart =
+          t.fixedStart || '';
 
-        isFixedTime:false,
+        const isFixedTime =
+          !!(
+            t.isFixedTime ||
+            fixedStart
+          );
 
-        pinned:
-          !!t.pinned,
+        return {
 
-        rememberedOrder:i,
+          ...t,
+
+          /*
+           * Compatibility repair for sessions saved before fixed-time
+           * metadata was preserved correctly.  Do not discard fixedStart
+           * on refresh; restore it as the initial scheduling anchor only
+           * when the saved session has no explicit startOverride.
+           */
+          isFixedTime,
+
+          fixedStart,
+
+          startOverride:
+            t.startOverride != null
+              ? t.startOverride
+              : (
+                  isFixedTime &&
+                  fixedStart
+
+                    ? timeStrToMinutesToday(
+                        fixedStart
+                      )
+
+                    : null
+                ),
+
+          pinned:
+            !!t.pinned,
+
+          rememberedOrder:i,
 
         originalIndex:i
 
-      })
+        };
+
+      }
     );
 
 
@@ -6641,8 +6549,16 @@ function loadArrangementTasksFromToday(){
           status:
             item.status,
 
+          /*
+           * Preserve Plan fixed-time metadata in Arrangement.
+           * A fixed/repeat task uses its fixedStart as an initial time anchor.
+           * Existing buildSchedule()/Fine Tune logic remains unchanged.
+           */
           isFixedTime:
-            !!item.isFixedTime,
+            !!(
+              item.isFixedTime &&
+              item.fixedStart
+            ),
 
           fixedStart:
             item.fixedStart || '',
