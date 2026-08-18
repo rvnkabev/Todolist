@@ -9194,7 +9194,7 @@ function buildTodayTimetableText(){
     );
 
 
-  return todos
+  const lines = todos
 
     .map(
       item => {
@@ -9236,9 +9236,48 @@ function buildTodayTimetableText(){
         );
 
       }
-    )
+    );
 
-    .join('\n');
+  const postponed =
+    getHistory24()
+      .filter(
+        item =>
+          item.archivedReason === 'postponed'
+          &&
+          item.date === todayStr()
+      );
+
+
+  if(postponed.length){
+
+    lines.push(
+      '',
+      'Postponed Tasks'
+    );
+
+
+    postponed.forEach(
+      item => {
+
+        const name =
+          normalizeTaskName(
+            item.displayText
+            ||
+            item.text
+          );
+
+
+        lines.push(
+          `- ${name}`
+        );
+
+      }
+    );
+
+  }
+
+
+  return lines.join('\n');
 }
 
 
@@ -9327,6 +9366,43 @@ function buildSuccessDailySnapshot(){
 
     timetable:
       buildTodayTimetableText(),
+
+    postponedTasks:
+      getHistory24()
+        .filter(
+          x =>
+            x.archivedReason === 'postponed'
+            &&
+            x.date === todayStr()
+        )
+        .map(
+          x => ({
+
+            id:
+              x.id,
+
+            text:
+              x.text,
+
+            displayText:
+              x.displayText
+              ||
+              x.text,
+
+            minutes:
+              x.arrangementMinutes
+              ??
+              x.minutes
+              ??
+              null,
+
+            postponedAt:
+              x.archivedAt
+              ||
+              null
+
+          })
+        ),
 
     todos:
       todos.map(
