@@ -2416,6 +2416,9 @@ const DUR_PRESETS =
 
 let arrangementTasks = [];
 
+/* Fine Tune auto-sorts by explicit task time only once per loaded Arrangement. */
+let fineTuneAutoSorted = false;
+
 
 /* ============================================================
    General helpers
@@ -2755,6 +2758,38 @@ function setTimetableChangeLog(arr){
 }
 
 
+function getCurrentTimetableSnapshot(){
+
+  if(!arrangementTasks.length){
+    return [];
+  }
+
+  const rows =
+    buildSchedule();
+
+  return rows.map(
+    (r,i) => {
+
+      const t =
+        arrangementTasks[i] || {};
+
+      return {
+        taskId:t.id || '',
+        taskName:t.name || '',
+        order:i,
+        start:minutesToTimeStr(r.start),
+        end:minutesToTimeStr(r.end),
+        minutes:r.minutes,
+        pinned:!!t.pinned,
+        fixed:!!t.isFixedTime,
+        fixedStart:t.fixedStart || ''
+      };
+
+    }
+  );
+}
+
+
 function logTimetableChange({
   taskId='',
   taskName='',
@@ -2788,7 +2823,14 @@ function logTimetableChange({
 
     to,
 
-    detail
+    detail,
+
+    /*
+     * Every modification event keeps the resulting complete timetable,
+     * so Today's schedule can later be reviewed as a sequence of states.
+     */
+    timetable:
+      getCurrentTimetableSnapshot()
 
   });
 
@@ -6339,6 +6381,9 @@ function restoreDailyArrangementSession(){
   }
 
 
+  fineTuneAutoSorted = false;
+
+
   arrangementTasks =
     session.tasks.map(
       (t,i) => {
@@ -6616,6 +6661,8 @@ function openArrangementFromStoredData(){
 
 
 function loadArrangementTasksFromToday(){
+
+  fineTuneAutoSorted = false;
 
   const todos =
     getArrangementInputs()
@@ -8225,7 +8272,117 @@ async function copyArrangementTimetable(){
 }
 
 
+function getFineTuneExplicitStart(task){
+
+  if(
+    task?.isFixedTime &&
+    task?.fixedStart
+  ){
+    return timeStrToMinutesToday(
+      task.fixedStart
+    );
+  }
+
+  if(
+    task?.startOverride != null &&
+    Number.isFinite(
+      Number(task.startOverride)
+    )
+  ){
+    return Number(
+      task.startOverride
+    );
+  }
+
+  return null;
+}
+
+
+function autoSortFineTuneByTimeOnce(){
+
+  if(
+    fineTuneAutoSorted ||
+    arrangementTasks.length < 2
+  ){
+    fineTuneAutoSorted = true;
+    return;
+  }
+
+  const before =
+    arrangementTasks
+      .map(t => t.id || t.name || '')
+      .join('|');
+
+  const beforeNames =
+    arrangementTasks
+      .map(t => t.name || '')
+      .join(' | ');
+
+  arrangementTasks =
+    arrangementTasks
+      .map((task,index) => ({
+        task,
+        index,
+        start:getFineTuneExplicitStart(task)
+      }))
+      .sort((a,b) => {
+
+        const aHasTime =
+          a.start != null;
+
+        const bHasTime =
+          b.start != null;
+
+        /* Explicitly timed tasks first, earliest to latest. */
+        if(aHasTime && bHasTime){
+          return (a.start-b.start) || (a.index-b.index);
+        }
+
+        /* Tasks without a specified time stay at the end. */
+        if(aHasTime){
+          return -1;
+        }
+
+        if(bHasTime){
+          return 1;
+        }
+
+        return a.index-b.index;
+
+      })
+      .map(x => x.task);
+
+  fineTuneAutoSorted = true;
+
+  const after =
+    arrangementTasks
+      .map(t => t.id || t.name || '')
+      .join('|');
+
+  if(before !== after){
+
+    logTimetableChange({
+      type:'fine-tune-auto-sort',
+      from:beforeNames,
+      to:
+        arrangementTasks
+          .map(t => t.name || '')
+          .join(' | '),
+      detail:'Explicit task time ascending; tasks without specified time placed last.'
+    });
+
+  }
+}
+
+
 function prepareReorderStep(){
+
+  /*
+   * Fine Tune initial view: explicit task times define the first order.
+   * This runs only once for the currently loaded Arrangement; after that,
+   * manual drag / ↑↓ order is preserved.
+   */
+  autoSortFineTuneByTimeOnce();
 
   saveArrangementMemory();
 
@@ -9068,6 +9225,11 @@ document
             newStart;
 
 
+        clearOverridesFrom(
+          i+1
+        );
+
+
         logTimetableChange({
           taskId:arrangementTasks[i]?.id || '',
           taskName:arrangementTasks[i]?.name || '',
@@ -9078,11 +9240,6 @@ document
               : '',
           to:minutesToTimeStr(newStart)
         });
-
-
-        clearOverridesFrom(
-          i+1
-        );
 
       }
 
