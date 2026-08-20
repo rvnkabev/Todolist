@@ -2351,7 +2351,8 @@
 ============================================================ */
 
 const STORAGE_KEYS = {
-
+timetableChangeLog:
+  'mainPlanner_timetableChangeLog_v1',
   todayTodos:
     'mainPlanner_todayTodos_v1',
 
@@ -2735,7 +2736,85 @@ function getHistory24(){
   );
 }
 
+function getTimetableChangeLog(){
 
+  return loadLS(
+    STORAGE_KEYS.timetableChangeLog,
+    []
+  );
+}
+
+
+function setTimetableChangeLog(arr){
+
+  saveLS(
+    STORAGE_KEYS.timetableChangeLog,
+    arr
+  );
+}
+
+
+function logTimetableChange({
+  taskId='',
+  taskName='',
+  type='change',
+  from='',
+  to='',
+  detail=''
+}){
+
+  const log =
+    getTimetableChangeLog();
+
+
+  log.push({
+
+    id:uid(),
+
+    date:
+      todayStr(),
+
+    createdAt:
+      now(),
+
+    taskId,
+
+    taskName,
+
+    type,
+
+    from,
+
+    to,
+
+    detail
+
+  });
+
+
+  /*
+   * Keep log bounded.
+   * Current requirement is today's modification log,
+   * so very old data is unnecessary here.
+   */
+  const cutoff =
+    now() -
+    7*24*60*60*1000;
+
+
+  setTimetableChangeLog(
+
+    log.filter(
+      x =>
+        (
+          x.createdAt ||
+          0
+        )
+        >= cutoff
+    )
+
+  );
+}
 function setHistory24(arr){
   saveLS(
     STORAGE_KEYS.history24,
@@ -2743,7 +2822,98 @@ function setHistory24(arr){
   );
 }
 
+function getTodayEffectiveStart(item){
 
+  return (
+    item?.arrangementStart ||
+    item?.fixedStart ||
+    ''
+  );
+}
+
+
+function sortTodayTasksByTime(a,b){
+
+  const aTime =
+    getTodayEffectiveStart(a);
+
+  const bTime =
+    getTodayEffectiveStart(b);
+
+
+  /*
+   * Both have time:
+   * actual timetable time becomes primary order.
+   */
+  if(aTime && bTime){
+
+    const byTime =
+      aTime.localeCompare(bTime);
+
+    if(byTime !== 0){
+      return byTime;
+    }
+
+
+    /*
+     * Same time:
+     * keep Arrangement order as fallback.
+     */
+    return (
+      Number(
+        a.arrangementOrder
+        ??
+        9999
+      )
+      -
+      Number(
+        b.arrangementOrder
+        ??
+        9999
+      )
+    );
+
+  }
+
+
+  /*
+   * Scheduled tasks always before
+   * unscheduled tasks.
+   */
+  if(aTime){
+    return -1;
+  }
+
+  if(bTime){
+    return 1;
+  }
+
+
+  /*
+   * Neither has time:
+   * retain original Arrangement /
+   * creation sequence.
+   */
+  return (
+    Number(
+      a.arrangementOrder
+      ??
+      9999
+    )
+    -
+    Number(
+      b.arrangementOrder
+      ??
+      9999
+    )
+  )
+  ||
+  (
+    (a.createdAt || 0)
+    -
+    (b.createdAt || 0)
+  );
+}
 /* ============================================================
    Legacy migration
 ============================================================ */
@@ -5304,46 +5474,36 @@ function renderTodayCards(
 
 
   list
-    .slice()
+  .slice()
 
-    .sort(
-      (a,b) => {
+  .sort(
+    allowActions
 
-        const aArranged =
-          Number.isFinite(
-            Number(
-              a.arrangementOrder
-            )
-          );
+      /*
+       * Today ToDoList:
+       * time is the execution order.
+       */
+      ? sortTodayTasksByTime
 
-
-        const bArranged =
-          Number.isFinite(
-            Number(
-              b.arrangementOrder
-            )
-          );
-
-
-        if(
-          aArranged &&
-          bArranged
-        ){
-
-          return (
-            Number(
-              a.arrangementOrder
+      /*
+       * History:
+       * keep original newest-first behaviour.
+       */
+      : (
+          (a,b) =>
+            (
+              b.updatedAt ||
+              b.createdAt ||
+              0
             )
             -
-            Number(
-              b.arrangementOrder
+            (
+              a.updatedAt ||
+              a.createdAt ||
+              0
             )
-          );
-
-        }
-
-
-        if(aArranged){
+        )
+  )        if(aArranged){
           return -1;
         }
 
@@ -8200,30 +8360,27 @@ function renderReorderList(){
     buildSchedule();
 
 
-  rows.forEach(
-    (r,visIdx) => {
-
-      const t =
-        arrangementTasks[
-          visIdx
-        ];
+ const conflicts =
+  getArrangementConflicts();
 
 
-      const li =
-        document.createElement(
-          'li'
-        );
+conflicts.forEach(
+  conflict => {
 
+    errors.push(
 
-      li.dataset.index =
-        String(visIdx);
+      `#${conflict.index+1} ` +
+      `${conflict.taskName} ` +
+      `${conflict.anchorType} anchor at ` +
+      `${minutesToTimeStr(conflict.anchorStart)}, ` +
+      `but ${conflict.previousTaskName} ends ` +
+      `${minutesToTimeStr(conflict.previousEnd)} ` +
+      `(overlap ${conflict.overlapMinutes}m).`
 
+    );
 
-      li.classList.toggle(
-        'pinned',
-        !!t.pinned
-      );
-
+  }
+);
 
       li.innerHTML = `
 
@@ -8960,13 +9117,12 @@ function finishArrangementStep4(){
     buildSchedule();
 
 
-  const hasConflict =
-    rows.some(
-      (r,i) =>
-        i > 0 &&
-        arrangementTasks[i].pinned &&
-        r.start < rows[i-1].end
-    );
+  const conflicts =
+  getArrangementConflicts();
+
+
+const hasConflict =
+  conflicts.length > 0;
 
 
   if(hasConflict){
@@ -9980,7 +10136,89 @@ function runDevTests(){
   );
 
 })();
+function getArrangementConflicts(){
 
+  const rows =
+    buildSchedule();
+
+  const conflicts =
+    [];
+
+
+  for(
+    let i=1;
+    i<rows.length;
+    i++
+  ){
+
+    const currentTask =
+      arrangementTasks[i];
+
+    const previousTask =
+      arrangementTasks[i-1];
+
+    const current =
+      rows[i];
+
+    const previous =
+      rows[i-1];
+
+
+    /*
+     * Only an Anchor blocks automatic flow.
+     *
+     * Previous task reaching beyond Anchor start
+     * = schedule conflict.
+     */
+    if(
+      isArrangementAnchor(
+        currentTask
+      )
+      &&
+      current.start <
+      previous.end
+    ){
+
+      conflicts.push({
+
+        index:i,
+
+        taskId:
+          currentTask.id || '',
+
+        taskName:
+          currentTask.name || '',
+
+        previousTaskId:
+          previousTask?.id || '',
+
+        previousTaskName:
+          previousTask?.name || '',
+
+        anchorStart:
+          current.start,
+
+        previousEnd:
+          previous.end,
+
+        overlapMinutes:
+          previous.end -
+          current.start,
+
+        anchorType:
+          currentTask.isFixedTime
+            ? 'fixed'
+            : 'pinned'
+
+      });
+
+    }
+
+  }
+
+
+  return conflicts;
+}
 </script>
 
 </body>
