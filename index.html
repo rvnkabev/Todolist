@@ -2351,8 +2351,9 @@
 ============================================================ */
 
 const STORAGE_KEYS = {
-timetableChangeLog:
-  'mainPlanner_timetableChangeLog_v1',
+
+  timetableChangeLog:
+    'mainPlanner_timetableChangeLog_v1',
   todayTodos:
     'mainPlanner_todayTodos_v1',
 
@@ -5279,6 +5280,16 @@ function startTodayTaskNow(id){
   );
 
 
+  logTimetableChange({
+    taskId:id,
+    taskName:
+      arrangementTasks[i]?.name || '',
+    type:'start-now',
+    from:'',
+    to:minutesToTimeStr(startMin)
+  });
+
+
   saveArrangementMemory();
 
   saveDailyArrangementSession();
@@ -5349,10 +5360,27 @@ function delayTodayTask(
   }
 
 
+  const oldStart =
+    current;
+
+
   arrangementTasks[i]
     .startOverride =
       current +
       Number(minutes);
+
+
+  logTimetableChange({
+    taskId:id,
+    taskName:
+      arrangementTasks[i]?.name || '',
+    type:'delay',
+    from:minutesToTimeStr(oldStart),
+    to:minutesToTimeStr(
+      arrangementTasks[i].startOverride
+    ),
+    detail:`+${Number(minutes)}m`
+  });
 
 
   clearOverridesFrom(
@@ -5474,51 +5502,25 @@ function renderTodayCards(
 
 
   list
-  .slice()
+    .slice()
 
-  .sort(
-    allowActions
-
-      /*
-       * Today ToDoList:
-       * time is the execution order.
-       */
-      ? sortTodayTasksByTime
-
-      /*
-       * History:
-       * keep original newest-first behaviour.
-       */
-      : (
-          (a,b) =>
-            (
-              b.updatedAt ||
-              b.createdAt ||
-              0
-            )
-            -
-            (
-              a.updatedAt ||
-              a.createdAt ||
-              0
-            )
-        )
-  )        if(aArranged){
-          return -1;
-        }
-
-        if(bArranged){
-          return 1;
-        }
-
-
-        return (
-          (b.updatedAt || b.createdAt || 0)
-          -
-          (a.updatedAt || a.createdAt || 0)
-        );
-
-      }
+    .sort(
+      allowActions
+        ? sortTodayTasksByTime
+        : (
+            (a,b) =>
+              (
+                b.updatedAt ||
+                b.createdAt ||
+                0
+              )
+              -
+              (
+                a.updatedAt ||
+                a.createdAt ||
+                0
+              )
+          )
     )
 
     .forEach(
@@ -7076,11 +7078,27 @@ function renderTaskCards(){
             }
 
 
+            const oldMinutes =
+              arrangementTasks[i].minutes;
+
+
             arrangementTasks[i]
               .minutes =
                 Number(
                   el.dataset.v
                 );
+
+
+            logTimetableChange({
+              taskId:arrangementTasks[i]?.id || '',
+              taskName:arrangementTasks[i]?.name || '',
+              type:'duration',
+              from:
+                oldMinutes == null || oldMinutes === ''
+                  ? ''
+                  : `${oldMinutes}m`,
+              to:`${arrangementTasks[i].minutes}m`
+            });
 
 
             if(
@@ -7157,8 +7175,30 @@ function renderTaskCards(){
             }
 
 
+            const oldValue =
+              arrangementTasks[i][k];
+
+
             arrangementTasks[i][k] =
               v;
+
+
+            if(k === 'minutes'){
+
+              logTimetableChange({
+                taskId:arrangementTasks[i]?.id || '',
+                taskName:arrangementTasks[i]?.name || '',
+                type:'duration',
+                from:
+                  oldValue == null || oldValue === ''
+                    ? ''
+                    : `${oldValue}m`,
+                to:
+                  v === ''
+                    ? ''
+                    : `${v}m`
+              });
+            }
 
 
             if(
@@ -8360,27 +8400,30 @@ function renderReorderList(){
     buildSchedule();
 
 
- const conflicts =
-  getArrangementConflicts();
+  rows.forEach(
+    (r,visIdx) => {
+
+      const t =
+        arrangementTasks[
+          visIdx
+        ];
 
 
-conflicts.forEach(
-  conflict => {
+      const li =
+        document.createElement(
+          'li'
+        );
 
-    errors.push(
 
-      `#${conflict.index+1} ` +
-      `${conflict.taskName} ` +
-      `${conflict.anchorType} anchor at ` +
-      `${minutesToTimeStr(conflict.anchorStart)}, ` +
-      `but ${conflict.previousTaskName} ends ` +
-      `${minutesToTimeStr(conflict.previousEnd)} ` +
-      `(overlap ${conflict.overlapMinutes}m).`
+      li.dataset.index =
+        String(visIdx);
 
-    );
 
-  }
-);
+      li.classList.toggle(
+        'pinned',
+        !!t.pinned
+      );
+
 
       li.innerHTML = `
 
@@ -8556,7 +8599,6 @@ conflicts.forEach(
   validateOverflow();
 }
 
-
 function toggleArrangementPin(index){
 
   const t =
@@ -8566,6 +8608,10 @@ function toggleArrangementPin(index){
   if(!t){
     return;
   }
+
+
+  const wasPinned =
+    !!t.pinned;
 
 
   if(t.pinned){
@@ -8606,6 +8652,15 @@ function toggleArrangementPin(index){
   );
 
 
+  logTimetableChange({
+    taskId:t.id || '',
+    taskName:t.name || '',
+    type:wasPinned ? 'unpin' : 'pin',
+    from:wasPinned ? 'pinned' : 'movable',
+    to:wasPinned ? 'movable' : 'pinned'
+  });
+
+
   saveArrangementMemory();
 
   saveDailyArrangementSession();
@@ -8631,6 +8686,18 @@ function moveArrangementTask(
   }
 
 
+  const movedTask =
+    arrangementTasks[index];
+
+
+  const oldPosition =
+    index + 1;
+
+
+  const newPosition =
+    target + 1;
+
+
   [
     arrangementTasks[index],
     arrangementTasks[target]
@@ -8643,6 +8710,16 @@ function moveArrangementTask(
 
 
   clearOverridesFrom(0);
+
+
+  logTimetableChange({
+    taskId:movedTask?.id || '',
+    taskName:movedTask?.name || '',
+    type:'reorder',
+    from:`#${oldPosition}`,
+    to:`#${newPosition}`
+  });
+
 
   saveArrangementMemory();
 
@@ -8816,6 +8893,12 @@ function enablePointerReorder(){
       );
 
 
+      const oldOrderNames =
+        arrangementTasks
+          .map(t => t.name || '')
+          .join(' | ');
+
+
       const newOrder =
         Array.from(
           list.children
@@ -8836,6 +8919,16 @@ function enablePointerReorder(){
 
 
       clearOverridesFrom(0);
+
+
+      logTimetableChange({
+        type:'reorder-drag',
+        from:oldOrderNames,
+        to:
+          arrangementTasks
+            .map(t => t.name || '')
+            .join(' | ')
+      });
 
 
       Array.from(
@@ -8907,6 +9000,10 @@ document
         }
 
 
+        const oldMinutes =
+          arrangementTasks[i].minutes;
+
+
         arrangementTasks[i]
           .minutes =
             Math.max(
@@ -8924,6 +9021,15 @@ document
         clearOverridesFrom(
           i+1
         );
+
+
+        logTimetableChange({
+          taskId:arrangementTasks[i]?.id || '',
+          taskName:arrangementTasks[i]?.name || '',
+          type:'duration',
+          from:`${oldMinutes ?? 0}m`,
+          to:`${arrangementTasks[i].minutes}m`
+        });
 
       }
 
@@ -8953,9 +9059,25 @@ document
         }
 
 
+        const oldStart =
+          arrangementTasks[i].startOverride;
+
+
         arrangementTasks[i]
           .startOverride =
             newStart;
+
+
+        logTimetableChange({
+          taskId:arrangementTasks[i]?.id || '',
+          taskName:arrangementTasks[i]?.name || '',
+          type:'start-time',
+          from:
+            oldStart != null
+              ? minutesToTimeStr(oldStart)
+              : '',
+          to:minutesToTimeStr(newStart)
+        });
 
 
         clearOverridesFrom(
@@ -8973,6 +9095,96 @@ document
 
     }
   );
+
+
+
+function isArrangementAnchor(task){
+
+  return !!(
+    task &&
+    (
+      task.pinned ||
+      task.isFixedTime
+    )
+  );
+}
+
+
+function getArrangementConflicts(){
+
+  const rows =
+    buildSchedule();
+
+  const conflicts =
+    [];
+
+
+  for(
+    let i=1;
+    i<rows.length;
+    i++
+  ){
+
+    const currentTask =
+      arrangementTasks[i];
+
+    const previousTask =
+      arrangementTasks[i-1];
+
+    const current =
+      rows[i];
+
+    const previous =
+      rows[i-1];
+
+
+    if(
+      isArrangementAnchor(
+        currentTask
+      )
+      &&
+      current.start <
+      previous.end
+    ){
+
+      conflicts.push({
+
+        index:i,
+
+        taskId:
+          currentTask.id || '',
+
+        taskName:
+          currentTask.name || '',
+
+        previousTaskId:
+          previousTask?.id || '',
+
+        previousTaskName:
+          previousTask?.name || '',
+
+        anchorStart:
+          current.start,
+
+        previousEnd:
+          previous.end,
+
+        overlapMinutes:
+          previous.end -
+          current.start,
+
+        anchorType:
+          currentTask.isFixedTime
+            ? 'fixed'
+            : 'pinned'
+
+      });
+    }
+  }
+
+
+  return conflicts;
+}
 
 
 function validateOverflow(){
@@ -9021,20 +9233,22 @@ function validateOverflow(){
     [];
 
 
-  rows.forEach(
-    (r,i) => {
+  const conflicts =
+    getArrangementConflicts();
 
-      if(
-        i > 0 &&
-        arrangementTasks[i].pinned &&
-        r.start < rows[i-1].end
-      ){
 
-        errors.push(
-          `#${i+1} ${arrangementTasks[i].name} pinned at ${minutesToTimeStr(r.start)}, but previous task ends ${minutesToTimeStr(rows[i-1].end)}.`
-        );
+  conflicts.forEach(
+    conflict => {
 
-      }
+      errors.push(
+        `#${conflict.index+1} ` +
+        `${conflict.taskName} ` +
+        `${conflict.anchorType} anchor at ` +
+        `${minutesToTimeStr(conflict.anchorStart)}, ` +
+        `but ${conflict.previousTaskName} ends ` +
+        `${minutesToTimeStr(conflict.previousEnd)} ` +
+        `(overlap ${conflict.overlapMinutes}m).`
+      );
 
     }
   );
@@ -9113,16 +9327,12 @@ function validateOverflow(){
 
 function finishArrangementStep4(){
 
-  const rows =
-    buildSchedule();
-
-
   const conflicts =
-  getArrangementConflicts();
+    getArrangementConflicts();
 
 
-const hasConflict =
-  conflicts.length > 0;
+  const hasConflict =
+    conflicts.length > 0;
 
 
   if(hasConflict){
@@ -9131,7 +9341,7 @@ const hasConflict =
 
 
     alert(
-      'Time arrangement error: pinned task overlaps the previous task. Please reorder, unpin, or adjust the unpinned task duration.'
+      'Time arrangement error: an Anchor task overlaps the previous task. Please reorder, unpin, or adjust the movable task duration.'
     );
 
 
@@ -10136,89 +10346,6 @@ function runDevTests(){
   );
 
 })();
-function getArrangementConflicts(){
-
-  const rows =
-    buildSchedule();
-
-  const conflicts =
-    [];
-
-
-  for(
-    let i=1;
-    i<rows.length;
-    i++
-  ){
-
-    const currentTask =
-      arrangementTasks[i];
-
-    const previousTask =
-      arrangementTasks[i-1];
-
-    const current =
-      rows[i];
-
-    const previous =
-      rows[i-1];
-
-
-    /*
-     * Only an Anchor blocks automatic flow.
-     *
-     * Previous task reaching beyond Anchor start
-     * = schedule conflict.
-     */
-    if(
-      isArrangementAnchor(
-        currentTask
-      )
-      &&
-      current.start <
-      previous.end
-    ){
-
-      conflicts.push({
-
-        index:i,
-
-        taskId:
-          currentTask.id || '',
-
-        taskName:
-          currentTask.name || '',
-
-        previousTaskId:
-          previousTask?.id || '',
-
-        previousTaskName:
-          previousTask?.name || '',
-
-        anchorStart:
-          current.start,
-
-        previousEnd:
-          previous.end,
-
-        overlapMinutes:
-          previous.end -
-          current.start,
-
-        anchorType:
-          currentTask.isFixedTime
-            ? 'fixed'
-            : 'pinned'
-
-      });
-
-    }
-
-  }
-
-
-  return conflicts;
-}
 </script>
 
 </body>
