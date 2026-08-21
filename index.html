@@ -8375,6 +8375,40 @@ function autoSortFineTuneByTimeOnce(){
 }
 
 
+function sortFineTuneByCurrentScheduleTime(){
+
+  if(arrangementTasks.length < 2){
+    return;
+  }
+
+  /*
+   * A user-edited Start Time is an alternative reorder command.
+   * Sort by the CURRENT calculated schedule time, not only startOverride,
+   * because some displayed times come from Plan / Fixed / auto-flow.
+   * Stable fallback keeps the existing manual order when times are equal.
+   */
+  const rows =
+    buildSchedule();
+
+  arrangementTasks =
+    arrangementTasks
+      .map((task,index) => ({
+        task,
+        index,
+        start:
+          rows[index]?.start
+          ??
+          Number.POSITIVE_INFINITY
+      }))
+      .sort((a,b) =>
+        (a.start-b.start)
+        ||
+        (a.index-b.index)
+      )
+      .map(x => x.task);
+}
+
+
 function prepareReorderStep(){
 
   /*
@@ -9216,29 +9250,60 @@ document
         }
 
 
-        const oldStart =
-          arrangementTasks[i].startOverride;
+        /*
+         * Keep a direct reference because time-based sorting below
+         * may move this task to a different array index.
+         */
+        const editedTask =
+          arrangementTasks[i];
 
 
-        arrangementTasks[i]
+        const oldRows =
+          buildSchedule();
+
+
+        const oldEffectiveStart =
+          oldRows[i]?.start
+          ??
+          editedTask.startOverride
+          ??
+          null;
+
+
+        editedTask
           .startOverride =
             newStart;
 
 
+        /*
+         * Preserve the existing scheduler rule: tasks after the edited
+         * position are allowed to auto-flow again, while pinned/fixed
+         * anchors retain their protected time.
+         */
         clearOverridesFrom(
           i+1
         );
 
 
+        /*
+         * Method 2 of Fine Tune reorder:
+         * changing Start Time immediately reorders the working timetable
+         * by the CURRENT calculated start times.  This is a one-off user
+         * command; ordinary render/drag does not auto-sort again.
+         */
+        sortFineTuneByCurrentScheduleTime();
+
+
         logTimetableChange({
-          taskId:arrangementTasks[i]?.id || '',
-          taskName:arrangementTasks[i]?.name || '',
+          taskId:editedTask?.id || '',
+          taskName:editedTask?.name || '',
           type:'start-time',
           from:
-            oldStart != null
-              ? minutesToTimeStr(oldStart)
+            oldEffectiveStart != null
+              ? minutesToTimeStr(oldEffectiveStart)
               : '',
-          to:minutesToTimeStr(newStart)
+          to:minutesToTimeStr(newStart),
+          detail:'User changed Start Time; Fine Tune reordered immediately by current schedule time.'
         });
 
       }
