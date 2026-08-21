@@ -5228,9 +5228,187 @@ function changeTodayArrangementStart(
 
 
 
+/* ============================================================
+   Today MASTER / CONFIRMED → Arrangement editor
+
+   Once the user has pressed Finish, Today ToDoList is the
+   authoritative timetable.  Opening Edit Arrangement must rebuild
+   the working arrangementTasks from that confirmed Today data,
+   instead of reusing a possibly stale RAM / daily-session copy.
+============================================================ */
+function loadArrangementTasksFromConfirmedToday(){
+
+  const todos =
+    getTodayTodos()
+      .filter(
+        x =>
+          x.date === todayStr()
+      );
+
+
+  if(!todos.length){
+    return false;
+  }
+
+
+  fineTuneAutoSorted = false;
+
+
+  arrangementTasks =
+    todos
+      .slice()
+      .sort(
+        (a,b) => {
+
+          const ao =
+            Number.isFinite(
+              Number(a.arrangementOrder)
+            )
+              ? Number(a.arrangementOrder)
+              : 9999;
+
+          const bo =
+            Number.isFinite(
+              Number(b.arrangementOrder)
+            )
+              ? Number(b.arrangementOrder)
+              : 9999;
+
+
+          if(ao !== bo){
+            return ao - bo;
+          }
+
+
+          const as =
+            a.arrangementStart || '';
+
+          const bs =
+            b.arrangementStart || '';
+
+
+          if(as && bs && as !== bs){
+            return as.localeCompare(bs);
+          }
+
+          if(as){
+            return -1;
+          }
+
+          if(bs){
+            return 1;
+          }
+
+
+          return (
+            (a.createdAt || 0)
+            -
+            (b.createdAt || 0)
+          );
+        }
+      )
+      .map(
+        (item,i) => ({
+
+          id:item.id,
+
+          raw:'',
+
+          name:
+            normalizeTaskName(
+              item.displayText ||
+              item.text
+            ),
+
+          minutes:
+            item.arrangementMinutes
+            ??
+            item.minutes
+            ??
+            parseDurationMinutes(
+              item.displayText ||
+              item.text
+            ),
+
+          rank:
+            item.arrangementRank
+            ??
+            '',
+
+          /*
+           * Confirmed Today time wins.  This restores exactly the
+           * timetable the user last accepted with Finish.
+           */
+          startOverride:
+            item.arrangementStart
+              ? timeStrToMinutesToday(
+                  item.arrangementStart
+                )
+              : (
+                  item.isFixedTime &&
+                  item.fixedStart
+                    ? timeStrToMinutesToday(
+                        item.fixedStart
+                      )
+                    : null
+                ),
+
+          status:
+            item.status,
+
+          isFixedTime:
+            !!item.isFixedTime,
+
+          fixedStart:
+            item.fixedStart || '',
+
+          recurringTaskId:
+            item.recurringTaskId || '',
+
+          recurringRule:
+            item.recurringRule || '',
+
+          recurringDays:
+            item.recurringDays || [],
+
+          /*
+           * Pin is an Arrangement editing control, not part of the
+           * confirmed Today schema.  Fixed-time tasks remain protected
+           * by isFixedTime/fixedStart; normal tasks reopen as movable.
+           */
+          pinned:false,
+
+          rememberedOrder:i,
+
+          originalIndex:i
+
+        })
+      );
+
+
+  /*
+   * Replace the old working-session snapshot immediately so any later
+   * Arrangement action starts from the same confirmed Today version.
+   */
+  saveDailyArrangementSession();
+
+
+  return true;
+}
+
+
 function openTodayArrangementEditor(){
 
-  ensureTodayArrangementTasks();
+  /*
+   * MASTER rule:
+   * Today ToDoList confirmed data → Arrangement working copy.
+   * Only fall back to the old recovery path when Today has no data.
+   */
+  if(
+    !loadArrangementTasksFromConfirmedToday()
+  ){
+    ensureTodayArrangementTasks();
+  }
 
   showPage(
     'pageArrangement'
@@ -9571,12 +9749,20 @@ function finishArrangementStep4(){
   }
 
 
+  /*
+   * Finish creates the confirmed timetable first.
+   * Today ToDoList is the MASTER / CONFIRMED VERSION.
+   */
+  syncArrangementToTodayTodos();
+
+
+  /*
+   * Working memories are secondary snapshots only.  Edit Arrangement
+   * from Today will rebuild from the confirmed Today data above.
+   */
   saveArrangementMemory();
 
   saveDailyArrangementSession();
-
-
-  syncArrangementToTodayTodos();
 
 
   renderArrangementStats();
